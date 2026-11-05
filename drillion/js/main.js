@@ -1,9 +1,12 @@
-/* DRILLION screens: title -> 7 x (descend, prompt, result) -> treasure tally. */
+/* DRILLION screens: title -> 7 x (prompt, result + drill) -> dive log.
+   Points are drill power: every 100 points breaks through to the next zone,
+   and each prompt comes from the zone the drill has reached. */
 (function () {
   'use strict';
   const D = window.DRILLION, E = D.engine, art = D.art, sfx = D.sfx;
   const $ = (id) => document.getElementById(id);
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TURNS = 7;
 
   const store = {
     get(k, d) { try { const v = localStorage.getItem('drillion:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -13,8 +16,9 @@
   const TIER_LEVEL = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
   const EMOJI = { common: '🐚', uncommon: '⭐', rare: '🔵', epic: '💎', legendary: '👑', junk: '👢' };
   const screens = ['title', 'prompt', 'result', 'end'];
+  const m = (meters) => Math.round(meters).toLocaleString('en-US') + ' m';
 
-  const state = { screen: 'title', run: null, i: 0, results: [], total: 0, used: new Set(), busy: false };
+  const state = { screen: 'title', turn: 0, prompts: [], results: [], total: 0, used: new Set(), drilling: false };
 
   // ---------- helpers ----------
   function show(name) {
@@ -25,21 +29,22 @@
   function setTrack() {
     const t = $('track');
     t.innerHTML = '';
+    const here = state.screen === 'title' ? -1 : E.zoneFor(state.total).index;
     E.ZONES.forEach((z, i) => {
       const dot = document.createElement('i');
-      if (state.run && i < state.results.length) dot.className = 'done';
-      else if (state.run && i === state.i && state.screen !== 'title') dot.className = 'now';
+      if (i < here || (state.total >= E.MAX_PTS)) dot.className = 'done';
+      else if (i === here) dot.className = 'now';
       dot.title = z.name;
       t.appendChild(dot);
     });
   }
   function setHud() {
     $('hud-score').textContent = pad(state.total, 3);
-    $('hud-zone').textContent = state.run ? `${Math.min(state.i + 1, 7)}/7` : '-/7';
+    $('hud-zone').textContent = state.screen === 'title' ? '-/7' : `${Math.min(state.turn + 1, TURNS)}/7`;
   }
   let lastDepth = -1;
-  function onFrame(m) {
-    const d = Math.round(m);
+  function onFrame(meters) {
+    const d = Math.round(meters);
     if (d !== lastDepth) { lastDepth = d; $('hud-depth').textContent = d.toLocaleString('en-US'); }
   }
   function typewrite(el, text, done) {
@@ -56,9 +61,21 @@
   }
   function snapshot() {
     return {
-      screen: state.screen, keys: state.run ? state.run.map((p) => p.key) : null,
-      i: state.i, results: state.results, total: state.total, used: [...state.used],
+      screen: state.screen, turn: state.turn, total: state.total, used: [...state.used], results: state.results,
+      prompts: state.prompts.map((p) => ({ z: p.zone.index, key: p.key })),
     };
+  }
+  // How far the drill is through its current zone, for the gauge.
+  function gauge() {
+    const z = E.zoneFor(state.total);
+    const into = Math.min(E.PTS_PER_ZONE, state.total - z.minPts);
+    const left = E.PTS_PER_ZONE - into;
+    $('gauge-fill').style.width = (into / E.PTS_PER_ZONE * 100) + '%';
+    const nextZone = E.ZONES[z.index + 1];
+    $('gauge-text').innerHTML = '';
+    const b = document.createElement('b');
+    b.textContent = left + ' pts';
+    $('gauge-text').append('Drill ', b, nextZone ? ` more to break into ${nextZone.the}${nextZone.name}.` : ' more to hit the sea floor.');
   }
 
   // ---------- title ----------
@@ -76,44 +93,43 @@
     E.ZONES.forEach((z) => {
       const li = document.createElement('li');
       li.innerHTML = '<span class="d"></span><span class="z"></span><span class="c"></span>';
-      li.children[0].textContent = z.range;
+      li.children[0].textContent = z.minPts + ' pts';
       li.children[1].textContent = z.name;
-      li.children[2].textContent = z.theme;
+      li.children[2].textContent = `${z.range} · ${z.theme}`;
       plan.appendChild(li);
     });
-    const best = store.get('best', 0);
-    $('best').textContent = best ? `BEST DIVE: ${best}` : '';
+    const best = store.get('bestDepth', 0);
+    $('best').textContent = best ? `DEEPEST DIVE: ${m(best)}` : '';
   }
 
   // ---------- dive ----------
   function startDive() {
     sfx.unlock();
-    const history = store.get('history', []);
-    state.run = E.newRun(history);
-    store.set('history', history.concat(state.run.map((p) => p.key)).slice(-84));
-    state.i = 0; state.results = []; state.total = 0; state.used = new Set();
+    state.turn = 0; state.prompts = []; state.results = []; state.total = 0; state.used = new Set();
     art.openChest(false);
-    goZone(0, true);
+    ask(true);
   }
 
-  function fillZoneHead(p) {
-    const z = p.zone, i = E.ZONES.indexOf(z);
-    $('z-eyebrow').textContent = `Zone ${i + 1} of 7 · ${z.range}`;
-    $('z-name').textContent = z.name;
-    $('z-blurb').textContent = z.blurb;
-    $('theme').textContent = 'Category: ' + z.theme;
-    $('sonar-count').textContent = `Sonar detects ${p.valid.length} possible answers`;
-  }
-
-  function goZone(i, animate) {
-    state.i = i;
-    const p = state.run[i];
+  function ask(fromSurface) {
+    const zone = E.zoneFor(state.total);
+    let p = state.prompts[state.turn];
+    if (!p) {
+      const history = store.get('history', []);
+      p = E.promptFor(zone.index, history, state.prompts.map((x) => x.key));
+      state.prompts[state.turn] = p;
+      store.set('history', history.concat(p.key).slice(-84));
+    }
     show('prompt'); setTrack(); setHud();
-    fillZoneHead(p);
+    $('z-eyebrow').textContent = `Prompt ${state.turn + 1} of ${TURNS} · ${m(E.depthFor(state.total))}`;
+    $('z-name').textContent = p.zone.name;
+    $('z-blurb').textContent = p.zone.blurb;
+    $('theme').textContent = 'Category: ' + p.zone.theme;
+    $('sonar-count').textContent = `Sonar detects ${p.valid.length} possible answers`;
+    gauge();
     const input = $('answer');
     input.value = ''; input.disabled = true; $('drop').disabled = true; $('skip').disabled = true;
     $('msg').textContent = ''; $('msg').className = 'msg';
-    $('prompt').textContent = 'Descending…';
+    $('prompt').textContent = fromSurface ? 'Descending…' : '';
     $('prompt').classList.remove('done');
     const arrive = () => {
       sfx.ping();
@@ -123,13 +139,13 @@
         try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
       });
     };
-    if (animate) { sfx.dive(); art.moveTo(i, i === 0 ? 2600 : 2200, arrive); } else { art.jump(i); arrive(); }
+    if (fromSurface) { sfx.dive(); art.moveTo(0, 2400, arrive); } else arrive();
   }
 
   function submit(e) {
     if (e) e.preventDefault();
     if (state.screen !== 'prompt' || $('answer').disabled) return;
-    const p = state.run[state.i];
+    const p = state.prompts[state.turn];
     const value = $('answer').value;
     const r = E.judge(p, value, state.used);
     if (r.status === 'retry') {
@@ -144,28 +160,29 @@
 
   function skip() {
     if (state.screen !== 'prompt' || $('skip').disabled) return;
-    const p = state.run[state.i];
-    record(p, '', { status: 'skip', points: 0, tier: E.tierFor(0) });
+    record(state.prompts[state.turn], '', { status: 'skip', points: 0, tier: E.tierFor(0) });
   }
 
   function record(p, input, r) {
+    const before = state.total, after = Math.min(E.MAX_PTS, before + (r.points || 0));
     const res = {
-      key: p.key, text: p.text, zone: p.zone.name, input: input.trim(), status: r.status,
-      name: r.entity ? r.entity.name : '', points: r.points || 0, tier: r.tier.id,
-      tierLabel: r.tier.label, share: r.share || 0, fuzzy: !!r.fuzzy, why: r.message || '',
+      key: p.key, text: p.text, zone: p.zone.name, zoneIndex: p.zone.index, input: input.trim(), status: r.status,
+      name: r.entity ? r.entity.name : '', points: r.points || 0, tier: r.tier.id, tierLabel: r.tier.label,
+      share: r.share || 0, fuzzy: !!r.fuzzy, why: r.message || '',
+      before, after, depthBefore: E.depthFor(before), depthAfter: E.depthFor(after),
     };
     if (r.status === 'ok') state.used.add(r.entity.id);
-    state.results.push(res);
-    state.total += res.points;
-    showResult(state.i, true);
+    state.results[state.turn] = res;
+    state.total = after;
+    showResult(state.turn, true);
   }
 
   function showResult(i, fresh) {
-    const p = state.run[i], res = state.results[i];
-    show('result'); setTrack();
-    art.drawIcon($('icon'), res.tier);
+    const p = state.prompts[i], res = state.results[i];
+    show('result'); setTrack(); setHud();
     $('r-zone').textContent = `${p.zone.name} · ${p.zone.theme}`;
     $('r-prompt').textContent = p.text;
+    art.drawIcon($('icon'), res.tier);
     const you = $('r-you'), ans = $('r-answer'), pts = $('r-points'), badge = $('r-badge'), note = $('r-note');
     pts.className = 'points t-' + res.tier;
     badge.className = 'badge t-' + res.tier;
@@ -186,6 +203,22 @@
       ans.textContent = '—';
       note.textContent = 'An empty net. No points.';
     }
+
+    // How far the points drilled.
+    const drill = $('r-drill');
+    drill.innerHTML = '';
+    if (res.points > 0) {
+      const b1 = document.createElement('b'); b1.textContent = m(res.depthAfter - res.depthBefore);
+      const b2 = document.createElement('b'); b2.textContent = m(res.depthAfter);
+      drill.append('Drilled ', b1, ' deeper. Now at ', b2, '.');
+    } else {
+      const b2 = document.createElement('b'); b2.textContent = m(res.depthAfter);
+      drill.append('The drill didn’t move. Still at ', b2, '.');
+    }
+    const zc = $('r-zonechange');
+    const zBefore = E.zoneFor(res.before), zAfter = E.zoneFor(res.after);
+    if (res.after >= E.MAX_PTS && res.before < E.MAX_PTS) { zc.hidden = false; zc.textContent = 'You hit the sea floor! 10,935 m.'; } else if (zAfter !== zBefore) { zc.hidden = false; zc.textContent = `Breakthrough! You drilled into ${zAfter.the}${zAfter.name}.`; } else zc.hidden = true;
+
     const skipEntity = p.valid.find((e) => e.name === res.name) || null;
     const rv = E.reveal(p, res.status === 'ok' ? skipEntity : null);
     const fill = (ul, items) => {
@@ -199,59 +232,74 @@
     };
     fill($('r-common'), rv.common);
     fill($('r-rare'), rv.rare);
-    $('next').textContent = i === 6 ? 'OPEN THE CHEST ▼' : 'DIVE DEEPER ▼';
+    $('live').textContent = (res.status === 'ok' ? `${res.name}: ${res.points} points, ${res.tierLabel}.` : res.status === 'wrong' ? `${res.name}: wrong. ${res.why}` : 'Skipped.') + ` Depth ${m(res.depthAfter)}.`;
 
-    $('live').textContent = res.status === 'ok' ? `${res.name}: ${res.points} points, ${res.tierLabel}.` : res.status === 'wrong' ? `${res.name}: wrong. ${res.why}` : 'Skipped.';
+    const nextBtn = $('next');
+    const label = i === TURNS - 1 ? 'SEE YOUR DIVE ▼' : 'NEXT PROMPT ▼';
     if (fresh) {
       if (res.status === 'ok') sfx.good(TIER_LEVEL[res.tier] || 1); else sfx.bad();
       tally(pts, res.points);
+      if (res.points > 0) {
+        state.drilling = true;
+        nextBtn.disabled = true; nextBtn.textContent = 'DRILLING…';
+        setTimeout(() => sfx.dive(), 250);
+        art.moveTo(res.after / E.PTS_PER_ZONE, 500 + res.points * 16, () => {
+          state.drilling = false; nextBtn.disabled = false; nextBtn.textContent = label;
+          if (!zc.hidden) sfx.good(5);
+          try { nextBtn.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+        });
+      } else { nextBtn.disabled = false; nextBtn.textContent = label; }
     } else {
       pts.textContent = '+' + res.points;
-      setHud();
+      art.jump(res.after / E.PTS_PER_ZONE);
+      nextBtn.disabled = false; nextBtn.textContent = label;
     }
-    try { $('next').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    if (!state.drilling) { try { nextBtn.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
   }
 
   function tally(el, target) {
-    if (reduced || target === 0) { el.textContent = '+' + target; setHud(); return; }
+    if (reduced || target === 0) { el.textContent = '+' + target; return; }
     const start = performance.now(), ms = 450 + target * 6;
     const step = (now) => {
       const k = Math.min(1, (now - start) / ms);
       const v = Math.round(target * k);
       el.textContent = '+' + v;
       if (v % 7 === 0) sfx.tick();
-      if (k < 1) requestAnimationFrame(step); else setHud();
+      if (k < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }
 
   function next() {
-    if (state.screen !== 'result') return;
-    if (state.i < 6) goZone(state.i + 1, true); else finish(true);
+    if (state.screen !== 'result' || state.drilling) return;
+    if (state.turn < TURNS - 1) { state.turn++; ask(false); } else finish(true);
   }
 
   // ---------- end ----------
   function finish(fresh) {
-    state.i = 7;
-    show('end'); setTrack(); setHud();
+    state.turn = TURNS;
+    show('end'); setTrack();
     $('hud-zone').textContent = '7/7';
-    art.jump(6);
-    art.openChest(true);
+    $('hud-score').textContent = pad(state.total, 3);
+    art.jump(state.total / E.PTS_PER_ZONE);
+    const floor = state.total >= E.PTS_PER_ZONE * (E.ZONES.length - 1); // reached Challenger Deep
+    art.openChest(floor);
     if (fresh) sfx.fanfare();
-    const total = state.total;
-    $('e-total').textContent = total;
-    $('e-rank').textContent = 'RANK: ' + E.rankFor(total);
-    const best = store.get('best', 0);
-    if (fresh && total > best) store.set('best', total);
-    $('e-best').textContent = total > best ? (best ? `New best dive! Old best: ${best}.` : 'Your first logged dive.') : `Best dive: ${best}. Max possible: 700.`;
+    const depth = E.depthFor(state.total), zone = E.zoneFor(state.total);
+    $('e-total').textContent = m(depth);
+    $('e-zone').textContent = state.total >= E.MAX_PTS ? 'THE SEA FLOOR' : zone.name;
+    $('e-rank').textContent = 'RANK: ' + E.rankFor(state.total);
+    $('e-points').textContent = state.total >= E.MAX_PTS ? `${state.total} points. A perfect dive!` : `${state.total} points. ${E.MAX_PTS - state.total} more would have reached the sea floor.`;
+    const best = store.get('bestDepth', 0);
+    if (fresh && depth > best) store.set('bestDepth', Math.round(depth));
+    $('e-best').textContent = depth > best ? (best ? `New deepest dive! Old record: ${m(best)}.` : 'Your first logged dive.') : `Deepest dive: ${m(best)}.`;
     const tbody = $('e-log');
     tbody.innerHTML = '';
     state.results.forEach((r) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td><span></span><br><span class="q"></span></td><td></td><td class="pts"><span class="dot"></span><span></span></td>';
+      tr.innerHTML = '<td><span></span><br><span class="muted"></span></td><td></td><td class="pts"><span class="dot"></span><span></span></td>';
       tr.children[0].children[0].textContent = r.zone;
       tr.children[0].children[2].textContent = r.text;
-      tr.children[0].children[2].className = 'muted';
       tr.children[1].textContent = r.status === 'ok' ? r.name : r.status === 'wrong' ? `${r.name} (boot)` : '—';
       tr.children[2].classList.add('t-' + r.tier);
       tr.children[2].children[1].textContent = r.points;
@@ -263,8 +311,9 @@
 
   function shareText() {
     const icons = state.results.map((r) => EMOJI[r.tier] || '👢').join('');
+    const where = state.total >= E.MAX_PTS ? 'the sea floor' : E.zoneFor(state.total).name;
     const lines = state.results.map((r) => `${r.zone}: ${r.status === 'ok' ? r.name : '—'} (+${r.points})`);
-    return `DRILLION 🌊 ${state.total}/700 · ${E.rankFor(state.total)}\n${icons}\n${lines.join('\n')}`;
+    return `DRILLION 🌊 I drilled to ${m(E.depthFor(state.total))} (${where}) with ${state.total} pts\n${icons}\n${lines.join('\n')}`;
   }
   function copy() {
     const text = shareText();
@@ -295,23 +344,24 @@
     snd.addEventListener('click', () => { const on = !sfx.enabled; store.set('sound', on); setSnd(on); if (on) sfx.blip(); });
   }
 
+  function resume(data) {
+    if (!data || !data.prompts || !data.prompts.length || !data.screen || data.screen === 'title') return false;
+    const prompts = data.prompts.map((x) => E.rebuildOne(x.z, x.key));
+    if (!prompts.every(Boolean)) return false;
+    state.prompts = prompts; state.results = data.results || []; state.total = data.total || 0;
+    state.used = new Set(data.used || []); state.turn = data.turn || 0;
+    if (state.results.length >= TURNS || state.turn >= TURNS) { finish(false); return true; }
+    art.jump(state.total / E.PTS_PER_ZONE);
+    if (state.results[state.turn]) showResult(state.turn, false); else ask(false);
+    return true;
+  }
+
   function start(data) {
     renderTitle();
     bind();
     art.init($('scene'), onFrame);
     try { if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(snapshot); } catch (e) { /* not in a viewer */ }
-
-    // Resume a dive that was in progress when the page updated.
-    if (data && data.keys && data.screen && data.screen !== 'title') {
-      const run = E.rebuild(data.keys);
-      if (run.every(Boolean)) {
-        state.run = run; state.results = data.results || []; state.total = data.total || 0;
-        state.used = new Set(data.used || []); state.i = data.i || 0;
-        if (state.results.length >= 7) return finish(false);
-        if (state.results.length > state.i) { art.jump(state.i); return showResult(state.i, false); }
-        return goZone(state.i, false);
-      }
-    }
+    if (resume(data)) return;
     show('title'); setTrack(); setHud();
     art.jump(-1);
   }

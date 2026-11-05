@@ -373,17 +373,33 @@
   add('treasure', 'coins', () => ({ key: 't-old', text: 'Name a coin or currency that is no longer used.', test: (e) => e.tags.includes('h'), fact: (e) => `The ${e.name.toLowerCase()} is still in use today.` }));
 
   // ---------- zones ----------
+  // Seven zones stacked by depth. Every 100 points of answers drills through one zone,
+  // so the zone (and the category of the next prompt) depends on how well you have scored.
+  const PTS_PER_ZONE = 100;
   const ZONES = [
-    { id: 'reef', name: 'CORAL REEF', range: '0–30 m', depth: 18, cat: 'marine', theme: 'Reef Life', blurb: 'Warm, bright water. The reef is crowded with life.' },
-    { id: 'sun', name: 'SUNLIGHT ZONE', range: '30–200 m', depth: 160, cat: 'countries', theme: 'The World Above', blurb: 'Sunlight still reaches you. Sonar picks up chatter from every nation above.' },
-    { id: 'twilight', name: 'TWILIGHT ZONE', range: '200–1,000 m', depth: 640, cat: 'capitals', theme: 'City Lights', blurb: 'The light fades to blue. Far above, the capitals are switching their lights on.' },
-    { id: 'midnight', name: 'MIDNIGHT ZONE', range: '1,000–4,000 m', depth: 2600, cat: 'space', theme: 'Starlight', blurb: 'Pitch black. Glowing creatures drift past like stars.' },
-    { id: 'abyss', name: 'ABYSSAL ZONE', range: '4,000–6,000 m', depth: 5200, cat: 'elements', theme: 'Crushing Elements', blurb: 'Near freezing, 500 times surface pressure. Hope the hull holds.' },
-    { id: 'hadal', name: 'HADAL ZONE', range: '6,000–10,900 m', depth: 8400, cat: 'myth', theme: 'Realm of Hades', blurb: 'The trenches are named for Hades, lord of the underworld.' },
-    { id: 'deep', name: 'CHALLENGER DEEP', range: '10,935 m', depth: 10935, cat: 'treasure', theme: 'Sunken Treasure', blurb: 'The deepest point on Earth. Something glints in the silt.' },
+    { id: 'reef', name: 'CORAL REEF', top: 0, bottom: 30, cat: 'marine', theme: 'Reef Life', rank: 'CLOWNFISH', blurb: 'Warm, bright water. The reef is crowded with life.' },
+    { id: 'sun', name: 'SUNLIGHT ZONE', top: 30, bottom: 200, cat: 'countries', theme: 'The World Above', rank: 'SEA TURTLE', blurb: 'Sunlight still reaches you. Sonar picks up chatter from every nation above.' },
+    { id: 'twilight', name: 'TWILIGHT ZONE', top: 200, bottom: 1000, cat: 'capitals', theme: 'City Lights', rank: 'JELLYFISH', blurb: 'The light fades to blue. Far above, the capitals are switching their lights on.' },
+    { id: 'midnight', name: 'MIDNIGHT ZONE', top: 1000, bottom: 4000, cat: 'space', theme: 'Starlight', rank: 'ANGLERFISH', blurb: 'Pitch black. Glowing creatures drift past like stars.' },
+    { id: 'abyss', name: 'ABYSSAL ZONE', top: 4000, bottom: 6000, cat: 'elements', theme: 'Crushing Elements', rank: 'DUMBO OCTOPUS', blurb: 'Near freezing, 500 times surface pressure. Hope the hull holds.' },
+    { id: 'hadal', name: 'HADAL ZONE', top: 6000, bottom: 10000, cat: 'myth', theme: 'Realm of Hades', rank: 'GIANT SQUID', blurb: 'The trenches are named for Hades, lord of the underworld.' },
+    { id: 'deep', name: 'CHALLENGER DEEP', top: 10000, bottom: 10935, cat: 'treasure', theme: 'Sunken Treasure', rank: 'LEVIATHAN', blurb: 'The deepest trench on Earth. Something glints in the silt below.' },
   ];
+  const fmtM = (m) => Math.round(m).toLocaleString('en-US');
+  ZONES.forEach((z, i) => { z.index = i; z.minPts = i * PTS_PER_ZONE; z.range = `${fmtM(z.top)}–${fmtM(z.bottom)} m`; z.the = z.id === 'deep' ? '' : 'the '; });
+  const MAX_PTS = ZONES.length * PTS_PER_ZONE;
 
-  function build(cat, history) {
+  // Zone you are in after scoring `points` in total.
+  const zoneFor = (points) => ZONES[Math.min(ZONES.length - 1, Math.floor(Math.max(0, points) / PTS_PER_ZONE))];
+  // Depth in metres after scoring `points`: linear inside each zone.
+  function depthFor(points) {
+    const p = Math.max(0, Math.min(MAX_PTS, points));
+    if (p >= MAX_PTS) return ZONES[ZONES.length - 1].bottom;
+    const z = zoneFor(p), f = (p - z.minPts) / PTS_PER_ZONE;
+    return z.top + (z.bottom - z.top) * f;
+  }
+
+  function build(cat, avoid) {
     const pool = T[cat];
     const weighted = [];
     pool.forEach((t) => { for (let i = 0; i < t.weight; i++) weighted.push(t); });
@@ -396,30 +412,38 @@
       const valid = ds.entities.filter((e) => p.test(e, null));
       if (valid.length < 5) continue;
       p.ds = t.ds; p.valid = valid; p.fmax = Math.max(...valid.map((e) => e.fame));
-      if (!history.has(p.key)) return p;
-      if (!fallback) fallback = p;
+      if (!avoid.has(p.key)) return p;
+      if (!fallback && !avoid.has('run:' + p.key)) fallback = p;
     }
     return fallback;
   }
 
-  function rebuild(keys) {
-    return ZONES.map((z, i) => {
-      for (const t of T[z.cat]) {
-        for (let n = 0; n < 400; n++) {
-          const p = t.make();
-          if (!p || p.key !== keys[i]) { if (p && !p.key.startsWith(keys[i].split('-').slice(0, 2).join('-'))) break; continue; }
-          const ds = DS[t.ds];
-          p.ds = t.ds; p.valid = ds.entities.filter((e) => p.test(e, null)); p.fmax = Math.max(...p.valid.map((e) => e.fame));
-          return Object.assign({ zone: z }, p);
-        }
-      }
-      return null;
-    });
+  // A fresh prompt for a zone. `recent` = keys from earlier dives (avoided when possible),
+  // `inRun` = keys already asked this dive (never repeated).
+  function promptFor(zoneIndex, recent, inRun) {
+    const z = ZONES[zoneIndex];
+    const avoid = new Set(recent || []);
+    (inRun || []).forEach((k) => { avoid.add(k); avoid.add('run:' + k); });
+    let p = build(z.cat, avoid);
+    if (!p) p = build(z.cat, new Set((inRun || []).flatMap((k) => [k, 'run:' + k])));
+    return p ? Object.assign({ zone: z }, p) : null;
   }
 
-  function newRun(historyKeys) {
-    const history = new Set(historyKeys || []);
-    return ZONES.map((z) => Object.assign({ zone: z }, build(z.cat, history)));
+  // Rebuild a prompt from its saved key (used to resume a dive after the page updates).
+  function rebuildOne(zoneIndex, key) {
+    const z = ZONES[zoneIndex];
+    const prefix = key.split('-').slice(0, 2).join('-');
+    for (const t of T[z.cat]) {
+      for (let n = 0; n < 400; n++) {
+        const p = t.make();
+        if (!p) break;
+        if (p.key !== key) { if (!p.key.startsWith(prefix)) break; continue; }
+        const ds = DS[t.ds];
+        p.ds = t.ds; p.valid = ds.entities.filter((e) => p.test(e, null)); p.fmax = Math.max(...p.valid.map((e) => e.fame));
+        return Object.assign({ zone: z }, p);
+      }
+    }
+    return null;
   }
 
   // Exact match on any name or alias (also tries dropping a plural "s"/"es").
@@ -503,11 +527,7 @@
     };
   }
 
-  const RANKS = [
-    [0, 'PLANKTON'], [100, 'SEA SPONGE'], [200, 'CLOWNFISH'], [300, 'SEA TURTLE'],
-    [400, 'OCTOPUS'], [480, 'ANGLERFISH'], [550, 'GIANT SQUID'], [620, 'LEVIATHAN'],
-  ];
-  const rankFor = (total) => RANKS.filter((r) => total >= r[0]).pop()[1];
+  const rankFor = (points) => (points >= MAX_PTS ? 'KING OF THE DEEP' : zoneFor(points).rank);
 
-  D.engine = { ZONES, DS, T, newRun, rebuild, judge, reveal, tierFor, rankFor, norm, lookup, fuzzy, score, RANKS };
+  D.engine = { ZONES, DS, T, PTS_PER_ZONE, MAX_PTS, zoneFor, depthFor, promptFor, rebuildOne, judge, reveal, tierFor, rankFor, norm, lookup, fuzzy, score };
 })();

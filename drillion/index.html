@@ -19,7 +19,7 @@
   <section class="viewport" aria-label="Dive camera">
     <canvas id="scene" width="200" height="120" role="img" aria-label="Pixel-art view of the Drillion submarine in the ocean"></canvas>
     <div class="hud" aria-hidden="true">
-      <span><span class="lbl">SCORE</span> <span id="hud-score">000</span> &nbsp;<span class="lbl">ZONE</span> <span id="hud-zone">-/7</span></span>
+      <span><span class="lbl">PTS</span> <span id="hud-score">000</span> &nbsp;<span class="lbl">PROMPT</span> <span id="hud-zone">-/7</span></span>
       <span><span class="lbl">DEPTH</span> <span id="hud-depth">0</span>m</span>
     </div>
     <div class="zone-track" id="track" aria-hidden="true"></div>
@@ -30,16 +30,17 @@
     <!-- Title screen (also the resting state of the page) -->
     <div class="screen" id="screen-title">
       <h1 class="logo wave" id="logo" aria-label="Drillion">DRILLION</h1>
-      <p class="tagline">Drill to the bottom of the sea. Name the rarest things you can.</p>
+      <p class="tagline">Rare answers drill deep. Reach the bottom of the sea.</p>
       <div class="rules">
-        <p>You get <b>7 prompts</b>, one at each depth. Type any answer that fits.</p>
+        <p>You get <b>7 prompts</b>. Type any answer that fits.</p>
         <p>Points come from <b>rarity</b>: the fewer divers who would think of your answer, the more it's worth, up to <b>100</b>.</p>
-        <p>A wrong answer hauls up an old boot: 0 points. Prompts change every dive.</p>
+        <p><b>Points drill you down.</b> Every 100 points breaks through to the next zone, and each zone asks about something new.</p>
+        <p>A wrong answer hauls up an old boot: 0 points, and the drill doesn't move. Seven perfect answers reach the sea floor.</p>
       </div>
       <div class="tiers" aria-label="Rarity tiers">
         <span class="badge t-common">COMMON</span><span class="badge t-uncommon">UNCOMMON</span><span class="badge t-rare">RARE</span><span class="badge t-epic">EPIC</span><span class="badge t-legendary">LEGENDARY</span>
       </div>
-      <p class="eyebrow">Dive plan</p>
+      <p class="eyebrow">Depth chart</p>
       <ol class="plan" id="plan"></ol>
       <div class="row split">
         <button class="toggle" id="sound" type="button" aria-pressed="true">SOUND ON</button>
@@ -51,9 +52,13 @@
     <!-- Prompt screen -->
     <div class="screen" id="screen-prompt" hidden>
       <div class="zone-head">
-        <p class="eyebrow" id="z-eyebrow">Zone 1 of 7 · 0–30 m</p>
+        <p class="eyebrow" id="z-eyebrow">Prompt 1 of 7 · 0 m</p>
         <h2 class="zone-name" id="z-name">CORAL REEF</h2>
         <p class="zone-blurb" id="z-blurb"></p>
+      </div>
+      <div class="gauge" id="gauge">
+        <div class="bar" aria-hidden="true"><i id="gauge-fill"></i></div>
+        <p id="gauge-text"></p>
       </div>
       <p class="prompt" id="prompt" aria-hidden="true"></p>
       <div class="sonar"><span><span class="ping" aria-hidden="true"></span><span id="sonar-count"></span></span><span class="muted" id="theme"></span></div>
@@ -82,24 +87,28 @@
         <span class="badge" id="r-badge">COMMON</span>
       </div>
       <p id="r-note" class="share-note"></p>
+      <p class="drilled" id="r-drill"></p>
+      <p class="breakthrough" id="r-zonechange" hidden></p>
       <div class="reveal" id="r-reveal">
         <div><p class="eyebrow">Most divers said</p><ul id="r-common"></ul></div>
         <div><p class="eyebrow">Rarest catches</p><ul id="r-rare"></ul></div>
       </div>
-      <div class="row end"><button class="btn big" id="next" type="button">DIVE DEEPER ▼</button></div>
+      <div class="row end"><button class="btn big" id="next" type="button">NEXT PROMPT ▼</button></div>
     </div>
 
     <!-- Final screen -->
     <div class="screen" id="screen-end" hidden>
       <div class="final">
-        <p class="eyebrow">Challenger Deep · 10,935 m</p>
-        <p class="total" id="e-total">0</p>
-        <p class="rank" id="e-rank">RANK: PLANKTON</p>
+        <p class="eyebrow" id="e-eyebrow">Dive complete · you reached</p>
+        <p class="total" id="e-total">0 m</p>
+        <p class="zone-name" id="e-zone">CORAL REEF</p>
+        <p class="rank" id="e-rank">RANK: CLOWNFISH</p>
+        <p id="e-points"></p>
         <p class="muted" id="e-best"></p>
       </div>
       <div class="log-wrap">
         <table class="log">
-          <thead><tr><th scope="col">Zone</th><th scope="col">Your catch</th><th scope="col">Pts</th></tr></thead>
+          <thead><tr><th scope="col">Prompt</th><th scope="col">Your catch</th><th scope="col">Pts</th></tr></thead>
           <tbody id="e-log"></tbody>
         </table>
       </div>

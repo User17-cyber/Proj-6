@@ -1,6 +1,8 @@
 # Drillion
 
-An 8-bit deep-sea trivia dive. Pilot the Drillion, a drill-nosed submarine, from the coral reef down to Challenger Deep. At each of the 7 depths you get one prompt, like *"Name a country that borders at least 4 other countries."* Any answer that fits scores, but **rarer answers score more**: the most obvious answer is worth about 10 points, an obscure one up to 100. A wrong answer hauls up an old boot (0 points).
+An 8-bit deep-sea trivia dive. Pilot the Drillion, a drill-nosed submarine, from the surface toward the sea floor at 10,935 m. You get 7 prompts, like *"Name a country that borders at least 4 other countries."* Any answer that fits scores, but **rarer answers score more**: the most obvious answer is worth about 10 points, an obscure one up to 100.
+
+**Points are drill power.** Every 100 points breaks through to the next zone, and each prompt comes from the zone the drill has reached, so strong answers unlock the deep categories. A wrong answer hauls up an old boot: 0 points, and the drill doesn't move. Your final score is the depth you reach; seven perfect answers hit the sea floor.
 
 ## Play
 
@@ -8,17 +10,17 @@ Open `drillion/index.html` in a browser. No build step or server is needed.
 
 ## The dive
 
-| Depth | Zone | Category |
-| --- | --- | --- |
-| 0–30 m | Coral Reef | Sea life |
-| 30–200 m | Sunlight Zone | Countries |
-| 200–1,000 m | Twilight Zone | Capital cities |
-| 1,000–4,000 m | Midnight Zone | Space |
-| 4,000–6,000 m | Abyssal Zone | Chemical elements |
-| 6,000–10,900 m | Hadal Zone (named for Hades) | Gods, heroes and monsters |
-| 10,935 m | Challenger Deep | Sunken treasure: gems, precious metals, coins |
+| Points | Depth | Zone | Category |
+| --- | --- | --- | --- |
+| 0 | 0–30 m | Coral Reef | Sea life |
+| 100 | 30–200 m | Sunlight Zone | Countries |
+| 200 | 200–1,000 m | Twilight Zone | Capital cities |
+| 300 | 1,000–4,000 m | Midnight Zone | Space |
+| 400 | 4,000–6,000 m | Abyssal Zone | Chemical elements |
+| 500 | 6,000–10,000 m | Hadal Zone (named for Hades) | Gods, heroes and monsters |
+| 600 | 10,000–10,935 m | Challenger Deep | Sunken treasure: gems, precious metals, coins |
 
-Every dive builds 7 fresh prompts from about 290 templates and parameters (letters, continents, neighbours, atomic-number ranges, moons of each planet and so on). Prompts you saw in recent dives are avoided.
+Depth is linear inside each zone, so 150 points puts you at 115 m and 450 points at 5,000 m. Each prompt is built fresh from about 290 templates and parameters (letters, continents, neighbours, atomic-number ranges, moons of each planet and so on). Prompts never repeat within a dive, and prompts from recent dives are avoided.
 
 ## How rarity is scored
 

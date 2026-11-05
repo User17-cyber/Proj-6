@@ -1,9 +1,11 @@
 /* DRILLION pixel art: a 200x120 canvas scene that scrolls down through seven ocean zones.
-   The world is a vertical strip: zone i fills world rows i*120 .. i*120+119, the surface sits above zone 0. */
+   The world is a vertical strip: zone i fills world rows i*120 .. i*120+119, the surface sits above zone 0.
+   Position is in zone units (total points / 100): 0 = surface of the reef, 6 = top of Challenger Deep,
+   7 = the sea floor. The camera stops at 6; past that the sub itself sinks toward the floor. */
 (function () {
   'use strict';
   const W = 200, H = 120, WATERLINE = -68;
-  const DEPTHS = [18, 160, 640, 2600, 5200, 8400, 10935];
+  const TOPS = [0, 30, 200, 1000, 4000, 6000, 10000], FLOOR = 10935;
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- sprites ----------
@@ -74,21 +76,35 @@
     return WATER[WATER.length - 1][1];
   }
   function metersAt(z) {
-    if (z <= -1) return 0;
-    if (z < 0) return DEPTHS[0] * (z + 1);
-    if (z >= 6) return DEPTHS[6];
+    if (z <= 0) return 0;
+    if (z >= 7) return FLOOR;
     const i = Math.floor(z), f = z - i;
-    return DEPTHS[i] + (DEPTHS[i + 1] - DEPTHS[i]) * f;
+    const bottom = i < 6 ? TOPS[i + 1] : FLOOR;
+    return TOPS[i] + (bottom - TOPS[i]) * f;
   }
   function rowMeters(worldY) {
-    if (worldY < 0) return Math.max(0, DEPTHS[0] * (worldY - WATERLINE) / -WATERLINE);
+    if (worldY < 0) return Math.max(0, 6 * (worldY - WATERLINE) / -WATERLINE);
     return metersAt(Math.min(6.99, worldY / 120));
   }
+  // Where the sub sits in world rows. It slides down through each zone as points come in
+  // (continuous across zone edges), from the waterline on the title screen to just above the chest.
+  function subWorldAt(z) {
+    if (z < 0) return -84 + (z + 1) * 100;
+    if (z >= 6) return 720 + 16 + Math.min(1, z - 6) * 40;
+    return z * 120 + 16;
+  }
+  // The camera rests on the zone's own scene and only moves to keep the sub between rows 12 and 84 on screen.
+  function camLimits(z) {
+    const w = subWorldAt(z);
+    return [(w - 84) / 120, (w - 12) / 120];
+  }
+  const camHome = (z) => (z < 0 ? z : Math.min(6, Math.floor(z)));
+  const clampCam = (c, z) => { const [lo, hi] = camLimits(z); return Math.max(-1, Math.min(6, Math.max(lo, Math.min(hi, c)))); };
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
 
   // ---------- state ----------
   let g, img, canvas;
-  let cam = -1, from = -1, to = -1, t0 = 0, dur = 0, doneCb = null, vel = 0;
+  let pos = -1, cam = -1, from = -1, to = -1, t0 = 0, dur = 0, doneCb = null, vel = 0;
   let chest = 0, chestTarget = 0, shake = 0;
   let onFrame = null;
   const snow = [], bubbles = [], sparks = [], stars = [];
@@ -104,8 +120,12 @@
   // ---------- zone props ----------
   function reef(sy, t) {
     // sand floor
-    g.fillStyle = '#e8c070'; g.fillRect(0, sy + 104, W, 16);
-    g.fillStyle = '#c89848'; for (let x = 3; x < W; x += 9) g.fillRect(x, sy + 108 + (x % 3) * 3, 2, 1);
+    const hole = pos > 0.62; // the drill has punched through the reef floor
+    g.fillStyle = '#e8c070';
+    if (hole) { g.fillRect(0, sy + 104, 88, 16); g.fillRect(112, sy + 104, W - 112, 16); } else g.fillRect(0, sy + 104, W, 16);
+    g.fillStyle = '#c89848';
+    for (let x = 3; x < W; x += 9) if (!hole || x < 86 || x > 112) g.fillRect(x, sy + 108 + (x % 3) * 3, 2, 1);
+    if (hole) { g.fillStyle = '#a07838'; for (let y = 0; y < 16; y += 2) { g.fillRect(86 + (y % 4 ? 0 : 1), sy + 104 + y, 2, 2); g.fillRect(112 - (y % 4 ? 0 : 1), sy + 104 + y, 2, 2); } }
     // seaweed
     for (const x0 of [12, 30, 150, 176, 188]) {
       for (let y = 0; y < 34; y += 2) {
@@ -121,7 +141,7 @@
       g.fillStyle = c2; g.fillRect(x, sy + 104 - h, 3, 1); g.fillRect(x - 4, sy + 104 - h + 2, 2, 1); g.fillRect(x + 5, sy + 104 - h + 4, 2, 1);
     };
     coral(52, 20, '#f86878', '#fcb8b8'); coral(70, 13, '#f87818', '#fcc890'); coral(128, 17, '#c048f8', '#e8b8fc'); coral(110, 10, '#f86878', '#fcb8b8');
-    g.fillStyle = '#f8a830'; g.fillRect(88, sy + 99, 9, 5); g.fillStyle = '#fcd070'; g.fillRect(89, sy + 99, 7, 1); // brain coral
+    g.fillStyle = '#f8a830'; g.fillRect(140, sy + 99, 9, 5); g.fillStyle = '#fcd070'; g.fillRect(141, sy + 99, 7, 1); // brain coral
     // clownfish pair and a school of tangs
     const cx = ((t / 40) % 260) - 30;
     draw(g, 'clown', cx, sy + 80 + Math.sin(t / 300) * 2);
@@ -242,14 +262,17 @@
 
   function frame(now) {
     const t = now;
-    const prev = cam;
+    const prev = pos;
     if (dur) {
       const k = Math.min(1, (now - t0) / dur);
       const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-      cam = from + (to - from) * e;
-      if (k >= 1) { dur = 0; cam = to; const cb = doneCb; doneCb = null; if (cb) setTimeout(cb, 0); }
+      pos = from + (to - from) * e;
+      if (k >= 1) { dur = 0; pos = to; const cb = doneCb; doneCb = null; if (cb) setTimeout(cb, 0); }
     }
-    vel = (cam - prev) * 120;
+    const prevCam = cam;
+    cam = clampCam(cam + (camHome(pos) - cam) * (reduced ? 1 : 0.06), pos);
+    vel = (cam - prevCam) * 120;
+    const moving = Math.abs(pos - prev) > 0.0004;
     chest += (chestTarget - chest) * 0.06;
 
     drawWater();
@@ -284,8 +307,8 @@
 
     // headlight cone in the dark zones
     const subX = 92, bob = reduced ? 0 : Math.round(Math.sin(t / 450) * 1.5);
-    const shk = Math.abs(vel) > 0.3 && !reduced ? Math.round(rnd(-1, 1)) : 0;
-    const subY = (cam <= -1 ? 36 : 40) + bob;
+    const shk = moving && !reduced ? Math.round(rnd(-1, 1)) : 0;
+    const subY = Math.round(subWorldAt(pos) - cam * 120) + bob;
     if (cam > 1.3) {
       g.globalAlpha = Math.min(0.22, (cam - 1.3) * 0.15);
       g.fillStyle = '#fcf0a8';
@@ -297,7 +320,7 @@
     }
 
     // bubbles from the propeller
-    if (Math.random() < (Math.abs(vel) > 0.3 ? 0.7 : 0.12) && top + subY > WATERLINE + 4) bubbles.push({ x: subX + 6 + rnd(0, 4), y: subY, life: 0 });
+    if (Math.random() < (moving ? 0.7 : 0.12) && top + subY > WATERLINE + 4) bubbles.push({ x: subX + 6 + rnd(0, 4), y: subY, life: 0 });
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i];
       b.life++; b.y -= 0.5 + Math.abs(vel) * 0.6; b.x += Math.sin(b.life / 5) * 0.3;
@@ -306,7 +329,7 @@
     }
 
     // the Drillion
-    const spin = Math.floor(t / (Math.abs(vel) > 0.3 ? 40 : 160)) % 2;
+    const spin = Math.floor(t / (moving ? 40 : 160)) % 2;
     draw(g, spin ? 'propA' : 'propB', subX + shk, subY);
     draw(g, 'body', subX + shk, subY + 3);
     draw(g, spin ? 'drillA' : 'drillB', subX + shk, subY + 18);
@@ -318,7 +341,7 @@
       g.fillStyle = s.life % 8 < 4 ? '#f8d878' : '#ffffff'; g.fillRect(Math.round(s.x), Math.round(s.y), 1, 1);
     }
 
-    if (onFrame) onFrame(metersAt(cam), cam);
+    if (onFrame) onFrame(metersAt(pos), pos);
     if (!(document.hidden)) requestAnimationFrame(frame); else setTimeout(() => requestAnimationFrame(frame), 250);
   }
 
@@ -337,10 +360,10 @@
       canvas = cv; g = cv.getContext('2d'); img = g.createImageData(W, H); onFrame = cb;
       requestAnimationFrame(frame);
     },
-    moveTo(z, ms, cb) { from = cam; to = z; t0 = performance.now(); dur = reduced ? Math.min(ms, 250) : ms; doneCb = cb || null; if (!dur) { cam = z; if (cb) cb(); } },
-    jump(z) { cam = from = to = z; dur = 0; },
+    moveTo(z, ms, cb) { from = pos; to = z; t0 = performance.now(); dur = reduced ? Math.min(ms, 250) : ms; doneCb = cb || null; if (!dur) { pos = z; if (cb) cb(); } },
+    jump(z) { pos = from = to = z; dur = 0; cam = clampCam(camHome(z), z); },
     openChest(v) { chestTarget = v ? 1 : 0; if (!v) chest = 0; },
-    get cam() { return cam; },
-    metersAt, drawIcon, DEPTHS,
+    get pos() { return pos; },
+    metersAt, drawIcon,
   };
 })();

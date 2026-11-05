@@ -34,14 +34,34 @@ for (const [cat, list] of Object.entries(E.T)) {
 const tiny = Object.entries(sizes).filter(([, n]) => n < 5);
 console.log('distinct prompt keys:', Object.keys(sizes).length, ' (too small, skipped in play:', tiny.map(([k, n]) => k + '=' + n).join(' ') || 'none', ')');
 
-// Full runs: 7 prompts, all distinct zones, none missing.
+// Points drive depth: 100 points per zone, linear metres inside each zone.
+check(E.depthFor(0) === 0 && E.depthFor(100) === 30 && E.depthFor(150) === 115, 'depth inside the first zones');
+check(E.depthFor(600) === 10000 && E.depthFor(700) === 10935 && E.depthFor(999) === 10935, 'depth at the bottom');
+check(E.zoneFor(0).id === 'reef' && E.zoneFor(99).id === 'reef' && E.zoneFor(100).id === 'sun' && E.zoneFor(650).id === 'deep' && E.zoneFor(700).id === 'deep', 'zone thresholds');
+check(E.rankFor(700) === 'KING OF THE DEEP' && E.rankFor(350) === 'ANGLERFISH', 'ranks by zone');
+
+// Simulated dives: the zone follows the running total, prompts never repeat within a dive,
+// and even seven misses in a row (all prompts from one zone) still find fresh prompts.
 const seen = new Set();
-for (let r = 0; r < 300; r++) {
-  const run = E.newRun([]);
-  check(run.length === 7 && run.every((p) => p && p.text && p.valid.length >= 5), 'run has 7 good prompts');
-  run.forEach((p) => seen.add(p.key));
+for (let r = 0; r < 400; r++) {
+  let total = 0; const keys = [];
+  const style = r % 4; // 0 always wrong, 1 weak, 2 strong, 3 perfect
+  for (let turn = 0; turn < 7; turn++) {
+    const z = E.zoneFor(total);
+    const p = E.promptFor(z.index, [], keys);
+    check(p && p.text && p.valid.length >= 5 && p.zone === z, `prompt for zone ${z.id}`);
+    check(!keys.includes(p.key), `no repeat within a dive (${p.key})`);
+    keys.push(p.key); seen.add(p.key);
+    total = Math.min(E.MAX_PTS, total + [0, 30, 85, 100][style]);
+  }
+  if (style === 3) check(total === 700 && E.depthFor(total) === 10935, 'perfect dive reaches the floor');
 }
-console.log('unique prompts seen across 300 runs:', seen.size);
+console.log('unique prompts seen across 400 dives:', seen.size);
+// Rebuilding a saved prompt by key gives the same prompt.
+for (let n = 0; n < 60; n++) {
+  const zi = n % 7, p = E.promptFor(zi, [], []), back = E.rebuildOne(zi, p.key);
+  check(back && back.key === p.key && back.valid.length === p.valid.length, 'rebuild ' + p.key);
+}
 
 // Matching and scoring.
 function promptFor(key) {
