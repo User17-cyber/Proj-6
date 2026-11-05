@@ -56,6 +56,7 @@
       if (level >= 4) for (let i = 0; i < 4; i++) tone(NOTE(96 + (i % 2) * 3), n * 0.08 + i * 0.05, 0.05, { vol: 0.15 });
     },
     bad() { tone(196, 0, 0.18, { vol: 0.4 }); tone(147, 0.18, 0.35, { vol: 0.4, to: 70 }); },
+    warn() { tone(NOTE(93), 0, 0.06, { vol: 0.22 }); tone(NOTE(93), 0.09, 0.06, { vol: 0.22 }); },
     retry() { tone(NOTE(55), 0, 0.07, { vol: 0.3 }); tone(NOTE(55), 0.1, 0.07, { vol: 0.3 }); },
     tick() { tone(NOTE(96), 0, 0.025, { vol: 0.12 }); },
     fanfare() {

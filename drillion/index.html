@@ -32,7 +32,7 @@
       <h1 class="logo wave" id="logo" aria-label="Drillion">DRILLION</h1>
       <p class="tagline">Rare answers drill deep. Reach the bottom of the sea.</p>
       <div class="rules">
-        <p>You get <b>7 prompts</b>. Type any answer that fits.</p>
+        <p>You get <b>7 prompts</b> and <b>25 seconds of air</b> for each one. Type any answer that fits.</p>
         <p>Points come from <b>rarity</b>: the fewer divers who would think of your answer, the more it's worth, up to <b>100</b>.</p>
         <p><b>Points drill you down.</b> Every 100 points breaks through to the next zone, and each zone asks about something new.</p>
         <p>A wrong answer hauls up an old boot: 0 points, and the drill doesn't move. Seven perfect answers reach the sea floor.</p>
@@ -62,6 +62,11 @@
       </div>
       <p class="prompt" id="prompt" aria-hidden="true"></p>
       <div class="sonar"><span><span class="ping" aria-hidden="true"></span><span id="sonar-count"></span></span><span class="muted" id="theme"></span></div>
+      <div class="o2" id="o2" aria-hidden="true">
+        <span class="o2-label">AIR</span>
+        <div class="bar"><i id="o2-fill"></i></div>
+        <span class="o2-time" id="o2-text">25s</span>
+      </div>
       <form class="field" id="form" autocomplete="off">
         <label class="sr" for="answer">Your answer</label>
         <input id="answer" name="answer" type="text" placeholder="Type your answer…" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" maxlength="60">

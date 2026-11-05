@@ -7,6 +7,7 @@
   const $ = (id) => document.getElementById(id);
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const TURNS = 7;
+  const TIME_LIMIT = 25; // seconds of air per prompt
 
   const store = {
     get(k, d) { try { const v = localStorage.getItem('drillion:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -14,7 +15,7 @@
   };
 
   const TIER_LEVEL = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
-  const EMOJI = { common: '🐚', uncommon: '⭐', rare: '🔵', epic: '💎', legendary: '👑', junk: '👢' };
+  const EMOJI = { common: '🐚', uncommon: '⭐', rare: '🔵', epic: '💎', legendary: '👑', junk: '👢', timeout: '⌛' };
   const screens = ['title', 'prompt', 'result', 'end'];
   const m = (meters) => Math.round(meters).toLocaleString('en-US') + ' m';
 
@@ -78,6 +79,39 @@
     $('gauge-text').append('Drill ', b, nextZone ? ` more to break into ${nextZone.the}${nextZone.name}.` : ' more to hit the sea floor.');
   }
 
+  // ---------- air timer ----------
+  // Each prompt gets TIME_LIMIT seconds once it is fully on screen. Retries don't reset it.
+  let timer = null, deadline = 0, lastSec = 0;
+  function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+  function drawTimer(left) {
+    const sec = Math.ceil(left / 1000);
+    $('o2-fill').style.width = (left / (TIME_LIMIT * 1000) * 100) + '%';
+    $('o2-text').textContent = sec + 's';
+    $('o2').classList.toggle('low', sec <= 8);
+    return sec;
+  }
+  function startTimer() {
+    stopTimer();
+    deadline = performance.now() + TIME_LIMIT * 1000;
+    lastSec = TIME_LIMIT;
+    drawTimer(TIME_LIMIT * 1000);
+    timer = setInterval(() => {
+      if (state.screen !== 'prompt') { stopTimer(); return; }
+      const left = Math.max(0, deadline - performance.now());
+      const sec = drawTimer(left);
+      if (sec !== lastSec) {
+        lastSec = sec;
+        if (sec <= 5 && sec > 0) sfx.warn();
+        if (sec === 10 || sec === 5) $('live').textContent = `${sec} seconds of air left.`;
+      }
+      if (left <= 0) { stopTimer(); outOfAir(); }
+    }, 100);
+  }
+  function outOfAir() {
+    if (state.screen !== 'prompt') return;
+    record(state.prompts[state.turn], $('answer').value, { status: 'timeout', points: 0, tier: E.tierFor(0) });
+  }
+
   // ---------- title ----------
   function renderTitle() {
     const logo = $('logo');
@@ -129,6 +163,7 @@
     const input = $('answer');
     input.value = ''; input.disabled = true; $('drop').disabled = true; $('skip').disabled = true;
     $('msg').textContent = ''; $('msg').className = 'msg';
+    stopTimer(); drawTimer(TIME_LIMIT * 1000);
     $('prompt').textContent = fromSurface ? 'Descending…' : '';
     $('prompt').classList.remove('done');
     const arrive = () => {
@@ -137,6 +172,7 @@
       typewrite($('prompt'), p.text, () => {
         input.disabled = false; $('drop').disabled = false; $('skip').disabled = false;
         try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
+        startTimer();
       });
     };
     if (fromSurface) { sfx.dive(); art.moveTo(0, 2400, arrive); } else arrive();
@@ -164,10 +200,11 @@
   }
 
   function record(p, input, r) {
+    stopTimer();
     const before = state.total, after = Math.min(E.MAX_PTS, before + (r.points || 0));
     const res = {
       key: p.key, text: p.text, zone: p.zone.name, zoneIndex: p.zone.index, input: input.trim(), status: r.status,
-      name: r.entity ? r.entity.name : '', points: r.points || 0, tier: r.tier.id, tierLabel: r.tier.label,
+      name: r.entity ? r.entity.name : '', points: r.points || 0, tier: r.tier.id, tierLabel: r.status === 'timeout' ? 'OUT OF AIR' : r.tier.label,
       share: r.share || 0, fuzzy: !!r.fuzzy, why: r.message || '',
       before, after, depthBefore: E.depthFor(before), depthAfter: E.depthFor(after),
     };
@@ -197,6 +234,11 @@
       you.textContent = 'You hauled up an old boot';
       ans.textContent = res.name;
       note.textContent = res.why + ' No points.';
+      note.className = 'share-note why';
+    } else if (res.status === 'timeout') {
+      you.textContent = 'Out of air!';
+      ans.textContent = '—';
+      note.textContent = `The ${TIME_LIMIT} seconds ran out. No points.`;
       note.className = 'share-note why';
     } else {
       you.textContent = 'You skipped this one';
@@ -232,7 +274,7 @@
     };
     fill($('r-common'), rv.common);
     fill($('r-rare'), rv.rare);
-    $('live').textContent = (res.status === 'ok' ? `${res.name}: ${res.points} points, ${res.tierLabel}.` : res.status === 'wrong' ? `${res.name}: wrong. ${res.why}` : 'Skipped.') + ` Depth ${m(res.depthAfter)}.`;
+    $('live').textContent = (res.status === 'ok' ? `${res.name}: ${res.points} points, ${res.tierLabel}.` : res.status === 'wrong' ? `${res.name}: wrong. ${res.why}` : res.status === 'timeout' ? 'Out of air. No points.' : 'Skipped.') + ` Depth ${m(res.depthAfter)}.`;
 
     const nextBtn = $('next');
     const label = i === TURNS - 1 ? 'SEE YOUR DIVE ▼' : 'NEXT PROMPT ▼';
@@ -300,7 +342,7 @@
       tr.innerHTML = '<td><span></span><br><span class="muted"></span></td><td></td><td class="pts"><span class="dot"></span><span></span></td>';
       tr.children[0].children[0].textContent = r.zone;
       tr.children[0].children[2].textContent = r.text;
-      tr.children[1].textContent = r.status === 'ok' ? r.name : r.status === 'wrong' ? `${r.name} (boot)` : '—';
+      tr.children[1].textContent = r.status === 'ok' ? r.name : r.status === 'wrong' ? `${r.name} (boot)` : r.status === 'timeout' ? '— (out of air)' : '—';
       tr.children[2].classList.add('t-' + r.tier);
       tr.children[2].children[1].textContent = r.points;
       tbody.appendChild(tr);
@@ -310,7 +352,7 @@
   }
 
   function shareText() {
-    const icons = state.results.map((r) => EMOJI[r.tier] || '👢').join('');
+    const icons = state.results.map((r) => EMOJI[r.status === 'timeout' ? 'timeout' : r.tier] || '👢').join('');
     const where = state.total >= E.MAX_PTS ? 'the sea floor' : E.zoneFor(state.total).name;
     const lines = state.results.map((r) => `${r.zone}: ${r.status === 'ok' ? r.name : '—'} (+${r.points})`);
     return `DRILLION 🌊 I drilled to ${m(E.depthFor(state.total))} (${where}) with ${state.total} pts\n${icons}\n${lines.join('\n')}`;

@@ -192,6 +192,15 @@ p { margin: 0; }
 #gauge-text { color: var(--mist); }
 #gauge-text b { color: var(--brass); font-weight: 400; }
 
+/* air timer */
+.o2 { display: grid; grid-template-columns: auto 1fr 3.2rem; gap: 10px; align-items: center; }
+.o2-label, .o2-time { font-family: var(--font-display); font-size: var(--step--1); color: var(--sonar); font-variant-numeric: tabular-nums; }
+.o2-time { text-align: right; }
+.o2 .bar i { width: 100%; transition: none; background: repeating-linear-gradient(90deg, var(--sonar) 0 6px, #1a7cb8 6px 8px); }
+.o2.low .o2-label, .o2.low .o2-time { color: var(--coral); }
+.o2.low .o2-time { animation: blink .5s steps(2) infinite; }
+.o2.low .bar i { background: repeating-linear-gradient(90deg, var(--coral) 0 6px, #a83848 6px 8px); }
+
 /* ---------- result ---------- */
 .drilled { color: var(--foam); font-size: var(--body-2); }
 .drilled b { color: var(--brass); font-weight: 400; }
