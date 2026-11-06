@@ -81,7 +81,7 @@ export class GameView {
 
   private view(id: number): KView {
     let v = this.views[id];
-    if (!v) { v = { anim: new KnightAnimator(), blood: 0, mud: 0.05 + Math.random() * 0.15, arrows: [], wasAlive: false, stepPhase: 0, lastStepX: 0, lastStepZ: 0 }; this.views[id] = v; }
+    if (!v) { v = { anim: new KnightAnimator(), blood: 0, mud: 0.3 + Math.random() * 0.3, arrows: [], wasAlive: false, stepPhase: 0, lastStepX: 0, lastStepZ: 0 }; this.views[id] = v; }
     return v;
   }
 
@@ -114,15 +114,16 @@ export class GameView {
           vv.anim.flinch(e.dx, e.dz, e.dmg / 40);
           const amount = Math.min(1, e.dmg / 45);
           if (e.kind !== 4 && this.showBlood) {
-            this.particles.blood(e.x, e.y, e.z, e.dx, e.dy, e.dz, amount * (e.killed ? 1.4 : 1));
-            if (Math.random() < 0.6) {
+            this.particles.blood(e.x, e.y, e.z, e.dx, e.dy, e.dz, Math.min(1.6, amount * (e.killed ? 2 : 1.4)));
+            if (Math.random() < 0.9) {
               const gx = e.x + e.dx * 0.6 + (Math.random() - 0.5) * 0.6, gz = e.z + e.dz * 0.6 + (Math.random() - 0.5) * 0.6;
               const gy = this.ground2(gx, gz);
-              if (Math.abs(gy - v.y) < 1.5) this.decals.add(gx, gy, gz, this.world.map.world.terrain.normal(gx, gz, _n), 0.35 + amount * 0.6);
+              if (Math.abs(gy - v.y) < 1.5) this.decals.add(gx, gy, gz, this.world.map.world.terrain.normal(gx, gz, _n), 0.45 + amount * 0.9);
             }
           }
-          vv.blood = Math.min(1, vv.blood + e.dmg / 130);
-          if (e.a >= 0) this.view(e.a).blood = Math.min(1, this.view(e.a).blood + 0.02);
+          vv.blood = Math.min(1, vv.blood + e.dmg / 75);
+          // the striker is splashed too
+          if (e.a >= 0) this.view(e.a).blood = Math.min(1, this.view(e.a).blood + 0.05);
           const plate = CLASSES[v.cls].armor[0] >= 0.3;
           if (e.kind === 4) break; // bleeding: no impact sound
           if (e.dtype === 1 && plate) A.play('plate', { pos: e, vol: 0.9 });
@@ -177,7 +178,7 @@ export class GameView {
         }
         case 'spawn': {
           const vv = this.view(e.k);
-          vv.blood = 0; vv.mud = 0.05 + Math.random() * 0.12; vv.arrows.length = 0;
+          vv.blood = 0; vv.mud = 0.28 + Math.random() * 0.25; vv.arrows.length = 0;
           vv.anim = new KnightAnimator();
           vv.wasAlive = true;
           break;
@@ -356,7 +357,7 @@ export class GameView {
         c.pooled = true;
         const j = c.rag.joints.chest;
         const gy = this.ground2(j.x, j.z);
-        this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 1.2 + Math.random() * 0.8, true);
+        this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 1.6 + Math.random() * 1.1, true);
       }
       const d = Math.hypot(c.rag.joints.chest.x - camPos.x, c.rag.joints.chest.z - camPos.z);
       this.kr.draw(c.cls, c.team, { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, this.showBlood ? c.blood : 0, c.mud, d < 10 ? 0 : d < 30 ? 1 : 2, false, c.id * 7 + c.team, d < 45);

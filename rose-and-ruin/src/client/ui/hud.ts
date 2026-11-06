@@ -69,7 +69,7 @@ export class Hud implements HudSink {
   private abil!: HTMLElement; private slots: { root: HTMLElement; cdv: HTMLElement; cdt: HTMLElement; last: number; id: string }[] = [];
   private cross!: HTMLElement; private hitmark!: HTMLElement; private skull!: HTMLElement; private ctext!: HTMLElement;
   private dmgLayer!: HTMLElement; private dmgNums: DmgNum[] = [];
-  private dirWrap!: HTMLElement; private dirs: DirInd[] = [];
+  private dirWrap!: HTMLElement; private splatLayer!: HTMLElement; private dirs: DirInd[] = [];
   private feed!: HTMLElement;
   private score!: HTMLElement; private sideL!: HTMLElement; private sideR!: HTMLElement; private clock!: HTMLElement; private tbar!: HTMLElement; private objRow!: HTMLElement;
   private mapWrap!: HTMLElement;
@@ -124,6 +124,7 @@ export class Hud implements HudSink {
     this.ctext = h('combattext');
     this.dmgLayer = h('');
     this.dirWrap = h('dmgdir');
+    this.splatLayer = h('splats');
     this.feed = h('killfeed');
     // score
     this.score = h('score');
@@ -151,7 +152,7 @@ export class Hud implements HudSink {
       if (e.key === 'Escape') this.closeChat();
     });
     this.chatBox.append(this.chatLog, this.chatIn);
-    R.append(this.plateLayer, this.mapWrap, this.score, this.feed, this.vitals, this.abil, this.dirWrap, this.cross, this.hitmark, this.skull, this.ctext, this.dmgLayer, this.notice, this.kbanner, this.warm, this.spec, this.chatBox);
+    R.append(this.splatLayer, this.plateLayer, this.mapWrap, this.score, this.feed, this.vitals, this.abil, this.dirWrap, this.cross, this.hitmark, this.skull, this.ctext, this.dmgLayer, this.notice, this.kbanner, this.warm, this.spec, this.chatBox);
     // overlays live in #ui so they can take the mouse
     const ui = this.root.parentElement!;
     this.board = h('overlay hidden', '<div class="board parchment"></div>');
@@ -215,7 +216,7 @@ export class Hud implements HudSink {
     this.hitmark.classList.toggle('block', blocked);
     this.hitmark.style.width = this.hitmark.style.height = head ? '54px' : '46px';
     replay(this.hitmark);
-    if (killed) replay(this.skull);
+    if (killed) { replay(this.skull); this.splatter(0.25); }
   }
 
   damageNumber(x: number, y: number, z: number, dmg: number, head: boolean, killed: boolean) {
@@ -226,7 +227,25 @@ export class Hud implements HudSink {
     if (this.dmgNums.length > 14) this.dmgNums.shift()!.el.remove();
   }
 
+  /** Blood thrown onto the view: dark blots at the edges that run and fade. */
+  splatter(amount: number) {
+    if (!this.prefs.blood || amount <= 0.05) return;
+    const n = Math.min(6, 1 + Math.round(amount * 4));
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('i');
+      const edge = Math.random();
+      const x = edge < 0.5 ? (Math.random() < 0.5 ? Math.random() * 18 : 82 + Math.random() * 18) : Math.random() * 100;
+      const y = edge < 0.5 ? Math.random() * 100 : (Math.random() < 0.5 ? Math.random() * 18 : 82 + Math.random() * 18);
+      const s = (30 + Math.random() * 90) * (0.6 + amount);
+      el.style.cssText = `left:${x}%;top:${y}%;width:${s}px;height:${s * (0.7 + Math.random() * 0.5)}px;transform:translate(-50%,-50%) rotate(${Math.random() * 360}deg)`;
+      this.splatLayer.appendChild(el);
+      el.animate([{ opacity: 0.85, transform: el.style.transform }, { opacity: 0.75, offset: 0.35 }, { opacity: 0, transform: el.style.transform + ` translateY(${20 + Math.random() * 30}px)` }], { duration: 2200 + Math.random() * 1600, easing: 'ease-in' }).onfinish = () => el.remove();
+    }
+    while (this.splatLayer.children.length > 24) this.splatLayer.firstElementChild!.remove();
+  }
+
   damageFrom(x: number, z: number, amount: number) {
+    this.splatter(Math.min(1, amount / 45));
     let d = this.dirs.find((q) => Math.hypot(q.x - x, q.z - z) < 1.5);
     if (!d) {
       const el = document.createElement('i');

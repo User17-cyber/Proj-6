@@ -217,6 +217,10 @@ const uberPatch: Patch = (s) => {
   float mudW = min(1.0, vWear.y * mix(0.6, 1.6, legs));
   float mud = smoothstep(1.0 - mudW, 1.0 - mudW + 0.25, mudN) * mudW;
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.13, 0.1, 0.07), mud * 0.85);
+  // campaign grime: soot and old dirt everywhere, heavier low down
+  float grime = vnoiseP(o.xy * 0.9 + o.z * 0.6, vec2(1e4)) * 0.6 + vnoiseP(o.zy * 4.0 + 11.0, vec2(1e4)) * 0.4;
+  diffuseColor.rgb *= mix(1.0, 0.62 + 0.25 * grime, 0.55 + 0.25 * legs);
+  rrRough = mix(rrRough, 1.0, 0.25 * grime);
 }`)
     .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp(mix(rrRough, 0.22, rrBlood * 0.7), 0.04, 1.0);')
     .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = rrMetal * (1.0 - rrBlood * 0.85);')

@@ -415,3 +415,12 @@ select.textin option { background: #1c1a18; color: var(--parch); }
 .lockhint .panel { padding: 12px 26px; }
 .lockhint b { color: var(--gold-hi); letter-spacing: 0.2em; font-size: 15px; }
 @media (max-width: 1180px) { #hud .bars { width: 220px; } .abilities { left: auto; right: 24px; transform: none; } }
+
+/* blood on the view */
+.splats { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.splats i { position: absolute; border-radius: 38% 62% 47% 53% / 58% 36% 64% 42%;
+  background:
+    radial-gradient(circle at 70% 30%, rgba(120, 10, 6, 0.9) 0 8%, transparent 9%),
+    radial-gradient(circle at 18% 75%, rgba(100, 8, 4, 0.9) 0 6%, transparent 7%),
+    radial-gradient(closest-side, rgba(85, 4, 2, 0.96) 0%, rgba(118, 9, 5, 0.9) 55%, rgba(90, 6, 3, 0.7) 78%, rgba(60, 2, 1, 0) 92%);
+  filter: blur(0.4px); mix-blend-mode: multiply; }
