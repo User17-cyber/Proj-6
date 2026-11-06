@@ -52,6 +52,8 @@ export class KnightAnimator {
   private fall = 0;
   private airT = 0;
   private restBlend = 0;
+  private pelvisYS = NaN;
+  private strikeS = 0;
   private pose: WeaponPose = newPose();
   private tmp7: number[] = [0, 0, 0, 0, 0, 0, 0];
   private headYawS = 0;
@@ -133,6 +135,9 @@ export class KnightAnimator {
       ankle.copy(root).addScaledVector(right, side * footW * (1 + idleFeet * 0.6)).addScaledVector(this.moveDir, u);
       // relaxed combat stance when standing: left foot forward, right foot back and turned out
       ankle.addScaledVector(fwd, idleFeet * -side * stanceSplit);
+      // standing fighters step into their blows with the lead foot
+      const sIn = Math.max(0, this.strikeS) * idleFeet;
+      ankle.addScaledVector(fwd, side < 0 ? sIn * 0.15 : -sIn * 0.04);
       // kick: the right leg strikes forward
       if (k.act === Act.Kick && side > 0) {
         const t = k.actT;
@@ -145,7 +150,7 @@ export class KnightAnimator {
         ankle.y = Math.max(gy, k.y - 0.4) + BODY.ankleY + l + this.airT * 0.25;
       }
       // toe: pointed down as the foot leaves the ground, up before it lands
-      const pitch = (swing > 0 ? (sU < 0.5 ? -0.6 * (1 - sU * 2) * (0.6 + run) : 0.3 * (sU - 0.5) * 2) : 0) * gait;
+      const pitch = (swing > 0 ? -0.55 * (0.6 + run) * Math.sin(Math.PI * Math.min(1, sU / 0.55)) + 0.28 * Math.sin(Math.PI * Math.max(0, (sU - 0.55) / 0.45)) : 0) * gait;
       const footYaw = side * 0.12 + (side > 0 ? idleFeet * 0.35 : -idleFeet * 0.08);
       _b.copy(fwd).applyAxisAngle(UP, -footYaw);
       toe.copy(ankle).addScaledVector(_b, 0.19 * Math.cos(pitch));
@@ -158,10 +163,16 @@ export class KnightAnimator {
 
     // ---------------- pelvis and torso
     // the body sinks onto each planted leg and rises between them (most at a run)
-    const bob = ((0.5 - Math.min(1, stanceSum)) * (0.02 + run * 0.06)) * gait;
+    const bob = ((0.5 - Math.min(1, stanceSum)) * (0.008 + run * 0.016)) * gait;
     let crouch = 0;
     if (k.act === Act.Block) crouch = 0.04;
-    if (k.act === Act.Windup || k.act === Act.Charge) crouch = k.heavy ? 0.06 : 0.03;
+    // a blow is thrown with the whole body: gather on the windup, step and drop into the
+    // release, rise through the recovery
+    let strike = 0;
+    if (k.act === Act.Windup || k.act === Act.Charge) { crouch = (k.heavy ? 0.06 : 0.035) * smoothstep(0, 0.6, k.actT / Math.max(0.05, k.actDur)); strike = -0.25; }
+    else if (k.act === Act.Release) { const u = clamp(k.actT / Math.max(0.05, k.actDur), 0, 1); strike = Math.sin(u * Math.PI * 0.8 + 0.3); crouch = (k.heavy ? 0.08 : 0.05) * strike; }
+    else if (k.act === Act.Recover) { const u = clamp(k.actT / Math.max(0.05, k.actDur), 0, 1); strike = 0.6 * (1 - smoothstep(0, 1, u)); crouch = 0.04 * strike; }
+    this.strikeS = lerp(this.strikeS, strike, 1 - Math.exp(-dt * 14));
     if (ability === 'lunge') crouch = abU < 0.35 ? smoothstep(0, 0.35, abU) * 0.16 : 0.16 * (1 - smoothstep(0.35, 0.9, abU));
     if (ability === 'sweep') crouch = 0.18 * Math.sin(abU * Math.PI);
     if (ability === 'earthshaker') crouch = abU > 0.65 ? 0.22 * (1 - smoothstep(0.75, 1, abU)) : abU < 0.18 ? 0.12 * abU / 0.18 : 0;
@@ -176,13 +187,17 @@ export class KnightAnimator {
       const maxY = ankle.y + Math.sqrt(Math.max(0.01, legLen * legLen - hd * hd));
       pelvisY = Math.min(pelvisY, maxY);
     }
+    // hips move smoothly; dips from reaching legs are eased rather than snapped
+    if (!Number.isFinite(this.pelvisYS) || Math.abs(this.pelvisYS - pelvisY) > 0.5) this.pelvisYS = pelvisY;
+    this.pelvisYS = lerp(this.pelvisYS, pelvisY, 1 - Math.exp(-dt * 22));
+    pelvisY = Math.min(this.pelvisYS, pelvisY + 0.03);
     // weight shifts over the planted foot
-    J.pelvis.set(k.x, pelvisY, k.z).addScaledVector(fwd, 0.02 + run * 0.08).addScaledVector(right, weightSide * 0.025 * gait * (1 - run * 0.5));
+    J.pelvis.set(k.x, pelvisY, k.z).addScaledVector(fwd, 0.02 + run * 0.08 + this.strikeS * 0.09).addScaledVector(right, weightSide * 0.025 * gait * (1 - run * 0.5));
     // the weapon pose decides how the torso twists and leans
     const rest = this.restKey(k, weapon, gait);
     const p = this.weaponPose(k, weapon, rest, ability, abU, time);
     const sprint = smoothstep(5.2, 6.8, this.speed);
-    let twist = p.twist, lean = p.lean + run * 0.14 + sprint * 0.12 + gait * 0.04 + (Math.min(1, stanceSum) - 0.5) * 0.04 * run;
+    let twist = p.twist, lean = p.lean + this.strikeS * 0.11 + run * 0.14 + sprint * 0.12 + gait * 0.04 + (Math.min(1, stanceSum) - 0.5) * 0.04 * run;
     if (ability === 'charge') lean += 0.28;
     if (ability === 'dash') lean += 0.15;
     if (k.act === Act.Kick) lean -= 0.12 * Math.sin(Math.PI * clamp(k.actT / 0.62, 0, 1));
@@ -218,7 +233,8 @@ export class KnightAnimator {
     J.neck.copy(J.chest).addScaledVector(torsoUp, BODY.shoulderY + 0.06);
     J.shoulderL.copy(J.chest).addScaledVector(torsoUp, BODY.shoulderY).addScaledVector(chestRight, -BODY.shoulderW);
     J.shoulderR.copy(J.chest).addScaledVector(torsoUp, BODY.shoulderY).addScaledVector(chestRight, BODY.shoulderW);
-    const pelvisRight = _pr.copy(right).applyAxisAngle(UP, hipTwist);
+    // the hips lead the shoulders into a blow
+    const pelvisRight = _pr.copy(right).applyAxisAngle(UP, hipTwist + p.twist * 0.4);
     J.hipL.copy(J.pelvis).addScaledVector(pelvisRight, -BODY.hipW).y -= 0.06;
     J.hipR.copy(J.pelvis).addScaledVector(pelvisRight, BODY.hipW).y -= 0.06;
 
