@@ -3,7 +3,7 @@
 
 import { Act, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone } from '../types';
 import { Knight, KNIGHT_RADIUS } from './knight';
-import { CLASSES, CLASS_IDS, type ClassId } from '../data/classes';
+import { CLASSES, CLASS_IDS, SHIELDS, type ClassId } from '../data/classes';
 import { knightName } from '../data/names';
 import { Rng } from '../rng';
 import type { BuiltMap, ObjectiveDef } from '../world/mapgen';
@@ -219,6 +219,7 @@ export class Match {
     k.stunT = k.knockT = k.invulnT = 0;
     k.bulwarkT = k.rallyT = k.bloodletT = k.bleedT = k.hotT = 0;
     k.bleedStacks = 0; k.bodkin = false; k.draw = 0;
+    k.shieldHp = k.def.shield ? SHIELDS[k.def.shield].hp : 0;
     k.cds[0] = 0; k.cds[1] = 0;
     k.combo = 0;
     k.spawnProt = formation ? 0 : 2.5;
@@ -302,7 +303,7 @@ export class Match {
     }
     const force = opts.kind === 2 ? 1.6 : opts.zone === 0 ? 1.2 : 1;
     this.emit({ t: 'kill', killer: killer ? killer.id : -1, victim: victim.id, assist, weapon: opts.kind === 1 || opts.kind === 5 ? 99 : killer ? CLASS_IDS.indexOf(killer.cls) : -1, head: opts.zone === 0, dx: opts.dx, dy: opts.dy, dz: opts.dz, force });
-    // in a pitched battle each order a player falls as is spent; with all six gone, he is out
+    // in a pitched battle each order a player falls as is spent; with every order gone, he is out
     if (!victim.bot && this.settings.mode === 'battle') victim.usedCls.add(victim.cls);
     const canRespawn = this.settings.mode !== 'laststand' && team.tickets > 0 && (victim.bot || this.freeClass(victim) !== null);
     victim.respawnT = canRespawn ? (victim.bot ? 7 + this.rng.range(0, 3) : 6) : Infinity;

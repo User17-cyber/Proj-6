@@ -4,6 +4,8 @@ import { buildMap, MAPS } from '../shared/world/maps/index';
 import { Match } from '../shared/sim/match';
 import { DEFAULT_SETTINGS, type GameMode } from '../shared/types';
 import { WEAPONS } from '../shared/data/weapons';
+import { CLASS_IDS, SHIELDS } from '../shared/data/classes';
+import { wearShield } from '../shared/sim/combat';
 import { keyToPose, newPose } from '../shared/sim/pose';
 import { DEG, rotY } from '../shared/math';
 
@@ -52,7 +54,7 @@ function runBattle(mapId: string, mode: GameMode, teamSize: number, seconds: num
   for (const [name, c] of comps) if (c !== c0 || c < 0) fail(`${mapId}: ${name} is not connected to ${comps[0][0]} (component ${c} vs ${c0})`);
   const tNav = performance.now() - t0 - tBuild;
   const steps = seconds * 60;
-  let hits = 0, blocks = 0, kills = 0, arrows = 0, abilities = 0, parries = 0;
+  let shieldBreaks = 0, hits = 0, blocks = 0, kills = 0, arrows = 0, abilities = 0, parries = 0;
   const byKind = [0, 0, 0, 0, 0, 0];
   const clsKills = new Map<string, number>(), clsDeaths = new Map<string, number>();
   const abilityBy = new Map<string, number>();
@@ -73,6 +75,7 @@ function runBattle(mapId: string, mode: GameMode, teamSize: number, seconds: num
       else if (e.t === 'block') { blocks++; if (e.parry) parries++; }
       else if (e.t === 'arrow') arrows++;
       else if (e.t === 'ability') abilities++;
+      else if (e.t === 'shieldBreak') shieldBreaks++;
     }
     m.events.length = 0;
     for (const k of m.knights) {
@@ -84,7 +87,7 @@ function runBattle(mapId: string, mode: GameMode, teamSize: number, seconds: num
   }
   const simMs = performance.now() - ts;
   const per = simMs / Math.max(1, m.tick);
-  console.log(`${mapId.padEnd(9)} ${mode.padEnd(9)} ${teamSize}v${teamSize} d${difficulty}: build ${tBuild.toFixed(0)}ms nav ${tNav.toFixed(0)}ms | ${(m.tick / 60).toFixed(0)}s sim, ${per.toFixed(2)}ms/tick (max ${maxStep.toFixed(1)}) | hits ${hits} blocks ${blocks} (parry ${parries}) kills ${kills} arrows ${arrows} abilities ${abilities} | tickets ${m.teams[0].tickets}/${m.teams[1].tickets} phase ${m.phase} winner ${m.winner}`);
+  console.log(`${mapId.padEnd(9)} ${mode.padEnd(9)} ${teamSize}v${teamSize} d${difficulty}: build ${tBuild.toFixed(0)}ms nav ${tNav.toFixed(0)}ms | ${(m.tick / 60).toFixed(0)}s sim, ${per.toFixed(2)}ms/tick (max ${maxStep.toFixed(1)}) | hits ${hits} blocks ${blocks} (parry ${parries}) kills ${kills} arrows ${arrows} abilities ${abilities} shields broken ${shieldBreaks} | tickets ${m.teams[0].tickets}/${m.teams[1].tickets} phase ${m.phase} winner ${m.winner}`);
   console.log('   hits by kind [melee, arrow, ability, kick, bleed, volley]:', byKind.join(' '), '| K/D by class:', [...new Set([...clsKills.keys(), ...clsDeaths.keys()])].map((c) => `${c} ${clsKills.get(c) ?? 0}/${clsDeaths.get(c) ?? 0}`).join(', '));
   console.log('   ability hits by class:', [...abilityBy].map(([c, n]) => `${c} ${n}`).join(', '));
   if (kills < 3) fail(`${mapId}/${mode}: too few kills (${kills}) - bots are not fighting`);
@@ -108,7 +111,7 @@ if (!only) {
   const me = m.addPlayer('Tester', 1, 0, 'vanguard');
   for (let i = 0; i < 60 * 7; i++) m.step();
   const seen: string[] = [];
-  for (let life = 0; life < 6; life++) {
+  for (let life = 0; life < CLASS_IDS.length; life++) {
     if (!me.alive) { fail(`life ${life}: player not alive`); break; }
     seen.push(me.cls);
     me.spawnProt = 0; me.invulnT = 0;
@@ -119,9 +122,31 @@ if (!only) {
     if (free) m.requestSpawn(me.id, free);
     for (let i = 0; i < 60 * 8 && !me.alive && free; i++) m.step();
   }
-  if (new Set(seen).size !== 6) fail(`orders reused: ${seen.join(',')}`);
-  if (me.alive || isFinite(me.respawnT)) fail('player could respawn after all six orders fell');
-  console.log(`pitched lives: ${seen.join(' > ')}; out after six`);
+  if (new Set(seen).size !== CLASS_IDS.length) fail(`orders reused: ${seen.join(',')}`);
+  if (me.alive || isFinite(me.respawnT)) fail('player could respawn after every order fell');
+  console.log(`pitched lives: ${seen.join(' > ')}; out after ${seen.length}`);
+}
+// shields: blocked blows wear them down until they splinter, then the guard is the weapon's own
+{
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'battle', teamSize: 20, seed: 5 }, buildMap('bodiam'));
+  const me = m.addPlayer('Tester', 0, 0, 'pavisier');
+  for (let i = 0; i < 60 * 7; i++) m.step();
+  const full = SHIELDS.pavise.hp;
+  if (me.shieldHp !== full) fail(`pavise starts at ${me.shieldHp}, expected ${full}`);
+  if (me.blockArc !== SHIELDS.pavise.blockArc) fail('pavise guard arc not applied');
+  let broke = 0;
+  const sub = m.events.length;
+  for (let n = 0; n < 40 && me.shieldHp > 0; n++) wearShield(m, me, -1, 60, me.x, me.y + 1, me.z);
+  for (const e of m.events.slice(sub)) if (e.t === 'shieldBreak' && e.k === me.id) broke++;
+  if (broke !== 1) fail(`expected one shieldBreak event, got ${broke}`);
+  if (me.shield || !me.shieldBroken) fail('shield should be broken');
+  if (me.blockArc !== WEAPONS.spear.blockArc) fail('broken shield still guards like a shield');
+  me.spawnProt = 0; me.invulnT = 0;
+  m.damage(me, null, 9999, { zone: 1, dtype: 0, kind: 0, x: me.x, y: me.y + 1, z: me.z, dx: 0, dy: 0, dz: 1 });
+  m.requestSpawn(me.id, 'bachelor');
+  for (let i = 0; i < 60 * 8 && !me.alive; i++) m.step();
+  if (!me.alive || me.shieldHp !== SHIELDS.heater.hp) fail(`a fresh shield on respawn (alive ${me.alive}, hp ${me.shieldHp})`);
+  console.log(`shields: pavise ${full} splintered after ${Math.ceil(full / 60)} blows; fresh heater on respawn`);
 }
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all simulation checks passed');

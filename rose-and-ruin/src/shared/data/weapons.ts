@@ -15,7 +15,7 @@ export type DmgType = 0 | 1 | 2; // cut, blunt, pierce
 export const DMG_CUT = 0, DMG_BLUNT = 1, DMG_PIERCE = 2;
 export const DMG_NAMES = ['cut', 'blunt', 'pierce'] as const;
 
-export type WeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion';
+export type WeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
 
 export interface AttackDef {
   name: string;
@@ -59,7 +59,7 @@ export interface WeaponDef {
   blockStamina: number; // multiplier on stamina lost when blocking
   parryWindow: number; // seconds after raising the guard that count as a parry
   /** visual weapon kind for the renderer */
-  visual: 'sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'bow' | 'falchion';
+  visual: 'sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'bow' | 'falchion' | 'spear' | 'mace';
 }
 
 const A = (o: Omit<AttackDef, 'maxTargets' | 'moveMult' | 'lunge'> & Partial<AttackDef>): AttackDef => ({
@@ -92,8 +92,8 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
         wind: [0.25, 1.25, -0.1, 0, 0, -25, 0], mid: [0.12, 1.3, 0.45, 0, 0, 5, 8], end: [0.08, 1.3, 0.58, 0, -2, 12, 12], lunge: 1.6 }),
     ],
     heavyChargeMax: 0.8,
-    blockArc: 170,
-    blockStamina: 0.55,
+    blockArc: 130,
+    blockStamina: 0.95,
     parryWindow: 0.2,
     visual: 'sword',
   },
@@ -204,10 +204,66 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
         wind: [0.25, 1.25, -0.1, 0, 0, -25, 0], mid: [0.12, 1.3, 0.45, 0, 0, 5, 8], end: [0.08, 1.3, 0.58, 0, -2, 12, 12], lunge: 2.0 }),
     ],
     heavyChargeMax: 0.7,
-    blockArc: 120,
-    blockStamina: 0.8,
+    blockArc: 110,
+    blockStamina: 0.95,
     parryWindow: 0.28,
     visual: 'falchion',
+  },
+
+  spear: {
+    id: 'spear',
+    name: 'War Spear',
+    blurb: 'An ash-hafted spear with a leaf blade, held one-handed over the pavise. Every blow is a thrust, and it outreaches a sword.',
+    twoHanded: false,
+    hitStart: 1.3,
+    hitEnd: 1.84,
+    offhand: null,
+    idle: [0.26, 1.12, 0.12, 0, 8, 0, 0],
+    carry: [0.26, 1.0, 0.12, -6, 78, 0, 0],
+    block: [0.28, 1.18, 0.04, -8, 58, 0, 0],
+    attacks: [
+      A({ name: 'Low Thrust', kind: 'thrust', windup: 0.38, release: 0.18, recover: 0.32, damage: 44, dtype: 2, stamina: 8,
+        wind: [0.3, 1.04, -0.2, 0, 6, -22, 0], mid: [0.18, 1.1, 0.3, 0, 3, 4, 6], end: [0.12, 1.12, 0.5, 0, 1, 12, 10], lunge: 1.4 }),
+      A({ name: 'High Thrust', kind: 'thrust', windup: 0.42, release: 0.18, recover: 0.34, damage: 48, dtype: 2, stamina: 9,
+        wind: [0.32, 1.52, -0.14, 0, -4, -24, 0], mid: [0.2, 1.48, 0.3, 0, -7, 4, 6], end: [0.14, 1.44, 0.5, 0, -10, 12, 10], lunge: 1.4 }),
+      A({ name: 'Driving Thrust', kind: 'thrust', windup: 0.56, release: 0.2, recover: 0.44, damage: 68, dtype: 2, stamina: 14,
+        wind: [0.32, 1.3, -0.26, 0, 0, -32, 0], mid: [0.16, 1.3, 0.34, 0, 0, 6, 10], end: [0.1, 1.3, 0.56, 0, -2, 14, 16], lunge: 2.2, moveMult: 0.6 }),
+      A({ name: 'Quick Jab', kind: 'thrust', windup: 0.28, release: 0.14, recover: 0.26, damage: 34, dtype: 2, stamina: 6,
+        wind: [0.28, 1.2, -0.08, 0, 0, -16, 0], mid: [0.16, 1.24, 0.3, 0, 0, 4, 6], end: [0.12, 1.25, 0.46, 0, 0, 10, 8], lunge: 1.2 }),
+    ],
+    heavyChargeMax: 0.8,
+    blockArc: 120,
+    blockStamina: 0.9,
+    parryWindow: 0.18,
+    visual: 'spear',
+  },
+
+  mace: {
+    id: 'mace',
+    name: 'Flanged Mace',
+    blurb: 'A steel-hafted mace with seven flanges. It does not cut plate: it dents it, and the man inside.',
+    twoHanded: false,
+    hitStart: 0.42,
+    hitEnd: 0.66,
+    offhand: null,
+    idle: [0.24, 1.04, 0.24, 6, 54, 0, 0],
+    carry: [0.26, 1.0, 0.14, -8, 70, 0, 0],
+    block: [0.27, 1.22, 0.1, -18, 74, 0, 0],
+    attacks: [
+      A({ name: 'Forehand Smash', kind: 'slash', windup: 0.46, release: 0.2, recover: 0.34, damage: 46, dtype: 1, stamina: 10,
+        wind: [0.38, 1.52, -0.05, -120, 40, -40, 0], mid: [0.1, 1.34, 0.42, 0, 8, 0, 4], end: [-0.25, 1.15, 0.3, 85, -15, 40, 6], lunge: 0.8 }),
+      A({ name: 'Backhand Smash', kind: 'slash', windup: 0.46, release: 0.2, recover: 0.34, damage: 46, dtype: 1, stamina: 10,
+        wind: [-0.15, 1.47, 0.1, 110, 44, 35, 0], mid: [0.15, 1.32, 0.42, 0, 8, 0, 4], end: [0.42, 1.1, 0.12, -95, -15, -35, 6], lunge: 0.8 }),
+      A({ name: 'Helm Breaker', kind: 'overhead', windup: 0.6, release: 0.22, recover: 0.48, damage: 70, dtype: 1, stamina: 16,
+        wind: [0.18, 1.76, 0.0, 0, 145, -15, -8], mid: [0.1, 1.52, 0.45, 0, 25, 0, 10], end: [0.08, 1.0, 0.4, 0, -40, 5, 22], lunge: 1.3, moveMult: 0.6 }),
+      A({ name: 'Pommel Jab', kind: 'thrust', windup: 0.3, release: 0.16, recover: 0.3, damage: 30, dtype: 1, stamina: 7,
+        wind: [0.25, 1.25, -0.1, 0, 0, -25, 0], mid: [0.12, 1.3, 0.45, 0, 0, 5, 8], end: [0.08, 1.3, 0.56, 0, -2, 12, 12], lunge: 1.4 }),
+    ],
+    heavyChargeMax: 0.8,
+    blockArc: 120,
+    blockStamina: 0.9,
+    parryWindow: 0.2,
+    visual: 'mace',
   },
 
   longbow: {

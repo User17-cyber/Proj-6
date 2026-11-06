@@ -124,6 +124,15 @@ const W: Record<string, PieceDef[]> = {
     { key: 'falSteel', geo: () => A.falchion().steel!, mat: 'steelBright', mount: 'weapon' },
     { key: 'falGrip', geo: () => A.falchion().grip!, mat: 'grip', mount: 'weapon' },
   ],
+  spear: [
+    { key: 'spearWood', geo: () => A.spear().wood!, mat: 'wood', mount: 'weapon' },
+    { key: 'spearSteel', geo: () => A.spear().steel!, mat: 'steel', mount: 'weapon' },
+    { key: 'spearGrip', geo: () => A.spear().grip!, mat: 'grip', mount: 'weapon' },
+  ],
+  mace: [
+    { key: 'maceSteel', geo: () => A.mace().steel!, mat: 'steelBright', mount: 'weapon' },
+    { key: 'maceGrip', geo: () => A.mace().grip!, mat: 'grip', mount: 'weapon' },
+  ],
   bow: [
     { key: 'bowStave', geo: () => A.longbow().wood!, mat: 'wood', mount: 'bow' },
     { key: 'bowGrip', geo: () => A.longbow().grip!, mat: 'grip', mount: 'bow' },
@@ -140,6 +149,14 @@ const heater = (): PieceDef[] => {
     { key: 'heaterFace', geo: () => s.face, mat: 'shieldFace', mount: 'offhand', team: true },
     { key: 'heaterBack', geo: () => s.back, mat: 'shieldBack', mount: 'offhand' },
     { key: 'heaterRim', geo: () => s.rim, mat: 'steelDark', mount: 'offhand' },
+  ];
+};
+const pavise = (): PieceDef[] => {
+  const s = A.paviseShield();
+  return [
+    { key: 'paviseFace', geo: () => s.face, mat: 'shieldFace', mount: 'offhand', team: true },
+    { key: 'paviseBack', geo: () => s.back, mat: 'shieldBack', mount: 'offhand' },
+    { key: 'paviseRim', geo: () => s.rim, mat: 'leatherDark', mount: 'offhand' },
   ];
 };
 
@@ -243,5 +260,40 @@ export const KITS: Record<ClassId, PieceDef[]> = {
     { key: 'greave', geo: () => A.legTube(-0.04, -SH + 0.03, 0.064, 0.048, 0.022), mat: 'steel', mount: B.shinR },
     ...W.falchion,
     { key: 'buckler', geo: () => A.buckler(), mat: 'steel', mount: 'offhand' },
+  ],
+  pavisier: [
+    ...base(),
+    { key: 'kettleP', geo: () => A.kettleHat(), mat: 'steel', mount: B.head, head: true },
+    { key: 'coifMail', geo: () => A.coif(), mat: 'mail', mount: B.head, head: true },
+    { key: 'brigandineP', geo: () => cylUV(A.tabardTop(0.3), -0.3, 0.215), mat: 'brig', mount: B.chest, team: true },
+    { key: 'mailSkirtP', geo: () => A.skirtRound(0.32), mat: 'mail', mount: B.pelvis },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    { key: 'spaudlerL', geo: () => A.pauldron(-1, 0.85), mat: 'steel', mount: B.upperArmL },
+    { key: 'spaudlerR', geo: () => A.pauldron(1, 0.85), mat: 'steel', mount: B.upperArmR },
+    ...mailSleeves(),
+    { key: 'vambrace', geo: () => A.armTube(-0.03, -FA + 0.01, 0.05, 0.041), mat: 'steel', mount: B.forearmL },
+    { key: 'vambrace', geo: () => A.armTube(-0.03, -FA + 0.01, 0.05, 0.041), mat: 'steel', mount: B.forearmR },
+    { key: 'glove', geo: () => A.gauntlet(true), mat: 'leather', mount: B.handL },
+    { key: 'glove', geo: () => A.gauntlet(true), mat: 'leather', mount: B.handR },
+    ...lightLegs(true),
+    { key: 'greave', geo: () => A.legTube(-0.04, -SH + 0.03, 0.064, 0.048, 0.022), mat: 'steel', mount: B.shinL },
+    { key: 'greave', geo: () => A.legTube(-0.04, -SH + 0.03, 0.064, 0.048, 0.022), mat: 'steel', mount: B.shinR },
+    ...W.spear,
+    ...pavise(),
+  ],
+  bachelor: [
+    ...base(),
+    { key: 'bascinetV', geo: () => A.bascinet().steel, mat: 'steel', mount: B.head, head: true },
+    { key: 'bascinetVDetail', geo: () => A.bascinetDetail(), mat: 'void', mount: B.head, head: true, detail: true },
+    { key: 'aventail', geo: () => A.aventail(0.16), mat: 'mail', mount: B.head, head: true },
+    { key: 'cuirassK', geo: () => A.cuirass({ bulge: 1.04, ridge: 1.3 }), mat: 'steel', mount: B.chest },
+    { key: 'surcoatK', geo: () => cylUV(A.tabardTop(0.3), -0.3, 0.215), mat: 'tabard', mount: B.chest, team: true },
+    { key: 'surcoatKSkirt', geo: () => cylUV(A.skirtPanels(0.42, 1.15, 1.0), -0.42, 0.08), mat: 'tabard', mount: B.pelvis, team: true },
+    { key: 'fauld3', geo: () => A.fauld(3), mat: 'steel', mount: B.pelvis },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    ...fullArms('steel'),
+    ...fullLegs('steel', 0.04),
+    ...W.mace,
+    ...heater(),
   ],
 };

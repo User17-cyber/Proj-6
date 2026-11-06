@@ -3,7 +3,7 @@
 
 import { MAPS } from '../../shared/world/maps/index';
 import type { MapDef } from '../../shared/world/mapgen';
-import { CLASSES, type ClassId } from '../../shared/data/classes';
+import { CLASSES, CLASS_IDS, type ClassId } from '../../shared/data/classes';
 import { DIFFICULTY_NAMES, TEAM_HOUSE, TEAM_MOTTO, type GameMode, type MatchSettings, type Team } from '../../shared/types';
 import { icon } from './icons';
 import { mapArt } from './mapArt';
@@ -232,8 +232,8 @@ export class Menus {
     });
     const onKey = (e: KeyboardEvent) => {
       if (!s.isConnected) { window.removeEventListener('keydown', onKey); return; }
-      const m = /^Digit([1-6])$/.exec(e.code);
-      if (m) select((['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant'] as ClassId[])[Number(m[1]) - 1]);
+      const m = /^Digit([1-8])$/.exec(e.code);
+      if (m && CLASS_IDS[Number(m[1]) - 1]) select(CLASS_IDS[Number(m[1]) - 1]);
     };
     window.addEventListener('keydown', onKey);
     this.mount(s);

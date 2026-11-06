@@ -182,6 +182,19 @@ export class Particles {
     this.spawn(PK.Fire, x, y, z, 0, 0, 0, 0.06, big ? 0.35 : 0.22, [5, 3.4, 1.6, 1]);
   }
 
+  /** A shield bursting: painted boards and splinters thrown out and falling. */
+  splinters(x: number, y: number, z: number, nx: number, nz: number) {
+    for (let i = 0; i < 46; i++) {
+      const s = 1.5 + Math.random() * 4.5;
+      const wood = 0.25 + Math.random() * 0.25;
+      const col: [number, number, number, number] = Math.random() < 0.3 ? [0.55, 0.12, 0.08, 1] : [wood * 1.5, wood, wood * 0.6, 1];
+      this.spawn(PK.Blood, x + (Math.random() - 0.5) * 0.3, y + (Math.random() - 0.5) * 0.4, z + (Math.random() - 0.5) * 0.3,
+        nx * s + (Math.random() - 0.5) * 3.5, 1 + Math.random() * 3.5, nz * s + (Math.random() - 0.5) * 3.5,
+        1.1 + Math.random() * 1.0, 0.03 + Math.random() * 0.05, col, { grav: 9.8, drag: 0.4, spin: (Math.random() - 0.5) * 20 });
+    }
+    this.dust(x, y - 0.4, z, 0.35, [0.5, 0.42, 0.32]);
+  }
+
   dust(x: number, y: number, z: number, amount: number, color: [number, number, number] = [0.45, 0.4, 0.33]) {
     const n = Math.round(2 + amount * 10);
     const alpha = 0.14 + 0.3 * Math.min(1, amount);

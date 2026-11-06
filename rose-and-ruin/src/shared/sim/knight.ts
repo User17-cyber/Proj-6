@@ -1,5 +1,5 @@
 import { Act, emptyInput, type InputFrame, type Team } from '../types';
-import { CLASSES, type ClassDef, type ClassId } from '../data/classes';
+import { CLASSES, SHIELDS, type ClassDef, type ClassId, type ShieldDef } from '../data/classes';
 import { WEAPONS, type WeaponDef } from '../data/weapons';
 import type { V3 } from '../math';
 
@@ -75,6 +75,8 @@ export class Knight {
   hotT = 0;
   hotRate = 0;
   bodkin = false;
+  /** shield durability left (0 when the class has none or it has splintered) */
+  shieldHp = 0;
   chargeHit = false;
   abilityAim = { x: 0, y: 0, z: 0 };
   abilityHits: number[] = [];
@@ -105,9 +107,15 @@ export class Knight {
     this.cls = c;
     this.def = CLASSES[c];
     this.weapon = WEAPONS[this.def.weapon];
+    this.shieldHp = this.def.shield ? SHIELDS[this.def.shield].hp : 0;
   }
 
   get maxHp() { return this.def.hp; }
+  /** the shield still in hand, if any */
+  get shield(): ShieldDef | null { return this.def.shield && this.shieldHp > 0 ? SHIELDS[this.def.shield] : null; }
+  get shieldBroken() { return this.def.shield !== null && this.shieldHp <= 0; }
+  get blockArc() { const s = this.shield; return s ? Math.max(s.blockArc, this.weapon.blockArc) : this.weapon.blockArc; }
+  get blockStamina() { const s = this.shield; return s ? s.blockStamina : this.weapon.blockStamina; }
   get maxStamina() { return this.def.stamina; }
   get blocking() { return this.act === Act.Block; }
   get downed() { return this.knockT > 0; }

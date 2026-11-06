@@ -1,7 +1,30 @@
 import type { WeaponId } from './weapons';
 
-export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant';
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant'];
+export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor';
+/** at most 8: snapshots pack the class index into 3 bits */
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor'];
+
+export type ShieldId = 'heater' | 'buckler' | 'pavise';
+
+export interface ShieldDef {
+  id: ShieldId;
+  name: string;
+  /** durability: the damage the shield can turn before it splinters */
+  hp: number;
+  /** guard arc (degrees, full) and stamina multiplier while the shield is whole */
+  blockArc: number;
+  blockStamina: number;
+  /** stops arrows */
+  arrows: boolean;
+  /** chance an arrow from the front strikes the shield when not guarding */
+  cover: number;
+}
+
+export const SHIELDS: Record<ShieldId, ShieldDef> = {
+  heater: { id: 'heater', name: 'heater shield', hp: 260, blockArc: 170, blockStamina: 0.55, arrows: true, cover: 0.35 },
+  buckler: { id: 'buckler', name: 'buckler', hp: 160, blockArc: 130, blockStamina: 0.7, arrows: false, cover: 0 },
+  pavise: { id: 'pavise', name: 'hand pavise', hp: 440, blockArc: 210, blockStamina: 0.4, arrows: true, cover: 0.7 },
+};
 
 export type AbilityId =
   | 'shield_bash' | 'rally'
@@ -67,7 +90,7 @@ export interface ClassDef {
   mass: number;
   armor: readonly [number, number, number]; // damage reduction vs cut, blunt, pierce
   weapon: WeaponId;
-  shield: 'heater' | 'buckler' | null;
+  shield: ShieldId | null;
   ranged: boolean;
   abilities: readonly [AbilityId, AbilityId];
   /** heavy attacks cannot be interrupted by light hits */
@@ -140,6 +163,26 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     ratings: { attack: 3, defence: 3, speed: 5, reach: 2, difficulty: 4 },
     armourDesc: 'Barbute, mail hauberk and brigandine',
     botWeight: 12,
+  },
+  pavisier: {
+    id: 'pavisier', name: 'Pavisier', title: 'War Spear & Hand Pavise',
+    description: 'A wall of painted timber with a spear behind it. The pavise covers him from shin to brow and turns arrow after arrow, but every blow it takes splinters it further. Shield Bash shoves foes off the line; Iron Bulwark roots him in place.',
+    hp: 120, stamina: 105, speed: 4.4, sprint: 6.5, mass: 1.15,
+    armor: [0.28, 0.12, 0.22], weapon: 'spear', shield: 'pavise', ranged: false,
+    abilities: ['shield_bash', 'bulwark'], hyperArmor: false, attackSpeed: 1,
+    ratings: { attack: 3, defence: 5, speed: 2, reach: 4, difficulty: 2 },
+    armourDesc: 'Kettle hat over a mail coif, brigandine and splinted limbs',
+    botWeight: 12,
+  },
+  bachelor: {
+    id: 'bachelor', name: 'Knight Bachelor', title: 'Flanged Mace & Heater Shield',
+    description: 'A young knight with his spurs freshly won. The mace caves in plate that turns a sword, and a heater shield keeps him alive long enough to use it. Shield Bash opens a guard; Battle Charge carries him into the press.',
+    hp: 130, stamina: 100, speed: 4.6, sprint: 6.8, mass: 1.1,
+    armor: [0.36, 0.14, 0.28], weapon: 'mace', shield: 'heater', ranged: false,
+    abilities: ['shield_bash', 'charge'], hyperArmor: false, attackSpeed: 1,
+    ratings: { attack: 4, defence: 4, speed: 3, reach: 2, difficulty: 2 },
+    armourDesc: 'Visored bascinet, plate harness and surcoat',
+    botWeight: 14,
   },
 };
 

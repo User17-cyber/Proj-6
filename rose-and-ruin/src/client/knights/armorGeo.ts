@@ -515,6 +515,55 @@ export function heaterShield(): { face: THREE.BufferGeometry; back: THREE.Buffer
   return { face, back: merge([back, strap]), rim };
 }
 
+/**
+ * Hand pavise: a tall timber shield with a raised central ridge (the bouge), slightly
+ * narrower at the foot. Face toward +Z, strap point at the origin.
+ */
+export function paviseShield(): { face: THREE.BufferGeometry; back: THREE.BufferGeometry; rim: THREE.BufferGeometry } {
+  const top = 0.44, bottom = -0.6, hwTop = 0.27, hwBot = 0.23;
+  const rows = 12, cols = 11;
+  const hwAt = (y: number) => hwBot + (hwTop - hwBot) * (y - bottom) / (top - bottom);
+  // the bouge stands proud down the middle; the edges sweep back toward the bearer
+  const zAt = (x: number, hw: number) => 0.035 * (1 - Math.min(1, Math.abs(x) / (hw * 0.32))) - 0.05 * (x / hw) * (x / hw);
+  const build = (zOff: number, flip: boolean) => {
+    const pos: number[] = [], uv: number[] = [], idx: number[] = [];
+    for (let i = 0; i <= rows; i++) {
+      const y = bottom + (top - bottom) * (i / rows);
+      // the top corners are cut round
+      const hw = hwAt(y) * (y > top - 0.06 ? 1 - Math.pow((y - (top - 0.06)) / 0.06, 2) * 0.18 : 1);
+      for (let j = 0; j < cols; j++) {
+        const x = -hw + (2 * hw * j) / (cols - 1);
+        pos.push(x, y, zAt(x, hw) + zOff + 0.09);
+        uv.push((x + hwTop) / (2 * hwTop), (y - bottom) / (top - bottom));
+      }
+    }
+    for (let i = 0; i < rows; i++) for (let j = 0; j < cols - 1; j++) {
+      const a = i * cols + j, b = a + 1, c = a + cols, d = c + 1;
+      if (flip) idx.push(a, b, c, b, d, c); else idx.push(a, c, b, b, c, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  };
+  const face = build(0.016, false);
+  const back = build(-0.016, true);
+  const edge: THREE.Vector3[] = [];
+  const corner = (x: number, y: number) => new THREE.Vector3(x, y, zAt(x, Math.abs(x) || 1) + 0.09);
+  for (let i = 0; i <= rows; i++) { const y = bottom + (top - bottom) * (i / rows); edge.push(corner(hwAt(y) * (y > top - 0.06 ? 0.86 : 1), y)); }
+  for (let i = rows; i >= 0; i--) { const y = bottom + (top - bottom) * (i / rows); edge.push(corner(-hwAt(y) * (y > top - 0.06 ? 0.86 : 1), y)); }
+  edge.push(edge[0].clone());
+  const rim = tubeAlong(edge, 0.02, 6, false);
+  // enarmes: a pair of leather loops on the back, and the boss of the bouge's iron strap
+  const straps = merge([
+    xf(new THREE.BoxGeometry(0.06, 0.014, 0.034), 0, 0.12, 0.06),
+    xf(new THREE.BoxGeometry(0.06, 0.014, 0.034), 0, -0.1, 0.06),
+  ]);
+  return { face, back: merge([back, straps]), rim };
+}
+
 export function buckler() {
   const dome = lathe([[0.0, 0.07], [0.05, 0.068], [0.06, 0.05], [0.07, 0.04], [0.16, 0.018], [0.185, 0.0]], 28);
   const rim = lathe([[0.185, 0.0], [0.19, -0.006], [0.18, -0.01]], 28);
@@ -590,6 +639,44 @@ export function falchion(): WeaponGeo {
     grip: xf(new THREE.CylinderGeometry(0.016, 0.018, 0.13, 10), 0, 0.005, 0),
   };
 }
+/** One-handed war spear: ash haft with a leaf-shaped head, gripped a third of the way up. */
+export function spear(): WeaponGeo {
+  return {
+    wood: xf(new THREE.CylinderGeometry(0.016, 0.019, 2.2, 10), 0, 0.45, 0),
+    steel: merge([
+      bladeGeo(0.3, 0.05, 0.02, 0.012, 0.005, 1.56),
+      xf(new THREE.CylinderGeometry(0.016, 0.022, 0.12, 8), 0, 1.5, 0),
+      xf(new THREE.ConeGeometry(0.02, 0.06, 8), 0, -0.68, 0, Math.PI, 0, 0),
+    ]),
+    grip: xf(new THREE.CylinderGeometry(0.021, 0.021, 0.14, 10), 0, 0, 0),
+  };
+}
+
+/** Flanged mace: a steel haft and a head of seven flanges. */
+export function mace(): WeaponGeo {
+  const flanges: THREE.BufferGeometry[] = [];
+  const fl = new THREE.Shape();
+  fl.moveTo(0, -0.07); fl.lineTo(0.035, -0.04); fl.quadraticCurveTo(0.05, 0.0, 0.035, 0.05); fl.lineTo(0, 0.08); fl.lineTo(0, -0.07);
+  for (let i = 0; i < 7; i++) {
+    const g = new THREE.ExtrudeGeometry(fl, { depth: 0.007, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 1, curveSegments: 4 });
+    g.translate(0.012, 0, -0.0035);
+    g.rotateY((i / 7) * Math.PI * 2);
+    g.translate(0, 0.56, 0);
+    flanges.push(g);
+  }
+  return {
+    steel: merge([
+      ...flanges,
+      xf(new THREE.CylinderGeometry(0.016, 0.016, 0.24, 10), 0, 0.56, 0),
+      xf(new THREE.ConeGeometry(0.018, 0.05, 8), 0, 0.7, 0),
+      xf(new THREE.CylinderGeometry(0.013, 0.015, 0.46, 10), 0, 0.26, 0),
+      xf(new THREE.CylinderGeometry(0.026, 0.026, 0.012, 12), 0, 0.085, 0),
+      xf(new THREE.SphereGeometry(0.024, 10, 8), 0, -0.085, 0),
+    ]),
+    grip: xf(new THREE.CylinderGeometry(0.017, 0.018, 0.14, 10), 0, 0.005, 0),
+  };
+}
+
 export function dagger(): WeaponGeo {
   return {
     steel: merge([

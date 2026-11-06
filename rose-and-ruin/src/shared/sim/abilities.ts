@@ -5,7 +5,7 @@ import { Act } from '../types';
 import { ABILITY_IDS, type AbilityId } from '../data/classes';
 import type { Knight } from './knight';
 import type { Match } from './match';
-import { frontal, radial, stun, knockdown, isBlocking, applyBleed } from './combat';
+import { frontal, radial, stun, knockdown, isBlocking, applyBleed, wearShield } from './combat';
 import { spend } from './actions';
 
 const crossed = (t0: number, t1: number, at: number) => t0 < at && t1 >= at;
@@ -13,6 +13,7 @@ const abIndex = (id: AbilityId) => ABILITY_IDS.indexOf(id);
 
 export function canUseAbility(m: Match, k: Knight, id: AbilityId): boolean {
   if (!k.onGround && id !== 'rally' && id !== 'bulwark' && id !== 'bloodletting') return false;
+  if (id === 'shield_bash' && !k.shield) return false;
   return true;
 }
 
@@ -74,7 +75,11 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
         if (v) {
           v.pushX += fx * 3.8; v.pushZ += fz * 3.8;
           m.damage(v, k, 16 * (1 - v.def.armor[1]), { zone: 1, dtype: 1, kind: 2, x: v.x, y: v.y + 1.2, z: v.z, dx: fx, dy: 0, dz: fz, noStagger: true });
-          if (v.alive) { if (v.act === Act.Block) spend(v, 25); stun(m, v, 1.2); }
+          if (v.alive) {
+            if (v.act === Act.Block) { spend(v, 25); wearShield(m, v, k.id, 45, v.x, v.y + 1.2, v.z); }
+            stun(m, v, 1.2);
+          }
+          wearShield(m, k, v.id, 12, k.x + fx * 0.4, k.y + 1.2, k.z + fz * 0.4);
           m.emit({ t: 'kick', a: k.id, v: v.id, hit: true, broke: true });
         }
       }
@@ -103,8 +108,9 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
         k.abilityHits.push(key);
         const dx = v.x - k.x, dz = v.z - k.z, l = Math.hypot(dx, dz) || 1;
         if (isBlocking(v, k.x, k.z)) {
-          spend(v, 16 * v.weapon.blockStamina);
-          m.emit({ t: 'block', a: k.id, v: v.id, x: (v.x + k.x) / 2, y: v.y + 1.3, z: (v.z + k.z) / 2, parry: false, shield: !!v.def.shield, broke: false });
+          spend(v, 16 * v.blockStamina);
+          m.emit({ t: 'block', a: k.id, v: v.id, x: (v.x + k.x) / 2, y: v.y + 1.3, z: (v.z + k.z) / 2, parry: false, shield: !!v.shield, broke: false });
+          wearShield(m, v, k.id, 26, (v.x + k.x) / 2, v.y + 1.3, (v.z + k.z) / 2);
           return;
         }
         m.damage(v, k, 24 * (1 - v.def.armor[0]), { zone: 1, dtype: 0, kind: 2, x: v.x - (dx / l) * 0.25, y: v.y + 1.2, z: v.z - (dz / l) * 0.25, dx: -dz / l, dy: 0, dz: dx / l });
@@ -140,8 +146,9 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
         if (v) {
           k.abilityHits.push(v.id);
           if (isBlocking(v, k.x, k.z)) {
-            spend(v, 30 * v.weapon.blockStamina);
-            m.emit({ t: 'block', a: k.id, v: v.id, x: v.x + (k.x - v.x) * 0.3, y: v.y + 1.3, z: v.z + (k.z - v.z) * 0.3, parry: false, shield: !!v.def.shield, broke: false });
+            spend(v, 30 * v.blockStamina);
+            m.emit({ t: 'block', a: k.id, v: v.id, x: v.x + (k.x - v.x) * 0.3, y: v.y + 1.3, z: v.z + (k.z - v.z) * 0.3, parry: false, shield: !!v.shield, broke: false });
+            wearShield(m, v, k.id, 40, v.x + (k.x - v.x) * 0.3, v.y + 1.3, v.z + (k.z - v.z) * 0.3);
             k.ovActive = false;
             k.act = Act.Deflect; k.actT = 0; k.actDur = 0.4;
           } else {

@@ -1,6 +1,6 @@
 // Class descriptions shared by the armoury and the death screen.
 
-import { CLASSES, CLASS_IDS, ABILITIES, type ClassId } from '../../shared/data/classes';
+import { CLASSES, CLASS_IDS, ABILITIES, SHIELDS, type ClassId } from '../../shared/data/classes';
 import { WEAPONS } from '../../shared/data/weapons';
 import { icon } from './icons';
 
@@ -38,7 +38,7 @@ export function classDetailHtml(cls: ClassId, keys: [string, string] = ['Q', 'E'
       <span>Mastery</span>${pips(r.difficulty)}
     </div>
     ${abil}
-    <div class="armour-line">${esc(c.armourDesc)} · ${c.hp} vigour · ${esc(w.name)}${c.shield ? ` &amp; ${c.shield === 'heater' ? 'heater shield' : 'buckler'}` : ''}</div>`;
+    <div class="armour-line">${esc(c.armourDesc)} · ${c.hp} vigour · ${esc(w.name)}${c.shield ? ` &amp; ${SHIELDS[c.shield].name} (${SHIELDS[c.shield].hp} durability)` : ''}</div>`;
 }
 
 /** Compact selectable class list. Returns a setter for the selection. */

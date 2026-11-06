@@ -22,7 +22,7 @@ export class AudioEngine {
 
   constructor() {
     const reg = (name: string, gen: S.Gen, variants = 5) => this.banks.set(name, { gen, variants, bufs: [] });
-    reg('clang', S.clang, 8); reg('parry', S.clang, 4); reg('shield', S.shieldThud, 5);
+    reg('clang', S.clang, 8); reg('parry', S.clang, 4); reg('shield', S.shieldThud, 5); reg('splinter', S.shieldSplinter, 3);
     reg('flesh', S.hitFlesh, 6); reg('plate', S.hitPlate, 5);
     reg('whoosh', S.whoosh(false), 5); reg('whooshHeavy', S.whoosh(true), 4);
     reg('kick', S.kickThud, 3); reg('bow', S.bowTwang, 4); reg('thunk', S.arrowThunk, 5);

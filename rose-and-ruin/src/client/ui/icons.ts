@@ -25,6 +25,9 @@ const halberd = (tr: string) => `<g transform="${tr}"><rect x="30.4" y="8" width
 const poleaxe = (tr: string) => `<g transform="${tr}"><rect x="30.4" y="10" width="3.2" height="53" rx="1.2"/><path d="M32 0 L34.8 12.5 H29.2 Z"/><path d="M33.6 13.5 H44 V24.5 H33.6 Z"/><path d="M44 13.5 h3.6 v3.6 h-3.6z M44 20.9 h3.6 v3.6 h-3.6z"/><path d="M30.4 14.5 L15 21 L30.4 22.5 Z"/><circle cx="32" cy="31" r="3.4"/></g>`;
 const falchion = (tr: string) => `<g transform="${tr}"><path d="M29 44 V13 C29 9 31.5 5.5 34.5 4 C39.5 10.5 41.5 21 38 31 C36.6 36 35.4 40 35.2 44 Z"/><path d="M22.5 44 H41.5 Q43 45.8 41.5 47.5 H22.5 Q21 45.8 22.5 44 Z"/><rect x="30" y="47.5" width="4" height="8.5" rx="1"/><circle cx="32" cy="59" r="3.2"/></g>`;
 const bow = (tr: string) => `<g transform="${tr}"><path d="M20 3 Q52.5 32 20 61 L17.6 59.5 Q46 32 17.6 4.5 Z"/><path d="M18.6 4.5 h1.1 v55 h-1.1z"/><path d="M9 31 H53 V33 H9 Z"/><path d="M52 27.5 L62 32 L52 36.5 Z"/><path d="M5 27.5 L14 31 V33 L5 36.5 L8.2 32 Z"/></g>`;
+const spear = (tr: string) => `<g transform="${tr}"><rect x="30.6" y="12" width="2.8" height="52" rx="1.1"/><path d="M32 0 C35.5 5 36.2 9 35.2 12.5 L32 15 L28.8 12.5 C27.8 9 28.5 5 32 0 Z"/></g>`;
+const mace = (tr: string) => `<g transform="${tr}"><rect x="30.2" y="18" width="3.6" height="34" rx="1.2"/><path d="M32 2 L39 7 L41 14 L39 21 L32 24 L25 21 L23 14 L25 7 Z"/><path ${D} d="M31 4 h2 v18 h-2z M25.5 13 h13 v2 h-13z"/><rect x="29.2" y="52" width="5.6" height="2.6" rx="1"/><rect x="30.3" y="54.6" width="3.4" height="6" rx="1"/><circle cx="32" cy="61.5" r="2.4"/></g>`;
+const pavise = (tr: string) => `<g transform="${tr}"><path ${O} d="M13 9 Q13 6 16 6 H38 Q41 6 41 9 L39.5 58 H14.5 Z"/><path ${D} d="M25 8 h4 v49 h-4z"/></g>`;
 const shieldPath = 'M12 10 H52 V28 C52 43 43 52 32 59 C21 52 12 43 12 28 Z';
 const drop = (x: number, y: number, s: number) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -16 C6 -6 12 1 12 8 A12 12 0 0 1 -12 8 C-12 1 -6 -6 0 -16 Z"/>`;
 const arrowDown = (tr: string) => `<g transform="${tr}"><path d="M31 6 H33 V46 H31 Z"/><path d="M27.5 45 L32 56 L36.5 45 Z"/><path d="M28 2 L31 8 H33 L36 2 L32 5 Z"/></g>`;
@@ -36,6 +39,8 @@ export const ICONS: Record<string, string> = {
   halberdier: halberd('rotate(30 32 32)'),
   banneret: poleaxe('rotate(30 32 32)'),
   longbowman: bow('rotate(-30 32 32)'),
+  pavisier: spear('rotate(24 32 32) translate(9 0)') + pavise('translate(-4 1)'),
+  bachelor: mace('rotate(36 32 32) translate(6 -2)') + heater('translate(-1 4)'),
   errant: falchion('rotate(34 32 32) translate(5 -3)') + `<g ${O}><circle cx="20" cy="44" r="13"/></g><circle ${D} cx="20" cy="44" r="4.6"/><circle fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1.6" cx="20" cy="44" r="10"/>`,
 
   // ---- abilities ----

@@ -17,6 +17,8 @@ export interface AnimSource {
   act: number; actT: number; actDur: number; atk: number; heavy: boolean; charge: number; draw: number;
   abilitySlot: number; knockT: number; stunT: number; bulwarkT: number; sprinting: boolean; alive: boolean;
   cls: ClassId;
+  /** the shield has splintered: the left hand is empty */
+  shieldBroken?: boolean;
 }
 
 export type GroundFn = (x: number, z: number, y: number) => number;
@@ -72,6 +74,7 @@ export class KnightAnimator {
     const J = this.joints;
     if (this.hasFirstFrame) for (const key in J) (this.prevJoints as unknown as Record<string, THREE.Vector3>)[key].copy((J as unknown as Record<string, THREE.Vector3>)[key]);
     const def = CLASSES[k.cls];
+    const shieldK = k.shieldBroken ? null : def.shield;
     const weapon = WEAPONS[def.weapon];
     const ability: AbilityId | null = k.act === Act.Ability ? def.abilities[k.abilitySlot] : null;
     const abT = k.act === Act.Ability ? k.actT : 0, abDur = k.act === Act.Ability ? Math.max(0.01, k.actDur) : 1;
@@ -111,7 +114,7 @@ export class KnightAnimator {
     // runners land nearly under the hip and push off well behind it
     const contactBack = -0.2 * run * stepLen;
     let stanceSum = 0, weightSide = 0;
-    const stanceSplit = (k.act === Act.Block || weapon.twoHanded || def.shield) ? 0.13 : 0.06;
+    const stanceSplit = (k.act === Act.Block || weapon.twoHanded || shieldK) ? 0.13 : 0.06;
     const idleFeet = 1 - gait;
     const legs: [THREE.Vector3, THREE.Vector3, THREE.Vector3, number][] = [[J.ankleL, J.toeL, J.hipL, -1], [J.ankleR, J.toeR, J.hipR, 1]];
     for (const [ankle, toe, , side] of legs) {
@@ -277,13 +280,16 @@ export class KnightAnimator {
       if (weapon.offhand !== null) {
         offhandGrip.copy(grip).addScaledVector(bladeDir, weapon.offhand);
         leftTarget.copy(offhandGrip);
-      } else if (def.shield === 'heater') {
-        const blockA = k.act === Act.Block ? smoothstep(0, 0.1, k.actT) : 0;
+      } else if (shieldK === 'heater' || shieldK === 'pavise') {
+        const pav = shieldK === 'pavise';
+        const blockA = k.act === Act.Block ? smoothstep(0, pav ? 0.14 : 0.1, k.actT) : 0;
         const bash = ability === 'shield_bash' ? Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI) : 0;
-        const raise = Math.max(blockA, bash, ability === 'rally' ? 0 : 0);
-        toWorld(lerp(-0.3, -0.06, raise), lerp(1.05, 1.36, raise), -lerp(0.2, 0.44 + bash * 0.22, raise), leftTarget);
+        const raise = Math.max(blockA, bash);
+        // the pavise is carried before the body and raised to cover from brow to knee
+        if (pav) toWorld(lerp(-0.24, -0.04, raise), lerp(1.08, 1.3, raise), -lerp(0.3, 0.46 + bash * 0.22, raise), leftTarget);
+        else toWorld(lerp(-0.3, -0.06, raise), lerp(1.05, 1.36, raise), -lerp(0.2, 0.44 + bash * 0.22, raise), leftTarget);
         leftPole.copy(chestRight).multiplyScalar(-0.9).addScaledVector(UP, lerp(-0.6, -0.1, raise));
-      } else if (def.shield === 'buckler') {
+      } else if (shieldK === 'buckler') {
         const blockA = k.act === Act.Block ? smoothstep(0, 0.08, k.actT) : 0;
         toWorld(lerp(-0.3, -0.1, blockA), lerp(1.02, 1.36, blockA), -lerp(0.18, 0.5, blockA), leftTarget);
       }
@@ -293,7 +299,7 @@ export class KnightAnimator {
     _a.subVectors(J.shoulderR, grip).normalize();
     J.wristR.copy(grip).addScaledVector(_a, 0.085);
     solveTwoBone(J.shoulderR, J.wristR, BODY.upperArm, BODY.forearm, rightPole, J.elbowR);
-    const twoHanded = weapon.offhand !== null || def.ranged || def.shield !== null;
+    const twoHanded = weapon.offhand !== null || def.ranged || shieldK !== null;
     if (!twoHanded) {
       // free left arm swings with the gait
       // at a run the elbow bends and the arm pumps hard
@@ -340,17 +346,20 @@ export class KnightAnimator {
       if (this.edge.lengthSq() < 0.5) this.edge.copy(chestRight);
       setBasis(this.weapon, grip, bladeDir, this.edge);
     }
-    if (def.shield === 'heater') {
+    if (shieldK === 'heater' || shieldK === 'pavise') {
       // the shield is strapped to the forearm and faces out from the body
       _a.lerpVectors(J.elbowL, J.wristL, 0.55);
       const blockA = k.act === Act.Block ? smoothstep(0, 0.1, k.actT) : 0;
-      _b.copy(chestFwd).lerp(_c.copy(chestRight).negate().addScaledVector(chestFwd, 0.6), 1 - Math.max(blockA, ability === 'shield_bash' ? 1 : 0)).normalize();
+      const front = shieldK === 'pavise' ? 0.55 : 0;
+      _b.copy(chestFwd).lerp(_c.copy(chestRight).negate().addScaledVector(chestFwd, 0.6), (1 - Math.max(blockA, ability === 'shield_bash' ? 1 : 0)) * (1 - front)).normalize();
       _a.addScaledVector(_b, 0.07);
       setBasis(this.offhand, _a, _c.copy(UP).addScaledVector(_b, -0.15).normalize(), _b);
-    } else if (def.shield === 'buckler') {
+    } else if (shieldK === 'buckler') {
       _b.copy(chestFwd).lerp(_c.copy(chestRight).negate(), 0.3).normalize();
       _a.copy(J.wristL).addScaledVector(_d.subVectors(J.wristL, J.elbowL).normalize(), 0.06);
       setBasis(this.offhand, _a, _c.copy(UP).addScaledVector(_b, -0.2).normalize(), _b);
+    } else if (def.shield) {
+      this.offhand.makeScale(0, 0, 0); // splintered
     }
     this.hasFirstFrame = true;
   }

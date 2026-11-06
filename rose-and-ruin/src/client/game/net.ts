@@ -326,6 +326,7 @@ export class NetSession implements SessionView {
       s.actDur = src.actDur; s.atk = src.atk; s.heavy = src.heavy; s.charge = src.charge; s.draw = src.draw;
       s.abilitySlot = src.abilitySlot; s.knockT = src.knockT; s.stunT = src.stunT; s.bulwarkT = src.bulwarkT;
       s.hp = src.hp; s.bleedStacks = src.bleedStacks;
+      s.shieldBroken = src.shieldBroken; s.shield = CLASSES[s.cls].shield && !src.shieldBroken ? 1 : 0;
     }
     const me = this.localId >= 0 ? this.knights[this.localId] : null;
     if (me && this.you) {
@@ -334,6 +335,7 @@ export class NetSession implements SessionView {
       me.spawnProt = y.spawnProt; me.bleedStacks = y.bleedStacks; me.bodkin = y.bodkin;
       me.respawnT = y.respawnT >= NEVER ? 9999 : Math.max(0, y.respawnT - this.snapAge);
       me.nextCls = CLASS_IDS[y.nextCls] ?? me.nextCls;
+      if (me.alive) me.shield = y.shield;
     }
   }
 

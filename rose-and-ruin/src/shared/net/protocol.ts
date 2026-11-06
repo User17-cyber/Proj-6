@@ -6,12 +6,12 @@
 
 import type { MatchSettings, SimEvent, Team, GameMode } from '../types';
 import type { ClassId } from '../data/classes';
-import { CLASS_IDS } from '../data/classes';
+import { CLASS_IDS, SHIELDS } from '../data/classes';
 import type { Match } from '../sim/match';
 import type { Knight } from '../sim/knight';
 import { wrapAngle } from '../math';
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 export const SNAP_EVERY = 3; // ticks between snapshots (60 / 3 = 20 Hz)
 export const MSG_SNAPSHOT = 1;
 export const MSG_INPUT = 2;
@@ -51,11 +51,13 @@ export interface SnapKnight {
   cls: number; team: number; act: number;
   x: number; y: number; z: number; yaw: number; pitch: number; vx: number; vy: number; vz: number;
   actT: number; actDur: number; atk: number; charge: number; draw: number; abilitySlot: number;
-  knockT: number; stunT: number; bulwarkT: number; hp: number; bleedStacks: number;
+  knockT: number; stunT: number; bulwarkT: number; hp: number; bleedStacks: number; shieldBroken: boolean;
 }
 export interface SnapYou {
   id: number; stamina: number; cd0: number; cd1: number; rallyT: number; bloodletT: number; spawnProt: number;
   bleedStacks: number; bodkin: boolean; respawnT: number; nextCls: number;
+  /** shield durability left, 0..1 */
+  shield: number;
 }
 export interface Snapshot {
   tick: number; ack: number; phase: number; phaseT: number; timeLeft: number; winner: number;
@@ -106,7 +108,7 @@ export class SnapshotWriter {
     for (const k of ks) {
       if (k.id > 255) break;
       this.u8(k.id);
-      const flags = (k.alive ? 1 : 0) | (k.onGround ? 2 : 0) | (k.sprinting ? 4 : 0) | (k.heavy ? 8 : 0);
+      const flags = (k.alive ? 1 : 0) | (k.onGround ? 2 : 0) | (k.sprinting ? 4 : 0) | (k.heavy ? 8 : 0) | (k.shieldBroken ? 16 : 0);
       this.u8(flags);
       this.u8(CLASS_IDS.indexOf(k.cls) | (k.team << 3));
       if (!k.alive) continue;
@@ -125,7 +127,7 @@ export class SnapshotWriter {
 
   /** Full message for one client. */
   build(tick: number, ack: number, you: Knight | null): ArrayBuffer {
-    const youLen = you ? 1 + 1 + 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2 + 1 : 1;
+    const youLen = you ? 1 + 1 + 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 : 1;
     const total = 1 + 4 + 4 + this.head.length + youLen + this.knightsBytes.length;
     const out = new ArrayBuffer(total);
     const dv = new DataView(out);
@@ -148,6 +150,7 @@ export class SnapshotWriter {
       dv.setUint8(o, you.bodkin ? 1 : 0); o += 1;
       dv.setUint16(o, isFinite(you.respawnT) ? q(Math.max(0, you.respawnT), 10, 0, 65534) : 65535, true); o += 2;
       dv.setUint8(o, CLASS_IDS.indexOf(you.nextCls)); o += 1;
+      dv.setUint8(o, you.def.shield ? q(you.shieldHp / SHIELDS[you.def.shield].hp, 255, 0, 255) : 0); o += 1;
     } else { dv.setUint8(o, 0); o += 1; }
     bytes.set(this.knightsBytes, o);
     return out;
@@ -173,14 +176,15 @@ export function decodeSnapshot(buf: ArrayBuffer): Snapshot {
   if (u8() === 1) {
     const id = u8(), stamina = u8() / 255, cd0 = u16() / 100, cd1 = u16() / 100, rallyT = u8() / 10, bloodletT = u8() / 10, spawnProt = u8() / 10, bleedStacks = u8(), bodkin = u8() === 1;
     const rr = u16();
-    you = { id, stamina, cd0, cd1, rallyT, bloodletT, spawnProt, bleedStacks, bodkin, respawnT: rr === 65535 ? NEVER : rr / 10, nextCls: u8() };
+    you = { id, stamina, cd0, cd1, rallyT, bloodletT, spawnProt, bleedStacks, bodkin, respawnT: rr === 65535 ? NEVER : rr / 10, nextCls: u8(), shield: 0 };
+    you.shield = u8() / 255;
   }
   const n = u8();
   const knights: SnapKnight[] = [];
   for (let i = 0; i < n; i++) {
     const id = u8(), flags = u8(), ct = u8();
     const k: SnapKnight = {
-      id, alive: (flags & 1) !== 0, onGround: (flags & 2) !== 0, sprinting: (flags & 4) !== 0, heavy: (flags & 8) !== 0,
+      id, alive: (flags & 1) !== 0, onGround: (flags & 2) !== 0, sprinting: (flags & 4) !== 0, heavy: (flags & 8) !== 0, shieldBroken: (flags & 16) !== 0,
       cls: ct & 7, team: (ct >> 3) & 1, act: 15,
       x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, actT: 0, actDur: 0, atk: 0, charge: 0, draw: 0, abilitySlot: 0, knockT: 0, stunT: 0, bulwarkT: 0, hp: 0, bleedStacks: 0,
     };

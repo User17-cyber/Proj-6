@@ -59,6 +59,28 @@ export const shieldThud: Gen = (ctx, seed) => {
   return b;
 };
 
+/** A shield giving way: a hard crack, then a crackle of splitting boards. */
+export const shieldSplinter: Gen = (ctx, seed) => {
+  const r = rng(seed), sr = ctx.sampleRate;
+  const b = buf(ctx, 0.9), d = b.getChannelData(0);
+  const f = 95 + r() * 40;
+  for (let i = 0; i < d.length; i++) {
+    const t = i / sr;
+    d[i] = (r() * 2 - 1) * Math.exp(-t / 0.02) * 1.2 + Math.sin(2 * Math.PI * f * t) * Math.exp(-t / 0.12) * 0.9;
+  }
+  // crackles: short bursts of filtered noise as the grain tears
+  const c = new Float32Array(d.length);
+  for (let k = 0; k < 14; k++) {
+    const at = Math.floor((0.02 + Math.pow(r(), 1.6) * 0.55) * sr), len = Math.floor((0.004 + r() * 0.012) * sr), g = 0.4 + r() * 0.6;
+    for (let i = 0; i < len && at + i < c.length; i++) c[at + i] += (r() * 2 - 1) * g * (1 - i / len);
+  }
+  bandpass(c, sr, 1500 + r() * 900, 1.4);
+  for (let i = 0; i < d.length; i++) d[i] += c[i] * 2.2;
+  lowpass(d, sr, 4200);
+  normalize(d, 0.95);
+  return b;
+};
+
 /** Steel cutting into flesh and mail: wet thwack. */
 export const hitFlesh: Gen = (ctx, seed) => {
   const r = rng(seed), sr = ctx.sampleRate;

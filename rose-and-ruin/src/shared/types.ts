@@ -105,6 +105,7 @@ export type SimEvent =
   | { t: 'capture'; obj: number; team: number }
   | { t: 'knockdown'; k: number; by: number }
   | { t: 'stun'; k: number }
+  | { t: 'shieldBreak'; k: number; by: number; x: number; y: number; z: number }
   | { t: 'jump'; k: number }
   | { t: 'heal'; k: number; amt: number }
   | { t: 'horn'; team: number; kind: number }

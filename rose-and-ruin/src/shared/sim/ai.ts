@@ -336,8 +336,8 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
     }
     if (!b.threatDecided && m.time - b.threatSeen >= S.reaction) {
       b.threatDecided = true;
-      const canBlock = k.weapon.blockArc > 0 && k.stamina > 8;
-      const shieldBonus = k.def.shield === 'heater' ? 0.15 : 0;
+      const canBlock = k.blockArc > 0 && k.stamina > 8;
+      const shieldBonus = k.shield ? (k.shield.id === 'buckler' ? 0.05 : 0.15) : 0;
       const committed = (k.act === Act.Windup && k.actT > k.actDur * 0.45) || k.act === Act.Release || k.act === Act.Charge;
       b.threatBlock = canBlock && !committed && b.rng.chance(clamp(S.block + shieldBonus, 0, 0.97));
       // a skilled bot waits to raise the guard at the last instant for a parry
@@ -391,7 +391,7 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
   if (tryBotAbility(m, k, b, t, dist)) return buttons;
 
   // --- guard stance: a cautious fighter raises his guard while sizing the foe up
-  if (dist <= reach * 1.35 && k.weapon.blockArc > 0 && t.act !== Act.Block && b.rng.chance(0.22 * (1.2 - b.aggression)) && k.stamina > 30) {
+  if (dist <= reach * 1.35 && k.blockArc > 0 && t.act !== Act.Block && b.rng.chance(0.22 * (1.2 - b.aggression)) && k.stamina > 30) {
     b.holdBlock = b.rng.range(0.25, 0.7);
     return buttons;
   }
@@ -399,7 +399,7 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
   if (dist <= reach + 0.15 && facingErr < 0.45 && k.stamina > 6) {
     if (b.targetBlockT > 0.35 && b.rng.chance(0.55)) { b.pressKick = true; return buttons; }
     const r = b.rng.next();
-    const polearm = k.weapon.visual === 'halberd' || k.weapon.visual === 'poleaxe';
+    const polearm = k.weapon.visual === 'halberd' || k.weapon.visual === 'poleaxe' || k.weapon.visual === 'spear';
     if (r < (polearm ? 0.3 : 0.22)) b.pressThrust = true;
     else if (r < (polearm ? 0.5 : 0.44) && k.stamina > 30) b.holdAttack = k.weapon.attacks[2].windup + b.rng.range(0.05, 0.45);
     else { buttons |= Btn.Attack; b.holdAttack = 0; }
@@ -522,7 +522,7 @@ function archerCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
           b.pressAbility = slot;
         }
       }
-      if (id === 'bodkin' && !k.bodkin && (t.def.armor[2] > 0.25 || t.def.shield === 'heater') && b.rng.chance(0.6)) b.pressAbility = slot;
+      if (id === 'bodkin' && !k.bodkin && (t.def.armor[2] > 0.25 || !!t.shield?.arrows) && b.rng.chance(0.6)) b.pressAbility = slot;
     }
   }
   if (b.pressAbility >= 0) { buttons |= b.pressAbility === 0 ? Btn.Ability1 : Btn.Ability2; b.pressAbility = -1; return buttons; }

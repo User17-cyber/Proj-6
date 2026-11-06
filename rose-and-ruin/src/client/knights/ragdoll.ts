@@ -22,6 +22,8 @@ export class Ragdoll {
   readonly weapon = new THREE.Matrix4();
   readonly offhand = new THREE.Matrix4();
   hasWeapon: boolean;
+  /** the shield splintered before death: nothing in the left hand */
+  noOffhand = false;
   private sticks: Stick[] = [];
   private pose: Float32Array;
   t = 0;
@@ -210,6 +212,7 @@ export class Ragdoll {
       const x = _n.crossVectors(y, this.weaponEdge).normalize();
       this.weapon.set(x.x, y.x, this.weaponEdge.x, o.x, x.y, y.y, this.weaponEdge.y, o.y, x.z, y.z, this.weaponEdge.z, o.z, 0, 0, 0, 1);
     }
+    if (this.noOffhand) { this.offhand.makeScale(0, 0, 0); return; }
     // shield stays strapped to the left forearm, facing out from the body
     const mid = _l.lerpVectors(j.elbowL, j.wristL, 0.55);
     const fore = _m.subVectors(j.wristL, j.elbowL).normalize();

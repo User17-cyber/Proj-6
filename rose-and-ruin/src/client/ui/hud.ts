@@ -42,7 +42,7 @@ export interface HudFrame {
 interface DmgNum { el: HTMLElement; x: number; y: number; z: number; t: number; drift: number }
 interface DirInd { el: HTMLElement; x: number; z: number; t: number }
 
-const WEAPON_ICON = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant'];
+const WEAPON_ICON = CLASS_IDS as readonly string[];
 const fmtTime = (s: number) => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 function h(cls: string, html = '', tag = 'div'): HTMLElement {
@@ -66,6 +66,7 @@ export class Hud implements HudSink {
   private vitals!: HTMLElement; private crest!: HTMLElement; private nameEl!: HTMLElement;
   private hpFill!: HTMLElement; private hpLag!: HTMLElement; private hpVal!: HTMLElement; private hpBar!: HTMLElement;
   private stFill!: HTMLElement; private buffs!: HTMLElement;
+  private shBar!: HTMLElement; private shFill!: HTMLElement; private lastShield = 1;
   private abil!: HTMLElement; private slots: { root: HTMLElement; cdv: HTMLElement; cdt: HTMLElement; last: number; id: string }[] = [];
   private cross!: HTMLElement; private hitmark!: HTMLElement; private skull!: HTMLElement; private ctext!: HTMLElement;
   private dmgLayer!: HTMLElement; private dmgNums: DmgNum[] = [];
@@ -111,8 +112,12 @@ export class Hud implements HudSink {
     this.hpLag = this.hpBar.children[0] as HTMLElement; this.hpFill = this.hpBar.children[1] as HTMLElement; this.hpVal = this.hpBar.children[3] as HTMLElement;
     const st = h('bar st thin', '<i class="fill"></i>');
     this.stFill = st.children[0] as HTMLElement;
+    // shield durability: drains as the shield turns blows and splinters at zero
+    this.shBar = h('bar sh thin', `<i class="fill"></i><svg viewBox="0 0 64 64"><path d="M12 10 H52 V28 C52 43 43 52 32 59 C21 52 12 43 12 28 Z"/></svg>`);
+    this.shFill = this.shBar.children[0] as HTMLElement;
+    this.shBar.title = 'Shield';
     this.buffs = h('buffs');
-    bars.append(this.nameEl, this.hpBar, st, this.buffs);
+    bars.append(this.nameEl, this.hpBar, st, this.shBar, this.buffs);
     this.vitals.append(this.crest, bars);
     // abilities
     this.abil = h('abilities');
@@ -211,7 +216,7 @@ export class Hud implements HudSink {
     const btns = this.death.querySelectorAll<HTMLButtonElement>('.class-list .classbtn');
     CLASS_IDS.forEach((c, i) => { const b = btns[i]; if (!b) return; b.disabled = this.spent.has(c); b.classList.toggle('spent', this.spent.has(c)); });
     const note = this.death.querySelector('.spentnote') as HTMLElement | null;
-    if (note) note.textContent = pitched ? (this.spent.size ? `Each order may take the field once. ${6 - this.spent.size} of 6 remain to you.` : 'In a pitched battle each order may take the field only once.') : '';
+    if (note) note.textContent = pitched ? (this.spent.size ? `Each order may take the field once. ${CLASS_IDS.length - this.spent.size} of ${CLASS_IDS.length} remain to you.` : 'In a pitched battle each order may take the field only once.') : '';
     if (this.spent.has(this.deathCls)) { const free = CLASS_IDS.find((c) => !this.spent.has(c)); if (free) { this.setLoadout(free); this.host.selectClass(free); } }
   }
 
@@ -337,7 +342,7 @@ export class Hud implements HudSink {
   /** Keyboard shortcuts on the death screen; returns true if consumed. */
   deathKey(code: string): boolean {
     if (this.death.classList.contains('hidden')) return false;
-    const m = /^Digit([1-6])$/.exec(code);
+    const m = /^Digit([1-8])$/.exec(code);
     if (m) { const c = CLASS_IDS[Number(m[1]) - 1]; if (!this.spent.has(c)) { this.setLoadout(c); this.host.selectClass(c); } return true; }
     if (code === 'Space' || code === 'Enter') { if (!this.respawnBtn.disabled) this.host.respawn(this.deathCls); return true; }
     return false;
@@ -525,12 +530,24 @@ export class Hud implements HudSink {
     this.hpVal.textContent = String(Math.ceil(Math.max(0, me.hp)));
     this.hpBar.classList.toggle('low', hpP < 0.3);
     this.stFill.style.width = `calc(${(Math.max(0, me.stamina / me.maxStamina) * 100).toFixed(1)}% - 2px)`;
+    const hasShield = !!CLASSES[me.cls].shield;
+    this.shBar.style.display = hasShield ? '' : 'none';
+    if (hasShield) {
+      const sp = me.shieldBroken ? 0 : Math.max(0, Math.min(1, me.shield));
+      this.shFill.style.width = `calc(${(sp * 100).toFixed(1)}% - 2px)`;
+      this.shBar.classList.toggle('worn', sp > 0 && sp < 0.3);
+      this.shBar.classList.toggle('broken', sp <= 0);
+      this.shBar.title = sp > 0 ? `${CLASSES[me.cls].shield === 'pavise' ? 'Pavise' : 'Shield'}: ${Math.ceil(sp * 100)}%` : 'Shield broken';
+      if (sp < this.lastShield - 0.005) { this.shBar.classList.remove('hit'); void this.shBar.offsetWidth; this.shBar.classList.add('hit'); }
+      this.lastShield = sp;
+    }
     const b: string[] = [];
     if (me.spawnProt > 0) b.push('<span class="buff">Protected</span>');
     if (me.rallyT > 0) b.push('<span class="buff">Rallied</span>');
     if (me.bulwarkT > 0) b.push('<span class="buff">Bulwark</span>');
     if (me.bloodletT > 0) b.push('<span class="buff">Bloodletting</span>');
     if (me.bodkin) b.push('<span class="buff">Bodkin nocked</span>');
+    if (me.shieldBroken && hasShield) b.push('<span class="buff bad">Shield broken</span>');
     if (me.bleedStacks > 0) b.push(`<span class="buff bad">Bleeding${me.bleedStacks > 1 ? ' ×' + me.bleedStacks : ''}</span>`);
     const bh = b.join('');
     if (this.buffs.dataset.h !== bh) { this.buffs.innerHTML = bh; this.buffs.dataset.h = bh; }

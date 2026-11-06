@@ -110,9 +110,25 @@ function pointOn(p: V3, q: V3, s: number) {
 }
 
 export function isBlocking(v: Knight, ax: number, az: number): boolean {
-  if (v.act !== Act.Block || v.actT < 0.05 || v.weapon.blockArc <= 0) return false;
-  const half = (v.weapon.blockArc * DEG) / 2;
+  const arc = v.blockArc;
+  if (v.act !== Act.Block || v.actT < 0.05 || arc <= 0) return false;
+  const half = (arc * DEG) / 2;
   return Math.abs(angleDiff(v.yaw, yawTo(v.x, v.z, ax, az))) <= half;
+}
+
+/**
+ * Wear a knight's shield by `amount`. When it splinters the knight is left reeling and fights
+ * on without it until he next takes the field. Returns true if the shield broke.
+ */
+export function wearShield(m: Match, v: Knight, by: number, amount: number, x: number, y: number, z: number): boolean {
+  if (!v.shield || amount <= 0) return false;
+  v.shieldHp = Math.max(0, v.shieldHp - amount);
+  if (v.shieldHp > 0) return false;
+  m.emit({ t: 'shieldBreak', k: v.id, by, x, y, z });
+  if (v.alive && v.bulwarkT <= 0 && v.knockT <= 0) {
+    v.act = Act.Stagger; v.actT = 0; v.actDur = 0.7; v.heavy = false; v.draw = 0;
+  }
+  return true;
 }
 
 function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px: number, py: number, pz: number, sdx: number, sdy: number, sdz: number) {
@@ -121,11 +137,17 @@ function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px
   let dmg = a.damage * (1 + 0.25 * chargeF);
   if (isBlocking(v, k.x, k.z)) {
     const parry = v.actT <= v.weapon.parryWindow;
-    let cost = (k.heavy ? 26 : a.kind === 'thrust' ? 11 : 14) * v.weapon.blockStamina * (a.damage / 50);
+    let cost = (k.heavy ? 26 : a.kind === 'thrust' ? 11 : 14) * v.blockStamina * (a.damage / 50);
     if (parry) cost *= 0.25;
+    const shield = !!v.shield;
     const broke = !parry && v.stamina < cost;
     spend(v, cost);
-    m.emit({ t: 'block', a: k.id, v: v.id, x: px, y: py, z: pz, parry, shield: !!v.def.shield, broke });
+    m.emit({ t: 'block', a: k.id, v: v.id, x: px, y: py, z: pz, parry, shield, broke });
+    // the shield takes the blow: maces and axes splinter it fastest, a parry barely marks it
+    if (shield && wearShield(m, v, k.id, dmg * (a.dtype === 1 ? 1.35 : a.dtype === 2 ? 0.8 : 1) * (k.heavy ? 1.3 : 1) * (parry ? 0.3 : 1), px, py, pz)) {
+      k.act = Act.Recover; k.actT = 0; k.actDur = a.recover * attackSpeed(k);
+      return;
+    }
     if (broke) {
       v.act = Act.Stagger; v.actT = 0; v.actDur = 0.85;
       dmg *= 0.5 * ZONE_MULT[1][a.dtype] * (1 - v.def.armor[a.dtype]);
@@ -284,11 +306,13 @@ export function stepArrows(m: Match, dt: number) {
       const hx = px + (a.x - px) * hitS, hy = py + (a.y - py) * hitS, hz = pz + (a.z - pz) * hitS;
       const spd = Math.hypot(a.vx, a.vy, a.vz) || 1;
       const ndx = a.vx / spd, ndy = a.vy / spd, ndz = a.vz / spd;
-      const shieldBlock = v.def.shield === 'heater' && !a.bodkin && (isBlocking(v, px, pz) || (v.act !== Act.Release && Math.abs(angleDiff(v.yaw, yawTo(v.x, v.z, px, pz))) < 0.5 && hitZone !== 0 && m.rng.chance(0.35)));
+      const sh = v.shield;
+      const shieldBlock = !!sh && sh.arrows && !a.bodkin && (isBlocking(v, px, pz) || (v.act !== Act.Release && Math.abs(angleDiff(v.yaw, yawTo(v.x, v.z, px, pz))) < (sh.id === 'pavise' ? 0.8 : 0.5) && hitZone !== 0 && m.rng.chance(sh.cover)));
       if (shieldBlock) {
         spend(v, 5);
         m.emit({ t: 'arrowHit', id: a.id, v: v.id, x: hx, y: hy, z: hz, nx: -ndx, ny: -ndy, nz: -ndz, stuck: true, shield: true });
         m.emit({ t: 'block', a: a.owner, v: v.id, x: hx, y: hy, z: hz, parry: false, shield: true, broke: false });
+        wearShield(m, v, a.owner, a.dmg * 0.6, hx, hy, hz);
         arrows.splice(i, 1);
         continue;
       }

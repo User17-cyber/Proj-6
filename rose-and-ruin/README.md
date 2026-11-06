@@ -71,13 +71,14 @@ Keys can be rebound in Settings.
 
 ### Combat
 
-- **Guard**: hold right mouse to guard toward where you look. A guard turns a blow at the cost of stamina; shields cover a wider arc and stop arrows.
+- **Guard**: hold right mouse to guard toward where you look. A guard turns a blow at the cost of stamina. Shield-bearers raise the shield to guard: it covers a wider arc, costs less stamina, and heater shields and pavises stop arrows.
+- **Shield durability**: every blow and arrow a shield turns wears it down (the bar under your stamina). Maces splinter shields fastest and a clean parry barely marks them. When a shield breaks the bearer reels for a moment, then fights on without it, guarding with his weapon alone, until he next takes the field. Buckler 160, heater 260, pavise 440.
 - **Parry**: raise the guard in the instant before a blow lands. It costs no stamina, staggers the attacker and opens a quicker riposte.
 - **Feint**: press guard during your own windup to cancel the blow.
 - **Breaking a guard**: kicks, shield bashes and heavy blows against an exhausted guard break it.
 - **Wounds**: blows land on the head (extra damage), torso or legs. Armour resists cuts best, blunt weapons less so, and points find the gaps in mail.
 
-### The six orders
+### The eight orders
 
 | Class | Arms | Abilities |
 | --- | --- | --- |
@@ -87,12 +88,14 @@ Keys can be rebound in Settings.
 | Banneret | Poleaxe and full plate | Earthshaker, Iron Bulwark |
 | Longbowman | English longbow and rondel dagger | Arrow Storm, Bodkin Point |
 | Knight-Errant | Falchion and buckler | Sidestep, Bloodletting |
+| Pavisier | War spear and hand pavise | Shield Bash, Iron Bulwark |
+| Knight Bachelor | Flanged mace and heater shield | Shield Bash, Battle Charge |
 
-Any class can be chosen at the start and again every time you fall.
+Any class can be chosen at the start and again every time you fall (keys 1 to 8 in the armoury).
 
 ### Manners of battle
 
-- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each of the six orders once: when an order falls it is spent, and after all six you watch the rest of the battle.
+- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each of the eight orders once: when an order falls it is spent, and after all eight you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
 
@@ -120,7 +123,7 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
   - moats, rivers and the sea that mirror the castles and the knights through planar reflections
 - **Knights** (`src/client/knights`):
   - a 17-bone procedural skeleton with IK arms and legs and planted feet
-  - a man inside every harness: a continuous skinned body (torso, arms, legs, neck) that bends smoothly at the joints, and a sculpted head with a face, brows, beard and hair; skin tone and hair vary from knight to knight, and four orders wear open-faced helms
+  - a man inside every harness: a continuous skinned body (torso, arms, legs, neck) that bends smoothly at the joints, and a sculpted head with a face, brows, beard and hair; skin tone and hair vary from knight to knight, and five orders wear open-faced helms
   - each class's harness, weapon and body merged into a few meshes skinned on the GPU from a texture of bone matrices, with three levels of detail, so a hundred knights cost a few dozen draw calls
   - tabards in the house colours, and blood and mud that build up per knight
   - verlet ragdoll deaths whose muscle tone fades as the knight falls; every corpse stays on the field for the rest of the battle (settled bodies are posed once into a static pool), and arrows stay stuck in them

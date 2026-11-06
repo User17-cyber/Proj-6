@@ -24,6 +24,7 @@ export function setupParade(r: Renderer, world: WorldView, params: URLSearchPara
   const ks = classes.map((c, i) => {
     const k = new Knight(i, team);
     k.setClass(c);
+    if (params.has('broken')) k.shieldHp = 0;
     k.x = cx + (i - (classes.length - 1) / 2) * spacing * Math.cos(ang);
     k.z = cz + (i - (classes.length - 1) / 2) * spacing * Math.sin(ang);
     k.y = W.groundAt(k.x, k.z, 999);

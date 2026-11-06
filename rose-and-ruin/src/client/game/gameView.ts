@@ -254,6 +254,15 @@ export class GameView {
           A.play('hornShort', { bus: 'ui', vol: 0.45, rate: e.team === 0 ? 1 : 0.9, rateVar: 0 });
           break;
         }
+        case 'shieldBreak': {
+          const att = e.by >= 0 ? K[e.by] : null;
+          const nx = att ? e.x - att.x : 0, nz = att ? e.z - att.z : 0, l = Math.hypot(nx, nz) || 1;
+          this.particles.splinters(e.x, e.y, e.z, nx / l, nz / l);
+          A.play('splinter', { pos: e, vol: 1 });
+          if (e.k === localId) { this.hud?.combatText('Shield shattered!', 'broke'); this.hud?.notify('Your shield is broken: you fight on without it', -1); }
+          else if (e.by === localId) this.hud?.combatText('Shield broken!', 'broke');
+          break;
+        }
         case 'knockdown': {
           const k = K[e.k];
           if (k) { this.particles.dust(k.x, k.y, k.z, 0.7); A.play('plate', { pos: k, vol: 0.7, rate: 0.75 }); }
@@ -307,6 +316,7 @@ export class GameView {
     if (!v.wasAlive) return;
     const ranged = CLASSES[k.cls].ranged;
     const rag = new Ragdoll(v.anim.joints, v.anim.prevJoints, 1 / 60, ranged ? null : v.anim.weapon, { dx, dy: Math.max(dy, 0.05), dz, force, zone });
+    rag.noOffhand = k.shieldBroken;
     // arrows ride along on the ragdoll's bones
     this.corpses.push({ stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + 0.35), mud: v.mud, arrows: v.arrows.slice(), age: 0, pooled: false, id });
     v.arrows.length = 0;
