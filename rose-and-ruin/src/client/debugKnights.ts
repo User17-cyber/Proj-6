@@ -36,7 +36,7 @@ export function setupParade(r: Renderer, world: WorldView, params: URLSearchPara
     const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
     switch (act) {
       case 'walk': k.vx = fx * 1.6; k.vz = fz * 1.6; break;
-      case 'run': k.vx = fx * 4.7; k.vz = fz * 4.7; break;
+      case 'run': { const v = Number(params.get('spd') ?? 4.7); k.vx = fx * v; k.vz = fz * v; break; }
       case 'block': k.act = Act.Block; k.actT = 0.5; break;
       case 'wind': k.act = Act.Windup; k.atk = Number(params.get('atk') ?? 0); k.actDur = k.weapon.attacks[k.atk].windup; k.actT = k.actDur * u; k.heavy = k.atk === 2; break;
       case 'release': k.act = Act.Release; k.atk = Number(params.get('atk') ?? 0); k.actDur = k.weapon.attacks[k.atk].release; k.actT = k.actDur * u; k.heavy = k.atk === 2; break;

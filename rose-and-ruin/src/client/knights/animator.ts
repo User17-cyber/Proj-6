@@ -86,7 +86,7 @@ export class KnightAnimator {
     this.lastYaw = k.yaw;
     this.turnRate = lerp(this.turnRate, yawDelta / Math.max(dt, 1e-3), 1 - Math.exp(-dt * 8));
     const speedEff = Math.max(this.speed, Math.min(Math.abs(this.turnRate) * 0.25, 1.2) * (k.act === Act.Idle || k.act === Act.Block ? 1 : 0.4));
-    const stride = 1.1 + this.speed * 0.32;
+    const stride = 1.1 + this.speed * 0.36;
     this.phase += (2 * Math.PI * speedEff / stride) * dt;
     const gait = smoothstep(0.05, 0.9, speedEff);
     const run = smoothstep(2.5, 5.5, this.speed);
@@ -100,17 +100,36 @@ export class KnightAnimator {
     if (!k.onGround) this.airT = Math.min(1, this.airT + dt * 5); else this.airT = Math.max(0, this.airT - dt * 8);
 
     // ---------------- feet
-    const stepLen = (stride / 2) * gait * 0.92;
-    const lift = (0.1 + run * 0.12) * gait;
-    const footW = 0.11 - run * 0.03;
+    // each foot is planted for part of the cycle (stance) and swings through the rest; the
+    // planted share falls from 60% walking to about a third sprinting, leaving a flight phase
+    const duty = lerp(0.6, 0.28, run);
+    const stepLen = duty * stride * gait;
+    const lift = (0.09 + run * 0.08) * gait;
+    const footW = 0.11 - run * 0.045;
+    // runners land nearly under the hip and push off well behind it
+    const contactBack = -0.2 * run * stepLen;
+    let stanceSum = 0, weightSide = 0;
     const stanceSplit = (k.act === Act.Block || weapon.twoHanded || def.shield) ? 0.13 : 0.06;
     const idleFeet = 1 - gait;
     const legs: [THREE.Vector3, THREE.Vector3, THREE.Vector3, number][] = [[J.ankleL, J.toeL, J.hipL, -1], [J.ankleR, J.toeR, J.hipR, 1]];
     for (const [ankle, toe, , side] of legs) {
       const ph = this.phase + (side > 0 ? Math.PI : 0);
-      const u = -Math.cos(ph) * stepLen * 0.5;
-      const swing = Math.sin(ph);
-      const l = swing > 0 ? swing * lift : 0;
+      const t = ((ph / (Math.PI * 2)) % 1 + 1) % 1;
+      let u: number, l: number, swing: number, sU = 0;
+      if (t < duty) {
+        // planted: the foot stays put while the body passes over it
+        u = (0.5 - t / duty) * stepLen + contactBack;
+        l = 0; swing = -1;
+        const c = Math.sin((t / duty) * Math.PI);
+        stanceSum += c; weightSide += side * c;
+      } else {
+        sU = (t - duty) / (1 - duty);
+        // the heel kicks up behind first, then the knee drives the foot forward
+        const fwdU = smoothstep(0.12 + run * 0.12, 0.92, sU);
+        u = (-0.5 + fwdU) * stepLen + contactBack;
+        l = lift * Math.sin(Math.PI * sU) + run * gait * 0.26 * Math.sin(Math.PI * Math.min(1, sU / 0.62)) * (1 - fwdU * 0.6);
+        swing = Math.sin(Math.PI * sU);
+      }
       ankle.copy(root).addScaledVector(right, side * footW * (1 + idleFeet * 0.6)).addScaledVector(this.moveDir, u);
       // relaxed combat stance when standing: left foot forward, right foot back and turned out
       ankle.addScaledVector(fwd, idleFeet * -side * stanceSplit);
@@ -125,8 +144,8 @@ export class KnightAnimator {
         const gy = ground(ankle.x, ankle.z, k.y + 0.6);
         ankle.y = Math.max(gy, k.y - 0.4) + BODY.ankleY + l + this.airT * 0.25;
       }
-      // toe: pitched down at push-off, up at heel strike
-      const pitch = (swing > 0 ? -Math.cos(ph) * 0.35 : 0) * gait;
+      // toe: pointed down as the foot leaves the ground, up before it lands
+      const pitch = (swing > 0 ? (sU < 0.5 ? -0.6 * (1 - sU * 2) * (0.6 + run) : 0.3 * (sU - 0.5) * 2) : 0) * gait;
       const footYaw = side * 0.12 + (side > 0 ? idleFeet * 0.35 : -idleFeet * 0.08);
       _b.copy(fwd).applyAxisAngle(UP, -footYaw);
       toe.copy(ankle).addScaledVector(_b, 0.19 * Math.cos(pitch));
@@ -138,7 +157,8 @@ export class KnightAnimator {
     }
 
     // ---------------- pelvis and torso
-    const bob = (Math.abs(Math.sin(this.phase)) - 0.5) * (0.025 + run * 0.05) * gait;
+    // the body sinks onto each planted leg and rises between them (most at a run)
+    const bob = ((0.5 - Math.min(1, stanceSum)) * (0.02 + run * 0.06)) * gait;
     let crouch = 0;
     if (k.act === Act.Block) crouch = 0.04;
     if (k.act === Act.Windup || k.act === Act.Charge) crouch = k.heavy ? 0.06 : 0.03;
@@ -156,18 +176,20 @@ export class KnightAnimator {
       const maxY = ankle.y + Math.sqrt(Math.max(0.01, legLen * legLen - hd * hd));
       pelvisY = Math.min(pelvisY, maxY);
     }
-    J.pelvis.set(k.x, pelvisY, k.z).addScaledVector(fwd, 0.02 + run * 0.06);
+    // weight shifts over the planted foot
+    J.pelvis.set(k.x, pelvisY, k.z).addScaledVector(fwd, 0.02 + run * 0.08).addScaledVector(right, weightSide * 0.025 * gait * (1 - run * 0.5));
     // the weapon pose decides how the torso twists and leans
     const rest = this.restKey(k, weapon, gait);
     const p = this.weaponPose(k, weapon, rest, ability, abU, time);
-    let twist = p.twist, lean = p.lean + run * 0.16 + gait * 0.04;
+    const sprint = smoothstep(5.2, 6.8, this.speed);
+    let twist = p.twist, lean = p.lean + run * 0.14 + sprint * 0.12 + gait * 0.04 + (Math.min(1, stanceSum) - 0.5) * 0.04 * run;
     if (ability === 'charge') lean += 0.28;
     if (ability === 'dash') lean += 0.15;
     if (k.act === Act.Kick) lean -= 0.12 * Math.sin(Math.PI * clamp(k.actT / 0.62, 0, 1));
-    const hipTwist = Math.sin(this.phase) * 0.14 * gait;
-    twist -= hipTwist * 0.7;
+    const hipTwist = Math.sin(this.phase) * (0.12 + run * 0.06) * gait;
+    twist -= hipTwist * (0.7 + run * 0.4);
     // flinch / stagger / stun
-    let sideLean = 0;
+    let sideLean = -weightSide * 0.035 * gait;
     if (this.flinchT > 0) {
       this.flinchT -= dt;
       const f = Math.sin((1 - this.flinchT / 0.32) * Math.PI) * this.flinchAmp;
@@ -220,6 +242,11 @@ export class KnightAnimator {
     const toWorld = (bx: number, by: number, bz: number, o: THREE.Vector3) => o.set(k.x + bx * yawCos + bz * yawSin, k.y + by + bob * 0.6 - crouch * 0.8, k.z - bx * yawSin + bz * yawCos);
     const dirWorld = (dx: number, dy: number, dz: number, o: THREE.Vector3) => o.set(dx * yawCos + dz * yawSin, dy, -dx * yawSin + dz * yawCos).normalize();
     const grip = toWorld(p.gx, p.gy, p.gz, _grip);
+    // the weapon hand pumps with the stride when not fighting
+    if (k.act === Act.Idle && !def.ranged) {
+      const pump = run * gait;
+      grip.addScaledVector(fwd, Math.sin(this.phase) * 0.09 * pump).addScaledVector(UP, Math.abs(Math.cos(this.phase)) * 0.035 * pump);
+    }
     const bladeDir = dirWorld(p.dx, p.dy, p.dz, _dir);
     const offhandGrip = _og;
     let leftTarget = _lt, leftPole = _lp;
@@ -253,8 +280,9 @@ export class KnightAnimator {
     const twoHanded = weapon.offhand !== null || def.ranged || def.shield !== null;
     if (!twoHanded) {
       // free left arm swings with the gait
-      const swingA = -Math.sin(this.phase) * 0.35 * gait;
-      leftTarget.copy(J.shoulderL).addScaledVector(UP, -0.5).addScaledVector(chestFwd, 0.12 + swingA * 0.4).addScaledVector(chestRight, -0.08);
+      // at a run the elbow bends and the arm pumps hard
+      const swingA = -Math.sin(this.phase) * (0.35 + run * 0.5) * gait;
+      leftTarget.copy(J.shoulderL).addScaledVector(UP, -0.5 + run * 0.2 + Math.max(0, swingA) * run * 0.15).addScaledVector(chestFwd, 0.12 + swingA * 0.4).addScaledVector(chestRight, -0.08);
     }
     _a.subVectors(J.shoulderL, leftTarget).normalize();
     J.wristL.copy(leftTarget).addScaledVector(_a, 0.08);
