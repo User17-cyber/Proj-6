@@ -88,7 +88,7 @@ export class Menus {
       ['battle', 'Take the Field', 'Fight at the head of a host of knights', 'battle'],
       ['spectate', 'Watch the Battle', 'Start a battle of bots alone and witness it', 'spectate'],
       ['multiplayer', 'Join a Muster', 'Fight alongside and against other players', 'mp'],
-      ['armoury', 'The Armoury', 'Six orders of knighthood and their arms', 'armoury'],
+      ['armoury', 'The Armoury', 'Eight orders of knighthood and their arms', 'armoury'],
       ['codex', 'Codex of Arms', 'Controls, and the art of the fight', 'codex'],
       ['settings', 'Settings', 'Graphics, sound and controls', 'settings'],
     ];
