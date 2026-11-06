@@ -1,0 +1,117 @@
+{
+  "overcast": {
+    "source": "aristea_wreck_puresky_2k.hdr",
+    "sunDir": [
+      0.47878,
+      0.73758,
+      0.47617
+    ],
+    "sunElevationDeg": 47.53,
+    "sunAzimuthDeg": 44.84,
+    "sunColor": [
+      1.0,
+      0.9569,
+      0.8839
+    ],
+    "bgExposure": 0.5527896877083758,
+    "skyMedian": 0.904503125,
+    "skyMean": 1.2058741560585797,
+    "envCap": 10.8540375,
+    "bgSize": [
+      2048,
+      1024
+    ]
+  },
+  "golden": {
+    "source": "syferfontein_18d_clear_2k.hdr",
+    "sunDir": [
+      0.76916,
+      0.31514,
+      0.55595
+    ],
+    "sunElevationDeg": 18.37,
+    "sunAzimuthDeg": 35.86,
+    "sunColor": [
+      1.0,
+      0.9358,
+      0.8149
+    ],
+    "bgExposure": 4.746207668833359,
+    "skyMedian": 0.105347265625,
+    "skyMean": 1.6479733101705087,
+    "envCap": 1.2641671875,
+    "bgSize": [
+      2048,
+      1024
+    ]
+  },
+  "dawn": {
+    "source": "kiara_1_dawn_1k.hdr",
+    "sunDir": [
+      0.68688,
+      0.08422,
+      0.72187
+    ],
+    "sunElevationDeg": 4.83,
+    "sunAzimuthDeg": 46.42,
+    "sunColor": [
+      1.0,
+      0.3936,
+      0.2355
+    ],
+    "bgExposure": 0.8084380723804713,
+    "skyMedian": 0.6184765624999999,
+    "skyMean": 1.1676279690641909,
+    "envCap": 7.421718749999999,
+    "bgSize": [
+      1024,
+      512
+    ]
+  },
+  "sunset": {
+    "source": "quarry_01_1k.hdr",
+    "sunDir": [
+      0.79632,
+      0.17398,
+      0.57931
+    ],
+    "sunElevationDeg": 10.02,
+    "sunAzimuthDeg": 36.04,
+    "sunColor": [
+      1.0,
+      0.8035,
+      0.46
+    ],
+    "bgExposure": 2.614630080910545,
+    "skyMedian": 0.191231640625,
+    "skyMean": 0.8027209855316206,
+    "envCap": 2.2947796875,
+    "bgSize": [
+      1024,
+      512
+    ]
+  },
+  "noon": {
+    "source": "noon_grass_2k.hdr",
+    "sunDir": [
+      0.02572,
+      0.99684,
+      -0.07514
+    ],
+    "sunElevationDeg": 85.44,
+    "sunAzimuthDeg": -71.1,
+    "sunColor": [
+      1.0,
+      0.9622,
+      0.926
+    ],
+    "bgExposure": 1.6671138352214268,
+    "skyMedian": 0.29991953125,
+    "skyMean": 5.832159956882107,
+    "envCap": 3.5990343749999996,
+    "bgSize": [
+      2048,
+      1024
+    ]
+  }
+}
