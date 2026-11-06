@@ -82,12 +82,39 @@ export interface SkyResult {
   dispose(): void;
 }
 
+/**
+ * Load a Radiance .hdr. Hosts that will not serve .hdr files get a base64 copy in
+ * `<name>.hdr.json` ({"data": "..."}) instead; both parse to the same texture.
+ */
+async function loadEnvHdr(hdr: HDRLoader, sky: string): Promise<THREE.DataTexture> {
+  let buf: ArrayBuffer | null = null;
+  const isRadiance = (b: ArrayBuffer) => { const u = new Uint8Array(b, 0, Math.min(2, b.byteLength)); return u[0] === 0x23 && u[1] === 0x3f; }; // "#?"
+  try {
+    const r = await fetch(BASE + sky + '_env.hdr');
+    if (r.ok) { const b = await r.arrayBuffer(); if (isRadiance(b)) buf = b; }
+  } catch { /* fall back to the packed copy */ }
+  if (!buf) {
+    const r = await fetch(BASE + sky + '_env.hdr.json');
+    if (!r.ok) throw new Error(`sky ${sky}: environment map missing`);
+    const bin = atob(((await r.json()) as { data: string }).data);
+    const u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    buf = u.buffer;
+  }
+  const d = hdr.parse(buf) as unknown as { width: number; height: number; data: Float32Array; type: THREE.TextureDataType };
+  const tex = new THREE.DataTexture(d.data, d.width, d.height, THREE.RGBAFormat, d.type);
+  tex.colorSpace = THREE.LinearSRGBColorSpace;
+  tex.flipY = true;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 export async function buildSky(renderer: THREE.WebGLRenderer, atm: Atmosphere): Promise<SkyResult> {
   const man = (await skyManifest())[atm.sky];
   const hdr = new HDRLoader();
   hdr.setDataType(THREE.FloatType);
   const [envTex, bgTex] = await Promise.all([
-    hdr.loadAsync(BASE + atm.sky + '_env.hdr'),
+    loadEnvHdr(hdr, atm.sky),
     new THREE.TextureLoader().loadAsync(BASE + atm.sky + '_bg.jpg'),
   ]);
   bgTex.colorSpace = THREE.NoColorSpace;
