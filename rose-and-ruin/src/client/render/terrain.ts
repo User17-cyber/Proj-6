@@ -175,8 +175,8 @@ diffuseColor.rgb *= alb.rgb;
 `)
       .replace('#include <normal_fragment_maps>', /* glsl */ `
 {
-  vec3 T = normalize(cross(vec3(0.0, 0.0, 1.0), tn));
-  vec3 B = normalize(cross(tn, T));
+  vec3 T = normalize(cross(tn, vec3(0.0, 0.0, 1.0)));
+  vec3 B = normalize(cross(T, tn));
   vec3 n = rrTN; n.xy *= 1.2 * (1.0 - smoothstep(60.0, 220.0, dist) * 0.7);
   vec3 wn = normalize(T * n.x + B * n.y + tn * max(n.z, 0.2));
   normal = normalize((viewMatrix * vec4(wn, 0.0)).xyz);

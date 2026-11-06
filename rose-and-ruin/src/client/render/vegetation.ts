@@ -298,14 +298,14 @@ function buildGrass(map: BuiltMap, quality: number, heightTex: THREE.DataTexture
   const hf = map.world.terrain;
   const grid = quality >= 3 ? 72 : quality === 2 ? 58 : 40;
   const cell = 1.25;
-  const blades = quality >= 3 ? 36 : quality === 2 ? 28 : 18;
+  const blades = quality >= 3 ? 64 : quality === 2 ? 48 : 30;
   // one patch of blades; each blade 3 segments (8 verts)
   const rng = new Rng(77);
-  const pos: number[] = [], nrm: number[] = [], uv: number[] = [], data: number[] = [], idx: number[] = [];
+  const pos: number[] = [], nrm: number[] = [], uv: number[] = [], data: number[] = [], idx: number[] = [], roots: number[] = [];
   for (let b = 0; b < blades; b++) {
     const px = rng.range(0, cell), pz = rng.range(0, cell);
     const ang = rng.range(0, Math.PI * 2);
-    const h = rng.range(0.28, 0.62), w = rng.range(0.022, 0.04);
+    const h = rng.range(0.16, 0.48), w = rng.range(0.007, 0.016);
     const bend = rng.range(0.1, 0.35);
     const base = pos.length / 3;
     for (let s = 0; s <= 3; s++) {
@@ -317,6 +317,7 @@ function buildGrass(map: BuiltMap, quality: number, heightTex: THREE.DataTexture
         nrm.push(cx * 0.3, 1, cz * 0.3);
         uv.push(side * 0.5 + 0.5, t);
         data.push(t, rng.next(), h, ang);
+        roots.push(px, pz);
       }
     }
     for (let s = 0; s < 3; s++) {
@@ -329,13 +330,14 @@ function buildGrass(map: BuiltMap, quality: number, heightTex: THREE.DataTexture
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geo.setAttribute('bladeData', new THREE.Float32BufferAttribute(data, 4));
+  geo.setAttribute('bladeRoot', new THREE.Float32BufferAttribute(roots, 2));
   geo.setIndex(idx);
   geo.instanceCount = grid * grid;
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e5);
   const tint = new THREE.Vector3(...map.def.atmosphere.grassTint);
   const water = map.world.water.length ? Math.max(...map.world.water.map((w) => w.level)) : -999;
   const uCam = { value: new THREE.Vector2() };
-  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.6 });
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.35 });
   prepare(mat, [(s) => {
     s.uniforms.tHeight = { value: heightTex };
     s.uniforms.tSplat = { value: splatTex };
@@ -349,7 +351,7 @@ function buildGrass(map: BuiltMap, quality: number, heightTex: THREE.DataTexture
     s.vertexShader = s.vertexShader
       .replace('#include <common>', `#include <common>
 uniform sampler2D tHeight; uniform sampler2D tSplat; uniform vec4 uTerr; uniform vec2 uGridCam; uniform float uGrid; uniform float uTime; uniform float uWind; uniform vec2 uWindDir; uniform vec3 uTint;
-attribute vec4 bladeData;
+attribute vec4 bladeData; attribute vec2 bladeRoot;
 varying vec3 vGrassCol; varying float vGrassT;
 ${NOISE_GLSL}`)
       .replace('#include <begin_vertex>', /* glsl */ `
@@ -373,10 +375,12 @@ float patchN = vnoiseP(wxz * 0.21, vec2(1e4)) * 0.65 + vnoiseP(wxz * 0.9, vec2(1
 dens *= smoothstep(0.18, 0.5, patchN + 0.25);
 float dist = length(wxz - cameraPosition.xz);
 float fade = 1.0 - smoothstep(uGrid * uTerr.w * 0.32, uGrid * uTerr.w * 0.48, dist);
+float nearFade = smoothstep(0.6, 2.2, dist);
 float keep = step(bladeData.y, dens * fade * 1.15);
-float hScale = (0.55 + patchN * 0.9) * keep * clamp(dens * 1.6, 0.0, 1.0);
+float hScale = (0.55 + patchN * 0.9) * keep * clamp(dens * 1.6, 0.0, 1.0) * mix(0.25, 1.0, nearFade);
 transformed.y *= hScale;
-transformed.xz *= mix(1.0, 1.3, keep);
+// collapse rejected blades entirely onto their root
+transformed.xz = bladeRoot + (transformed.xz - bladeRoot) * hScale;
 // wind
 float t = bladeData.x;
 float wv = sin(uTime * 2.1 + dot(wxz, uWindDir) * 0.45 + bladeData.y * 6.0) * 0.6 + sin(uTime * 3.7 + wxz.x * 1.3) * 0.25;
@@ -386,7 +390,7 @@ transformed.y -= length(bendv) * 0.4 * t;
 transformed.xz += origin + jit;
 transformed.y += gh - 0.02;
 float shade = vnoiseP(wxz * 0.05, vec2(1e4));
-vec3 c0 = vec3(0.05, 0.075, 0.02), c1 = mix(vec3(0.2, 0.26, 0.08), vec3(0.32, 0.3, 0.13), shade);
+vec3 c0 = vec3(0.03, 0.05, 0.012), c1 = mix(vec3(0.13, 0.19, 0.05), vec3(0.25, 0.25, 0.1), shade);
 vGrassCol = mix(c0, c1, smoothstep(0.0, 1.0, t)) * uTint * (0.85 + 0.3 * bladeData.y);
 vGrassT = t;
 `)

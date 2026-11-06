@@ -1,6 +1,7 @@
 import { Renderer } from './render/renderer';
 import { buildWorldView } from './render/world';
 import { buildMap } from '../shared/world/maps/index';
+import { setupParade, paradeCamera } from './debugKnights';
 
 // Temporary world viewer (replaced by the full app).
 async function boot() {
@@ -33,6 +34,8 @@ async function boot() {
     r.camera.position.set(x, y, z);
     r.camera.lookAt(tx, ty, tz);
   }
+  let parade: ((dt: number) => void) | null = null;
+  if (params.has('knights')) { parade = setupParade(r, world, params); paradeCamera(r, params, world); }
   let last = performance.now();
   let frames = 0;
   const maxFrames = Number(params.get('frames') ?? 0);
@@ -41,6 +44,7 @@ async function boot() {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     world.update(dt);
+    if (parade) parade(params.has('frames') ? 1 / 30 : dt);
     r.render(dt);
     frames++;
     if (maxFrames && frames >= maxFrames) { (window as unknown as { __ready: boolean; __stats: unknown }).__ready = true; (window as unknown as { __stats: unknown }).__stats = { ...r.stats }; return; }

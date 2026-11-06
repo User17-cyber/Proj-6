@@ -157,17 +157,17 @@ void gen(vec2 uv, out float h, out vec3 col, out float rough, out float ao) {
 void gen(vec2 uv, out float h, out vec3 col, out float rough, out float ao) {
   float n = fbmP(uv * 6.0, 6.0, 6);
   vec4 w = worleyP(uv * 30.0, vec2(30.0), 0.9);
-  float pebble = smoothstep(0.32, 0.1, w.x) * step(0.55, hash12(w.zw));
-  float wet = smoothstep(0.15, 0.45, vfbmP(uv * 4.0 + 2.0, 4.0, 4) - 0.25);
+  float pebble = smoothstep(0.26, 0.08, w.x) * step(0.78, hash12(w.zw));
+  float wet = smoothstep(0.2, 0.45, vfbmP(uv * 4.0 + 2.0, 4.0, 4) - 0.3) * 0.7;
   float clods = vfbmP(uv * 40.0, 40.0, 4);
   h = 0.45 + 0.25 * n + 0.18 * clods + 0.3 * pebble - 0.25 * wet;
   vec3 soil = mix(vec3(0.25, 0.19, 0.13), vec3(0.36, 0.28, 0.19), clods);
   soil *= 0.85 + 0.3 * vfbmP(uv * 16.0, 16.0, 3);
-  vec3 peb = vec3(0.45, 0.42, 0.38) * (0.7 + 0.5 * hash12(w.zw + 2.0));
-  vec3 c = mix(soil, peb, pebble);
+  vec3 peb = vec3(0.38, 0.35, 0.3) * (0.75 + 0.4 * hash12(w.zw + 2.0));
+  vec3 c = mix(soil, peb, pebble * 0.75);
   c = mix(c, c * 0.55, wet);
   col = c;
-  rough = mix(0.92, 0.28, wet * (1.0 - pebble));
+  rough = mix(0.93, 0.55, wet * (1.0 - pebble));
   ao = 0.75 + 0.25 * clods;
 }` },
 

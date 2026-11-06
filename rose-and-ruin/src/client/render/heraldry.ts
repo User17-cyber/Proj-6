@@ -112,8 +112,13 @@ export function drawTabard(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.fillStyle = hex(metal);
   ctx.fillRect(0, h * 0.94, w, h * 0.06);
   const [p, pd] = roseColors(team);
-  drawRose(ctx, w * 0.25, h * 0.4, w * 0.13, p, pd);
-  drawRose(ctx, w * 0.75, h * 0.4, w * 0.13, p, pd);
+  // u = 0.5 is the front of the chest, u = 0 / 1 the back
+  drawRose(ctx, w * 0.5, h * 0.56, w * 0.085, p, pd);
+  drawRose(ctx, 0, h * 0.56, w * 0.07, p, pd);
+  drawRose(ctx, w, h * 0.56, w * 0.07, p, pd);
+  // a darker band of the metal colour down the edges and an embroidered hem
+  ctx.fillStyle = hex(metal);
+  ctx.fillRect(0, h * 0.965, w, h * 0.035);
   clothNoise(ctx, w, h, 0.12);
 }
 
