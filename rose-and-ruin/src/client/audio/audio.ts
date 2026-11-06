@@ -88,17 +88,38 @@ export class AudioEngine {
   buffer(name: string): AudioBuffer | null {
     const bank = this.banks.get(name);
     if (!bank || !this.ctx) return null;
-    if (bank.bufs.length < bank.variants) {
-      bank.bufs.push(bank.gen(this.ctx, bank.bufs.length + 1 + name.length * 17));
-      return bank.bufs[bank.bufs.length - 1];
-    }
+    // the first take of a sound is made on demand; further variants are synthesised in idle
+    // moments so a busy fight never waits on the synthesiser
+    if (!bank.bufs.length) bank.bufs.push(bank.gen(this.ctx, 1 + name.length * 17));
+    if (bank.bufs.length < bank.variants) this.queue(name);
     return bank.bufs[Math.floor(Math.random() * bank.bufs.length)];
   }
 
-  /** Pre-generate a few variants so the first fight has no hitches. */
+  private pending = new Set<string>();
+  private genTimer = 0;
+  private queue(name: string) {
+    this.pending.add(name);
+    if (!this.genTimer) this.genTimer = window.setTimeout(this.genStep, 50);
+  }
+  /** Synthesise variants for a few milliseconds at a time. */
+  private genStep = () => {
+    this.genTimer = 0;
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t0 = performance.now();
+    for (const name of this.pending) {
+      const bank = this.banks.get(name)!;
+      if (bank.bufs.length < bank.variants) bank.bufs.push(bank.gen(ctx, bank.bufs.length + 1 + name.length * 17));
+      if (bank.bufs.length >= bank.variants) this.pending.delete(name);
+      if (performance.now() - t0 > 5) break;
+    }
+    if (this.pending.size) this.genTimer = window.setTimeout(this.genStep, 40);
+  };
+
+  /** Prepare every sound in the background so the first fight has no hitches. */
   warm() {
     if (!this.ctx) return;
-    for (const name of this.banks.keys()) this.buffer(name);
+    for (const [name, bank] of this.banks) if (bank.bufs.length < bank.variants) this.queue(name);
   }
 
   setListener(pos: THREE.Vector3, fwd: THREE.Vector3, up: THREE.Vector3) {

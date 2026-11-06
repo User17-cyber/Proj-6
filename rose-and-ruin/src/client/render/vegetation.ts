@@ -296,9 +296,10 @@ export function buildVegetation(map: BuiltMap, baker: TextureBaker, quality: num
 
 function buildGrass(map: BuiltMap, quality: number, heightTex: THREE.DataTexture, splatTex: THREE.DataTexture) {
   const hf = map.world.terrain;
-  const grid = quality >= 3 ? 72 : quality === 2 ? 58 : 40;
+  // patches of blades around the camera; High keeps about 450k triangles, Ultra a million
+  const grid = quality >= 3 ? 60 : quality === 2 ? 46 : 34;
   const cell = 1.25;
-  const blades = quality >= 3 ? 64 : quality === 2 ? 48 : 30;
+  const blades = quality >= 3 ? 48 : quality === 2 ? 36 : 26;
   // one patch of blades; each blade 3 segments (8 verts)
   const rng = new Rng(77);
   const pos: number[] = [], nrm: number[] = [], uv: number[] = [], data: number[] = [], idx: number[] = [], roots: number[] = [];

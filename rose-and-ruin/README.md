@@ -115,7 +115,9 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
   - splat-mapped terrain with distance LODs, and instanced vegetation and grass
   - moats, rivers and the sea that mirror the castles and the knights through planar reflections
 - **Knights** (`src/client/knights`):
-  - a 17-bone procedural skeleton with IK arms and legs, planted feet, and instanced armour pieces per class
+  - a 17-bone procedural skeleton with IK arms and legs and planted feet
+  - a man inside every harness: a continuous skinned body (torso, arms, legs, neck) that bends smoothly at the joints, and a sculpted head with a face, brows, beard and hair; skin tone and hair vary from knight to knight, and four orders wear open-faced helms
+  - each class's harness, weapon and body merged into a few meshes skinned on the GPU from a texture of bone matrices, with three levels of detail, so a hundred knights cost a few dozen draw calls
   - tabards in the house colours, and blood and mud that build up per knight
   - verlet ragdoll deaths whose muscle tone fades as the knight falls; corpses stay on the field and arrows stay stuck in them
 - **Audio** (`src/client/audio`): everything is synthesised with WebAudio, including steel on steel, shield thuds, armour, voices, horns, the bow, footsteps and the battle din. Sounds are HRTF-positioned with stone-yard reverb, under a generative lute-and-drum score.
@@ -123,6 +125,12 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
   - the server runs the matches at 60 Hz and streams compact binary snapshots at 20 Hz, plus events
   - clients interpolate other knights 100 ms in the past and predict their own knight with the same movement code, reconciling against acknowledged inputs
   - players can join a battle at any time, taking a bot's place and giving it back on leaving; when a battle ends the room moves on to the next castle
+
+### Performance
+
+- Settings › Graphics quality picks shadows, grass density, ambient occlusion and reflections. The default is chosen from your GPU (integrated GPUs start at Medium).
+- Dynamic resolution (on by default) lowers the render scale while frames run long and raises it again when there is headroom.
+- Press **F3** in battle for a frame profiler: frame rate, time per stage, draw calls and triangles.
 
 ### A note on photorealism
 

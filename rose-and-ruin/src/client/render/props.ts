@@ -288,7 +288,9 @@ export function buildProps(map: BuiltMap, baker: TextureBaker, flagTex: (team: n
           im.setColorAt(i, c);
         }
       });
-      im.castShadow = part.mat !== 'ember';
+      // only props big enough to matter cast shadows (each caster costs a draw per cascade)
+      if (!part.geo.boundingSphere) part.geo.computeBoundingSphere();
+      im.castShadow = part.mat !== 'ember' && (part.geo.boundingSphere?.radius ?? 1) * (list[0]?.s ?? 1) > 0.7;
       im.receiveShadow = true;
       im.computeBoundingSphere();
       group.add(im);

@@ -25,11 +25,29 @@ export interface Prefs {
 
 const KEY = 'rose-and-ruin.prefs.v1';
 
+/** The GPU's name, where the browser reveals it. */
+function gpuName(): string {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    if (!gl) return '';
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return name;
+  } catch { return ''; }
+}
+
 function defaultQuality(): Quality {
   // a conservative guess from the hardware; the player can raise it in Settings
   const cores = navigator.hardwareConcurrency || 4;
   const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
   if (mobile) return 0;
+  const gpu = gpuName();
+  // integrated and software renderers start at Medium; known discrete cards at High
+  if (/SwiftShader|llvmpipe|Software/i.test(gpu)) return 0;
+  if (/Apple/i.test(gpu)) return /Pro|Max|Ultra/i.test(gpu) ? 2 : 1;
+  if (/Intel|UHD|Iris|Mali|Adreno|PowerVR|Vega \d|Radeon\(TM\) Graphics/i.test(gpu)) return 1;
+  if (/RTX|GTX|Radeon RX|Radeon Pro|Arc A/i.test(gpu)) return 2;
   return cores >= 8 ? 2 : 1;
 }
 
@@ -37,7 +55,7 @@ export function defaultPrefs(): Prefs {
   const q = defaultQuality();
   return {
     name: '',
-    gfx: { quality: q, renderScale: 1, ao: q >= 1, bloom: true, fov: 70, shadowQuality: q },
+    gfx: { quality: q, renderScale: 1, ao: q >= 1, bloom: true, fov: 70, shadowQuality: q, adaptive: true },
     sensitivity: 1,
     invertY: false,
     volumes: { master: 0.8, sfx: 1, music: 0.5, ambience: 0.7 },

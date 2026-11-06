@@ -10,6 +10,9 @@ import { KnightAnimator } from '../knights/animator';
 import { KnightRenderer } from '../knights/knightRenderer';
 import type { WorldView } from '../render/world';
 
+/** a fixed, well-groomed face for each order in the armoury */
+const CLASSES_SEED: Record<ClassId, number> = { manatarms: 11, vanguard: 4, halberdier: 23, banneret: 9, longbowman: 31, errant: 17 };
+
 interface Step { act: Act; dur: number; atk?: number; heavy?: boolean; slot?: number }
 
 export class ClassPreview {
@@ -90,7 +93,7 @@ export class ClassPreview {
     const a = this.anim;
     const ranged = CLASSES[k.cls].ranged;
     this.kr.begin();
-    this.kr.draw(k.cls, k.team, { bones: a.bones, weapon: ranged && !a.daggerOut ? null : a.weapon, offhand: a.offhand, daggerOut: a.daggerOut, bowBend: a.bowBend, nock: a.nock, arrowNocked: a.arrowNocked, aimYaw: k.yaw, aimPitch: 0 }, 0, 0.08, 0, false);
+    this.kr.draw(k.cls, k.team, { bones: a.bones, weapon: ranged && !a.daggerOut ? null : a.weapon, offhand: a.offhand, daggerOut: a.daggerOut, bowBend: a.bowBend, nock: a.nock, arrowNocked: a.arrowNocked, aimYaw: k.yaw, aimPitch: 0 }, 0, 0.08, 0, false, CLASSES_SEED[k.cls]);
     this.kr.end();
   }
 

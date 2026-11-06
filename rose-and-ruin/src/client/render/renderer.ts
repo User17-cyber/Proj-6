@@ -6,6 +6,7 @@ import { EffectComposer, RenderPass, EffectPass, BloomEffect, SMAAEffect, SMAAPr
 import { N8AOPostPass } from 'n8ao';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
 import { setCsm, G } from './materials';
+import { PASS } from './passes';
 
 export type Quality = 0 | 1 | 2 | 3;
 export const QUALITY_NAMES = ['Low', 'Medium', 'High', 'Ultra'] as const;
@@ -17,6 +18,8 @@ export interface GfxSettings {
   bloom: boolean;
   fov: number;
   shadowQuality: Quality;
+  /** lower the resolution automatically when frames run long */
+  adaptive?: boolean;
 }
 
 const GRADE_FRAG = /* glsl */ `
@@ -99,6 +102,11 @@ export class Renderer {
   settings: GfxSettings;
   private sun = { dir: new THREE.Vector3(0.4, 0.6, 0.3).normalize(), color: new THREE.Color(1, 0.95, 0.9), intensity: 3 };
   private w = 1; private h = 1;
+  /** adaptive resolution multiplier and its frame-time average */
+  private dyn = 1;
+  private emaMs = 16.7;
+  private adaptT = 0;
+  private frame = 0;
 
   constructor(readonly canvas: HTMLCanvasElement, settings: GfxSettings) {
     this.settings = settings;
@@ -107,7 +115,8 @@ export class Renderer {
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.info.autoReset = true;
+    // counters accumulate over every pass of a frame; the app resets them per frame
+    this.renderer.info.autoReset = false;
     this.camera = new THREE.PerspectiveCamera(settings.fov, 1, 0.08, 6000);
     this.scene.background = new THREE.Color(0x777777);
     this.buildComposer();
@@ -126,8 +135,8 @@ export class Renderer {
       ao.configuration.aoRadius = 1.6;
       ao.configuration.distanceFalloff = 0.9;
       ao.configuration.intensity = 2.4;
-      ao.configuration.aoSamples = q >= 3 ? 16 : q === 2 ? 12 : 8;
-      ao.configuration.denoiseSamples = q >= 2 ? 8 : 4;
+      ao.configuration.aoSamples = q >= 3 ? 12 : q === 2 ? 8 : 6;
+      ao.configuration.denoiseSamples = q >= 3 ? 6 : 4;
       ao.configuration.denoiseRadius = 10;
       ao.configuration.halfRes = false;
       ao.configuration.depthAwareUpsampling = true;
@@ -199,13 +208,34 @@ export class Renderer {
       l.shadow.normalBias = 0.035;
       l.shadow.radius = 2;
     }
+    // knights cast into the two nearest cascades only (beyond that their shadows are specks)
+    PASS.knightShadowCams.clear();
+    this.csm.lights.slice(0, 2).forEach((l) => PASS.knightShadowCams.add(l.shadow.camera));
     setCsm(this.csm);
     this.csm.updateFrustums();
   }
 
+  /**
+   * Adaptive resolution: drop the render scale when frames run past ~45 fps, raise it again
+   * while they keep up with ~57 fps. Changes are coarse and spaced out (resizing is costly).
+   */
+  adapt(frameMs: number) {
+    if (this.settings.adaptive === false) { if (this.dyn !== 1) { this.dyn = 1; this.resize(); } return; }
+    if (frameMs > 250) return; // a hitch (loading, tab switch) is not a trend
+    this.emaMs = this.emaMs * 0.93 + frameMs * 0.07;
+    this.adaptT += frameMs;
+    if (this.adaptT < 1500) return;
+    let next = this.dyn;
+    if (this.emaMs > 22.5 && this.dyn > 0.5) next = Math.max(0.5, Math.round(this.dyn * 0.85 * 20) / 20);
+    else if (this.emaMs < 17.6 && this.dyn < 1) next = Math.min(1, Math.round(this.dyn * 1.12 * 20) / 20);
+    this.adaptT = 0;
+    if (next !== this.dyn) { this.dyn = next; this.resize(); }
+  }
+
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, this.settings.quality >= 3 ? 2 : 1.5);
-    const scale = this.settings.renderScale;
+    // a pixel ratio above 1 multiplies every full-screen effect; only Ultra goes beyond it
+    const dpr = Math.min(window.devicePixelRatio || 1, this.settings.quality >= 3 ? 1.5 : 1);
+    const scale = this.settings.renderScale * this.dyn;
     this.w = Math.max(1, Math.floor(window.innerWidth));
     this.h = Math.max(1, Math.floor(window.innerHeight));
     this.renderer.setPixelRatio(dpr * scale);
@@ -222,6 +252,17 @@ export class Renderer {
   readonly preRender: (() => void)[] = [];
 
   render(dt: number) {
+    this.frame++;
+    // far shadow cascades hold static scenery and distant crowds: refresh them every third frame
+    if (this.csm) {
+      const L = this.csm.lights;
+      for (let i = 0; i < L.length; i++) {
+        const sh = L[i].shadow;
+        if (i < 2) { sh.autoUpdate = true; continue; }
+        sh.autoUpdate = false;
+        if ((this.frame + i) % 3 === 0) sh.needsUpdate = true;
+      }
+    }
     G.uTime.value += dt;
     G.uCamPos.value.copy(this.camera.position);
     this.grade.u('gtime').value = (this.grade.u('gtime').value + dt) % 100;
@@ -232,4 +273,6 @@ export class Renderer {
   }
 
   get stats() { return this.renderer.info.render; }
+  /** resolution multiplier actually in use (settings x adaptive scaling) */
+  get effectiveScale() { return this.settings.renderScale * this.dyn; }
 }

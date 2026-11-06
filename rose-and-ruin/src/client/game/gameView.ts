@@ -332,8 +332,8 @@ export class GameView {
       // far knights animate at a lower rate
       const skip = d > 160 ? 3 : d > 80 ? 2 : 1;
       if (skip === 1 || (this.frame + k.id) % skip === 0 || !v.anim.hasFirstFrame) v.anim.update(k as unknown as Parameters<KnightAnimator['update']>[0], dt * skip, this.ground, this.time);
-      const lod = d > 45 ? 1 : 0;
-      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId);
+      const lod = d < 12 ? 0 : d < 40 ? 1 : 2;
+      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId, k.id * 7 + k.team, d < 70);
       for (const a of v.arrows) this.arrows.body(v.anim.bones[a.bone], a);
       if (d < 12 && (k.act === Act.Release || k.act === Act.Block)) near++;
       // footsteps
@@ -359,7 +359,7 @@ export class GameView {
         this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 1.2 + Math.random() * 0.8, true);
       }
       const d = Math.hypot(c.rag.joints.chest.x - camPos.x, c.rag.joints.chest.z - camPos.z);
-      this.kr.draw(c.cls, c.team, { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, this.showBlood ? c.blood : 0, c.mud, d > 40 ? 1 : 0, false);
+      this.kr.draw(c.cls, c.team, { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, this.showBlood ? c.blood : 0, c.mud, d < 10 ? 0 : d < 30 ? 1 : 2, false, c.id * 7 + c.team, d < 45);
       for (const a of c.arrows) this.arrows.body(c.rag.bones[a.bone], a);
     }
     this.kr.end();

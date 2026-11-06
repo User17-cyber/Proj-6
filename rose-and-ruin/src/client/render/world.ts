@@ -62,7 +62,7 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
   await step(0.88, 'Filling the moat');
   root.add(buildWater(map, baker, terrain.heightTex));
   // the castle and the knights mirrored in the moat (Medium and up)
-  const reflection = q >= 1 && map.world.water.length ? new PlanarReflection(q >= 2 ? 0.5 : 0.33, q >= 2 ? 1 : 2) : null;
+  const reflection = q >= 1 && map.world.water.length ? new PlanarReflection(q >= 3 ? 0.5 : q === 2 ? 0.4 : 0.3, q >= 3 ? 1 : q === 2 ? 2 : 3) : null;
   const reflect = reflection ? () => reflection.render(r.renderer, r.scene, r.camera, map.world.water, root) : null;
   if (reflect) r.preRender.push(reflect);
 

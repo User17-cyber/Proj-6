@@ -402,6 +402,21 @@ void gen(vec2 uv, out float h, out vec3 col, out float rough, out float ao) {
   ao = 0.8 + 0.2 * pores;
 }` },
 
+  // Human skin: fine pores and soft mottling; the colour comes from the knight's skin tone.
+  skin: {
+    normalStrength: 0.8,
+    glsl: /* glsl */ `
+void gen(vec2 uv, out float h, out vec3 col, out float rough, out float ao) {
+  vec4 w = worleyP(uv * 90.0, vec2(90.0), 1.0);
+  float pores = smoothstep(0.0, 0.18, w.x);
+  float mottle = fbmP(uv * 5.0, 5.0, 4);
+  float fine = vnoiseP(uv * 160.0, vec2(160.0));
+  h = 0.5 + 0.08 * pores + 0.05 * fine;
+  col = vec3(1.0) * (0.9 + 0.12 * mottle) * mix(vec3(1.0), vec3(1.04, 0.97, 0.95), mottle * 0.5 + 0.5);
+  rough = 0.52 + 0.12 * (1.0 - pores) + 0.08 * mottle;
+  ao = 0.9 + 0.1 * pores;
+}` },
+
   // Quilted padded jack (gambeson).
   quilt: {
     normalStrength: 5,

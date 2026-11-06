@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { BuiltMap } from '../../shared/world/mapgen';
 import type { WaterBody } from '../../shared/world/world';
 import { prepare, G } from './materials';
+import { PASS } from './passes';
 import type { TextureBaker } from './textures';
 
 /** Shared reflection state read by every water material. */
@@ -43,6 +44,11 @@ export class PlanarReflection {
     }
     if (!best || bd > 260) { REFL.uReflOn.value = 0; return; }
     const L = best.level;
+    // nothing to reflect into when the water is off screen
+    _box.min.set(Math.max(best.minX, p.x - 3000), L - 0.1, Math.max(best.minZ, p.z - 3000));
+    _box.max.set(Math.min(best.maxX, p.x + 3000), L + 0.1, Math.min(best.maxZ, p.z + 3000));
+    _frus.setFromProjectionMatrix(_pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    if (!_frus.intersectsBox(_box)) return;
     // size the target to the drawing buffer
     const size = renderer.getDrawingBufferSize(_size);
     const w = Math.max(16, Math.floor(size.x * this.scale)), h = Math.max(16, Math.floor(size.y * this.scale));
@@ -79,7 +85,9 @@ export class PlanarReflection {
     const prevTarget = renderer.getRenderTarget();
     renderer.setRenderTarget(this.rt);
     renderer.clear();
+    PASS.reflect = true;
     renderer.render(scene, vc);
+    PASS.reflect = false;
     renderer.setRenderTarget(prevTarget);
     G.uCamPos.value.copy(camPos);
     renderer.shadowMap.autoUpdate = sm;
@@ -97,6 +105,7 @@ export class PlanarReflection {
 
 const _size = new THREE.Vector2(), _f = new THREE.Vector3(), _t = new THREE.Vector3(), _n = new THREE.Vector3(), _c = new THREE.Vector3();
 const _plane = new THREE.Plane(), _clip = new THREE.Vector4(), _q = new THREE.Vector4();
+const _box = new THREE.Box3(), _frus = new THREE.Frustum(), _pm = new THREE.Matrix4();
 
 export function buildWater(map: BuiltMap, baker: TextureBaker, heightTex: THREE.DataTexture): THREE.Group {
   const group = new THREE.Group();

@@ -88,7 +88,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     armor: [0.3, 0.12, 0.22], weapon: 'arming_sword', shield: 'heater', ranged: false,
     abilities: ['shield_bash', 'rally'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 3, defence: 5, speed: 3, reach: 2, difficulty: 1 },
-    armourDesc: 'Visored bascinet, plate harness over mail',
+    armourDesc: 'Open-faced bascinet and aventail, plate harness over mail',
     botWeight: 26,
   },
   vanguard: {
@@ -108,7 +108,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     armor: [0.26, 0.1, 0.2], weapon: 'halberd', shield: null, ranged: false,
     abilities: ['lunge', 'sweep'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 4, defence: 2, speed: 3, reach: 5, difficulty: 2 },
-    armourDesc: 'Sallet and bevor, brigandine over mail',
+    armourDesc: 'Open sallet and bevor, brigandine over mail',
     botWeight: 17,
   },
   banneret: {

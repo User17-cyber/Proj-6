@@ -59,13 +59,13 @@ export function setupParade(r: Renderer, world: WorldView, params: URLSearchPara
       }
       if (e.rag) {
         e.rag.step(1 / 60, ground, W);
-        kr.draw(e.k.cls, e.k.team, { bones: e.rag.bones, weapon: e.rag.hasWeapon ? e.rag.weapon : null, offhand: e.rag.offhand, daggerOut: false, bowBend: 0, nock: e.anim.nock, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, e.blood, e.mud, 0, false);
+        kr.draw(e.k.cls, e.k.team, { bones: e.rag.bones, weapon: e.rag.hasWeapon ? e.rag.weapon : null, offhand: e.rag.offhand, daggerOut: false, bowBend: 0, nock: e.anim.nock, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, e.blood, e.mud, 0, false, e.k.id * 7);
         continue;
       }
       setState(e.k, time);
       e.anim.update(e.k, dt, ground, time);
       const a = e.anim;
-      kr.draw(e.k.cls, e.k.team, { bones: a.bones, weapon: e.k.def.ranged && !a.daggerOut ? null : a.weapon, offhand: a.offhand, daggerOut: a.daggerOut, bowBend: a.bowBend, nock: a.nock, arrowNocked: a.arrowNocked, aimYaw: e.k.yaw, aimPitch: e.k.pitch }, e.blood, e.mud, 0, false);
+      kr.draw(e.k.cls, e.k.team, { bones: a.bones, weapon: e.k.def.ranged && !a.daggerOut ? null : a.weapon, offhand: a.offhand, daggerOut: a.daggerOut, bowBend: a.bowBend, nock: a.nock, arrowNocked: a.arrowNocked, aimYaw: e.k.yaw, aimPitch: e.k.pitch }, e.blood, e.mud, 0, false, e.k.id * 7);
     }
     kr.end();
   };

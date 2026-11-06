@@ -45,21 +45,13 @@ function cylUV(g: THREE.BufferGeometry, y0: number, y1: number) {
 const UA = BODY.upperArm, FA = BODY.forearm, TH = BODY.thigh, SH = BODY.shin;
 
 // ---------------------------------------------------------------- shared layers
+// The man himself (torso, limbs, neck and head) is a skinned body; see body.ts.
 function base(): PieceDef[] {
   return [
-    { key: 'doublet', geo: () => A.doublet(), mat: 'clothDark', mount: B.chest },
-    { key: 'neck', geo: () => A.neckTube(), mat: 'mail', mount: B.neck },
-    { key: 'sleeveU', geo: () => A.armTube(0.02, -UA - 0.02, 0.052, 0.045), mat: 'clothDark', mount: B.upperArmL },
-    { key: 'sleeveU', geo: () => A.armTube(0.02, -UA - 0.02, 0.052, 0.045), mat: 'clothDark', mount: B.upperArmR },
-    { key: 'sleeveF', geo: () => A.armTube(0.02, -FA, 0.045, 0.036), mat: 'clothDark', mount: B.forearmL },
-    { key: 'sleeveF', geo: () => A.armTube(0.02, -FA, 0.045, 0.036), mat: 'clothDark', mount: B.forearmR },
-    { key: 'hoseT', geo: () => A.legTube(0.04, -TH - 0.02, 0.085, 0.058), mat: 'clothDark', mount: B.thighL },
-    { key: 'hoseT', geo: () => A.legTube(0.04, -TH - 0.02, 0.085, 0.058), mat: 'clothDark', mount: B.thighR },
-    { key: 'hoseS', geo: () => A.legTube(0.02, -SH + 0.02, 0.058, 0.042, 0.012), mat: 'clothDark', mount: B.shinL },
-    { key: 'hoseS', geo: () => A.legTube(0.02, -SH + 0.02, 0.058, 0.042, 0.012), mat: 'clothDark', mount: B.shinR },
     { key: 'pelvisCloth', geo: () => A.skirtRound(0.16, 0.95), mat: 'clothDark', mount: B.pelvis },
   ];
 }
+const mailNeck = (): PieceDef => ({ key: 'neck', geo: () => A.neckTube(), mat: 'mail', mount: B.neck });
 
 function fullArms(steel: MatKey, size = 1): PieceDef[] {
   return [
@@ -155,8 +147,7 @@ const heater = (): PieceDef[] => {
 export const KITS: Record<ClassId, PieceDef[]> = {
   manatarms: [
     ...base(),
-    { key: 'bascinet', geo: () => A.bascinet().steel, mat: 'steel', mount: B.head, head: true },
-    { key: 'bascinetHoles', geo: () => A.bascinetDetail(), mat: 'void', mount: B.head, head: true, detail: true },
+    { key: 'bascinetOpen', geo: () => A.bascinetOpen(), mat: 'steel', mount: B.head, head: true },
     { key: 'aventail', geo: () => A.aventail(0.16), mat: 'mail', mount: B.head, head: true },
     { key: 'cuirass', geo: () => A.cuirass(), mat: 'steel', mount: B.chest },
     { key: 'tabard', geo: () => cylUV(A.tabardTop(0.3), -0.3, 0.215), mat: 'tabard', mount: B.chest, team: true },
@@ -170,6 +161,7 @@ export const KITS: Record<ClassId, PieceDef[]> = {
   ],
   vanguard: [
     ...base(),
+    mailNeck(),
     { key: 'greatHelm', geo: () => A.greatHelm(), mat: 'steel', mount: B.head, head: true },
     { key: 'greatHelmTrim', geo: () => A.greatHelmTrim(), mat: 'brass', mount: B.head, head: true, detail: true },
     { key: 'greatHelmSlits', geo: () => A.greatHelmSlits(), mat: 'void', mount: B.head, head: true, detail: true },
@@ -184,9 +176,9 @@ export const KITS: Record<ClassId, PieceDef[]> = {
   ],
   halberdier: [
     ...base(),
-    { key: 'sallet', geo: () => A.sallet(), mat: 'steel', mount: B.head, head: true },
-    { key: 'salletSlit', geo: () => A.slit(0.105, -0.152, 0.17), mat: 'void', mount: B.head, head: true, detail: true },
-    { key: 'bevor', geo: () => A.bevor(), mat: 'steel', mount: B.head, head: true },
+    mailNeck(),
+    { key: 'salletOpen', geo: () => A.salletOpen(), mat: 'steel', mount: B.head, head: true },
+    { key: 'bevorLow', geo: () => A.bevorLow(), mat: 'steel', mount: B.head, head: true },
     { key: 'brigandine', geo: () => cylUV(A.tabardTop(0.26), -0.26, 0.215), mat: 'brig', mount: B.chest, team: true },
     { key: 'mailSkirtL', geo: () => A.skirtRound(0.34), mat: 'mail', mount: B.pelvis },
     { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
@@ -204,6 +196,7 @@ export const KITS: Record<ClassId, PieceDef[]> = {
   ],
   banneret: [
     ...base(),
+    mailNeck(),
     { key: 'armet', geo: () => A.armet(), mat: 'steelBright', mount: B.head, head: true },
     { key: 'armetSlit', geo: () => A.slit(0.09, -0.17, 0.15), mat: 'void', mount: B.head, head: true, detail: true },
     { key: 'plume', geo: () => A.plume(), mat: 'plume', mount: B.head, head: true, team: true },
@@ -221,7 +214,6 @@ export const KITS: Record<ClassId, PieceDef[]> = {
     ...base(),
     { key: 'kettle', geo: () => A.kettleHat(), mat: 'steelDark', mount: B.head, head: true },
     { key: 'coif', geo: () => A.coif(), mat: 'quilt', mount: B.head, head: true },
-    { key: 'face', geo: () => A.faceShadow(), mat: 'void', mount: B.head, head: true },
     { key: 'scarf', geo: () => A.scarf(), mat: 'cloth', mount: B.head, head: true, team: true },
     { key: 'gambeson', geo: () => A.tabardTop(0.3), mat: 'quilt', mount: B.chest },
     { key: 'livery', geo: () => cylUV(A.xf(A.tabardTop(0.2), 0, 0, 0, 0, 0, 0, 1.03, 1, 1.04), -0.2, 0.215), mat: 'tabard', mount: B.chest, team: true },
@@ -238,7 +230,6 @@ export const KITS: Record<ClassId, PieceDef[]> = {
   errant: [
     ...base(),
     { key: 'barbute', geo: () => A.barbute(), mat: 'steel', mount: B.head, head: true },
-    { key: 'faceB', geo: () => A.faceShadow(), mat: 'void', mount: B.head, head: true },
     { key: 'brigandineE', geo: () => cylUV(A.tabardTop(0.28), -0.28, 0.215), mat: 'brig', mount: B.chest, team: true },
     { key: 'mailSkirtE', geo: () => A.skirtRound(0.3), mat: 'mail', mount: B.pelvis },
     { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },

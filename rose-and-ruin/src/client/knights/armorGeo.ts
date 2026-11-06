@@ -362,6 +362,23 @@ export function bascinet() {
   ], { segs: 18, from: -1.35, to: 1.35, thick: 0.004, rim: 0.005, square: 2.2 });
   return { steel: merge([skull, visor]) };
 }
+/** Bascinet worn open (visor off), so the face shows above the aventail. */
+export function bascinetOpen() {
+  return lathe([[0.0, 0.3], [0.04, 0.29], [0.085, 0.25], [0.118, 0.17], [0.128, 0.08], [0.125, 0.0], [0.122, -0.04]], 26, 1, 1.1);
+}
+/** Open-faced sallet: the brow is cut away above the eyes; the tail guards the neck. */
+export function salletOpen() {
+  const dome = lathe([[0.0, 0.25], [0.06, 0.24], [0.11, 0.19], [0.13, 0.135]], 26, 1, 1.12);
+  // sides and back of the skull below the brow line; lathe angle 0 is the back (+Z), PI the front
+  const band = lathe([[0.13, 0.135], [0.134, 0.08], [0.135, 0.04]], 22, 1, 1.12, Math.PI + 0.78, Math.PI * 2 - 1.56);
+  const tail = shell([ring(0.04, 0.135, 0.15), ring(-0.02, 0.14, 0.17, 0.03), ring(-0.06, 0.15, 0.2, 0.07)], { segs: 20, from: 0.9, to: Math.PI * 2 - 0.9, thick: 0.003, rim: 0.005 });
+  return merge([dome, band, tail]);
+}
+/** A bevor worn low, guarding the throat and chin. */
+export function bevorLow() {
+  return shell([ring(-0.13, 0.12, 0.12, 0.0), ring(-0.05, 0.118, 0.128, -0.014), ring(0.0, 0.11, 0.125, -0.018), ring(0.022, 0.104, 0.12, -0.012)], { segs: 18, from: -1.6, to: 1.6, thick: 0.004, rim: 0.005, ridge: 1.2 });
+}
+
 export function bascinetDetail() {
   // eye slits and breaths (dark)
   const parts: THREE.BufferGeometry[] = [];
@@ -436,15 +453,16 @@ export function faceShadow() {
   // the shadowed face inside an open helmet
   return xf(new THREE.SphereGeometry(0.105, 16, 12, -Math.PI * 0.35, Math.PI * 0.7, Math.PI * 0.28, Math.PI * 0.5), 0, 0.1, -0.012, 0, Math.PI, 0, 1, 1.1, 1.05);
 }
+/** A livery scarf wound about the throat. */
 export function scarf() {
-  return shell([ring(-0.02, 0.112, 0.128, -0.006), ring(0.05, 0.11, 0.13, -0.01), ring(0.1, 0.105, 0.125, -0.01)], { segs: 14, from: -1.1, to: 1.1 });
+  return shell([ring(-0.07, 0.085, 0.09, -0.008), ring(-0.03, 0.078, 0.084, -0.01), ring(0.005, 0.07, 0.078, -0.008)], { segs: 14, from: -1.3, to: 1.3 });
 }
 
 export function barbute() {
-  const shellG = shell([ring(-0.08, 0.12, 0.13), ring(0.0, 0.128, 0.142), ring(0.08, 0.13, 0.145), ring(0.16, 0.12, 0.132), ring(0.22, 0.09, 0.1)], { segs: 30, from: 0.32, to: Math.PI * 2 - 0.32, thick: 0.004, rim: 0.005 });
+  const shellG = shell([ring(-0.08, 0.12, 0.13), ring(0.0, 0.128, 0.142), ring(0.08, 0.13, 0.145), ring(0.16, 0.12, 0.132), ring(0.22, 0.09, 0.1)], { segs: 30, from: 0.42, to: Math.PI * 2 - 0.42, thick: 0.004, rim: 0.005 });
   const top = lathe([[0.09, 0.22], [0.05, 0.255], [0, 0.265]], 26, 1, 1.11);
-  // brow over the T opening
-  const brow = shell([ring(0.08, 0.13, 0.146), ring(0.16, 0.12, 0.134)], { segs: 10, from: -0.34, to: 0.34, thick: 0.004, rim: 0.004 });
+  // brow over the opening, above the eyes so the face shows
+  const brow = shell([ring(0.128, 0.126, 0.14), ring(0.17, 0.118, 0.131)], { segs: 10, from: -0.44, to: 0.44, thick: 0.004, rim: 0.004 });
   return merge([shellG, top, brow]);
 }
 

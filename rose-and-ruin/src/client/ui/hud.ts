@@ -51,7 +51,11 @@ function h(cls: string, html = '', tag = 'div'): HTMLElement {
   if (html) e.innerHTML = html;
   return e;
 }
-function replay(e: Element, cls = 'show') { e.classList.remove(cls); void (e as HTMLElement).offsetWidth; e.classList.add(cls); }
+/** Restart a CSS animation on the next frame (no forced layout, unlike reading offsetWidth). */
+function replay(e: Element, cls = 'show') {
+  e.classList.remove(cls);
+  requestAnimationFrame(() => e.classList.add(cls));
+}
 
 export class Hud implements HudSink {
   readonly root: HTMLElement;
@@ -597,7 +601,7 @@ export class Hud implements HudSink {
     const team = me ? me.team : -1;
     const fwd = cam.getWorldDirection(_v2);
     let used = 0;
-    const max = 22;
+    const max = f.spectating ? 6 : 16;
     for (const k of K) {
       if (!k.alive || k.id === f.localId) continue;
       if (f.spectating && k.id === f.watchId) continue;
@@ -606,7 +610,7 @@ export class Hud implements HudSink {
       const ally = k.team === team;
       const facing = (dx * fwd.x + dy * fwd.y + dz * fwd.z) / (d || 1);
       // allies near the crosshair; enemies when close or under the crosshair
-      const show = f.spectating ? d < 22 && facing > 0.96 : ally ? d < 24 && facing > 0.985 : (facing > 0.996 && d < 45) || (d < 4.5 && facing > 0.8);
+      const show = f.spectating ? d < 16 && facing > 0.99 : ally ? d < 24 && facing > 0.985 : (facing > 0.996 && d < 45) || (d < 4.5 && facing > 0.8);
       if (!show) continue;
       const p = this.project(k.x, k.y + 2.12, k.z, cam);
       if (!p.ok) continue;

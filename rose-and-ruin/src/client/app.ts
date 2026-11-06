@@ -21,6 +21,7 @@ import { CLASSES, type ClassId } from '../shared/data/classes';
 import { knightName } from '../shared/data/names';
 import { Rng } from '../shared/rng';
 import { clamp, lerp } from '../shared/math';
+import { Perf } from './perf';
 
 type Mode = 'boot' | 'menu' | 'loading' | 'battle';
 type SpecCam = 'director' | 'follow' | 'free';
@@ -68,6 +69,7 @@ export class App implements HudHost, MenuHost {
   private boardHeld = false;
   private frames = 0;
   private params = new URLSearchParams(location.search);
+  private perf = new Perf(new URLSearchParams(location.search).has('perf'));
   /** test aid: lets the simulation keep real time on very slow (software) renderers */
   private turbo = Math.max(1, Math.min(20, Number(new URLSearchParams(location.search).get('turbo') ?? 1)));
 
@@ -430,6 +432,7 @@ export class App implements HudHost, MenuHost {
 
   private onKeyDown(e: KeyboardEvent) {
     if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
+    if (e.code === 'F3') { e.preventDefault(); this.perf.toggle(); return; }
     if (this.mode !== 'battle') return;
     if (e.code === 'Escape' && this.hud.paused) { this.resume(); return; }
     if (e.code === 'Tab') e.preventDefault();
@@ -533,6 +536,8 @@ export class App implements HudHost, MenuHost {
     const s = this.session, v = this.view, w = this.world;
     if (!w) { this.input.endFrame(); return; }
     if (!s || !v) { w.update(dt); this.r.render(dt); this.input.endFrame(); return; }
+    const P = this.perf;
+    this.r.renderer.info.reset();
     if (!s.online) {
       if (this.hitStop > 0) { this.hitStop -= dt; s.timeScale = 0.2; } else s.timeScale = this.baseScale;
     }
@@ -540,16 +545,25 @@ export class App implements HudHost, MenuHost {
       this.input.enabled = !this.hud.paused && !this.hud.chatting && !this.hud.deathOpen && !this.hud.endOpen;
       this.battleInput(s);
     }
+    P.begin('sim');
     s.update(dt);
+    P.end('sim');
     if (s instanceof NetSession && s.lost && this.mode === 'battle') { this.menus.toast('The connection to the muster was lost.'); this.leave(); return; }
+    P.begin('events');
     const events = s.drainEvents();
     this.scanEvents(events, s);
     v.processEvents(events, s.localId);
+    P.end('events');
     this.updateCamera(dt, s, v);
     v.firstPerson = this.mode === 'battle' && !this.spectating && this.rig.mode === 'first';
+    P.begin('knights');
     v.update(dt, s.localId, this.r.camera);
+    P.end('knights');
+    P.begin('world');
     w.update(dt);
     this.previewKnight?.update(dt);
+    P.end('world');
+    P.begin('hud');
     if (this.mode === 'battle') {
       const me = this.localKnight();
       const watched = this.watchId >= 0 ? s.knights[this.watchId] : null;
@@ -568,9 +582,17 @@ export class App implements HudHost, MenuHost {
       this.lockHint.classList.toggle('hidden', !needLock);
       if (this.spectating && (this.specCam === 'free' || this.specCam === 'follow') && !this.input.locked) this.lockHint.classList.add('hidden');
     } else this.lockHint.classList.add('hidden');
+    P.end('hud');
+    P.begin('audio');
     this.updateAudio(dt, s, v);
+    P.end('audio');
     this.updateGrade(dt, s);
+    P.begin('render');
     this.r.render(dt);
+    P.end('render');
+    const info = this.r.renderer.info.render;
+    P.frame(dt, info, { knights: s.knights.filter((k) => k.alive).length, scale: this.r.effectiveScale });
+    this.r.adapt(dt * 1000);
     this.input.endFrame();
     if (this.attract && s.phase === 'ended' && s.phaseT > 8) this.startAttract();
     this.frames++;
