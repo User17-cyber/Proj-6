@@ -83,6 +83,8 @@ export class Knight {
   prevButtons = 0;
 
   respawnT = 0;
+  /** pitched battle: orders this player has already fought (and fallen) as */
+  usedCls = new Set<ClassId>();
   wantSpawn = false;
   deathTime = -999;
   /** sim time of the last damage received (for UI) */

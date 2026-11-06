@@ -120,6 +120,7 @@ export class Match {
     slot.setClass(cls);
     slot.nextCls = cls;
     slot.kills = slot.deaths = slot.assists = slot.score = slot.damage = slot.caps = 0;
+    slot.usedCls.clear();
     this.brains.delete(slot.id);
     if (slot.alive) {
       if (this.phase === 'warmup') {
@@ -151,6 +152,7 @@ export class Match {
   requestSpawn(knightId: number, cls: ClassId) {
     const k = this.knights[knightId];
     if (!k || k.bot) return;
+    if (!this.classAllowed(k, cls)) return;
     k.nextCls = cls;
     if (!k.alive) k.wantSpawn = true;
   }
@@ -179,7 +181,12 @@ export class Match {
     return best;
   }
 
+  /** Pitched battle: a player may fight as each order once. */
+  classAllowed(k: Knight, cls: ClassId) { return k.bot || this.settings.mode !== 'battle' || !k.usedCls.has(cls); }
+  freeClass(k: Knight): ClassId | null { return CLASS_IDS.find((c) => this.classAllowed(k, c)) ?? null; }
+
   spawn(k: Knight, formation = false) {
+    if (!this.classAllowed(k, k.nextCls)) k.nextCls = this.freeClass(k) ?? k.nextCls;
     if (k.nextCls !== k.cls || !k.alive) k.setClass(k.nextCls);
     const zone = this.spawnZoneFor(k);
     const c = Math.cos(zone.yaw), s = Math.sin(zone.yaw);
@@ -295,7 +302,9 @@ export class Match {
     }
     const force = opts.kind === 2 ? 1.6 : opts.zone === 0 ? 1.2 : 1;
     this.emit({ t: 'kill', killer: killer ? killer.id : -1, victim: victim.id, assist, weapon: opts.kind === 1 || opts.kind === 5 ? 99 : killer ? CLASS_IDS.indexOf(killer.cls) : -1, head: opts.zone === 0, dx: opts.dx, dy: opts.dy, dz: opts.dz, force });
-    const canRespawn = this.settings.mode !== 'laststand' && team.tickets > 0;
+    // in a pitched battle each order a player falls as is spent; with all six gone, he is out
+    if (!victim.bot && this.settings.mode === 'battle') victim.usedCls.add(victim.cls);
+    const canRespawn = this.settings.mode !== 'laststand' && team.tickets > 0 && (victim.bot || this.freeClass(victim) !== null);
     victim.respawnT = canRespawn ? (victim.bot ? 7 + this.rng.range(0, 3) : 6) : Infinity;
     if (victim.bot) victim.nextCls = this.rng.chance(0.25) ? this.pickBotClass(victim.team) : victim.cls;
   }

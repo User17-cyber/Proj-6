@@ -30,8 +30,9 @@ export interface HudSink {
 }
 
 interface KView { anim: KnightAnimator; blood: number; mud: number; arrows: BodyArrow[]; wasAlive: boolean; stepPhase: number; lastStepX: number; lastStepZ: number }
-interface Corpse { rag: Ragdoll; cls: ClassId; team: number; blood: number; mud: number; arrows: BodyArrow[]; age: number; pooled: boolean; id: number }
+interface Corpse { stat: number; rag: Ragdoll; cls: ClassId; team: number; blood: number; mud: number; arrows: BodyArrow[]; age: number; pooled: boolean; id: number }
 
+const MAX_CORPSES = 450;
 const HEAVY = new Set<ClassId>(['manatarms', 'vanguard', 'banneret']);
 
 export class GameView {
@@ -53,10 +54,11 @@ export class GameView {
   constructor(private r: Renderer, private world: WorldView, private s: SessionView, private audio: AudioEngine, private hud: HudSink | null) {
     // room for the largest battle (64 a side) plus the fallen
     const cap = Math.max(240, s.knights.length + 100);
-    this.kr = new KnightRenderer(world.baker, cap);
+    // the fallen stay for the whole battle: settled corpses are posed once and kept
+    this.kr = new KnightRenderer(world.baker, cap, MAX_CORPSES);
     this.particles = new Particles(r.settings.quality >= 2 ? 5000 : 2500);
     this.particles.quality = r.settings.quality;
-    this.decals = new Decals(r.settings.quality >= 2 ? 500 : 250);
+    this.decals = new Decals(r.settings.quality >= 2 ? 1400 : 800);
     this.arrows = new Arrows(world.baker);
     this.particles.group.userData.noReflect = true;
     this.decals.mesh.userData.noReflect = true;
@@ -73,6 +75,7 @@ export class GameView {
     this.hud = hud;
     this.views = [];
     this.corpses = [];
+    this.kr.clearStatic();
     this.arrows.clear();
     this.decals.clear();
     this.particles.clear();
@@ -305,11 +308,11 @@ export class GameView {
     const ranged = CLASSES[k.cls].ranged;
     const rag = new Ragdoll(v.anim.joints, v.anim.prevJoints, 1 / 60, ranged ? null : v.anim.weapon, { dx, dy: Math.max(dy, 0.05), dz, force, zone });
     // arrows ride along on the ragdoll's bones
-    this.corpses.push({ rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + 0.35), mud: v.mud, arrows: v.arrows.slice(), age: 0, pooled: false, id });
+    this.corpses.push({ stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + 0.35), mud: v.mud, arrows: v.arrows.slice(), age: 0, pooled: false, id });
     v.arrows.length = 0;
     v.wasAlive = false;
-    const maxCorpses = this.r.settings.quality >= 2 ? 90 : 50;
-    if (this.corpses.length > maxCorpses) this.corpses.shift();
+    // only beyond the static pool's size (more deaths than any normal battle) do the oldest go
+    if (this.corpses.length > MAX_CORPSES + 40) this.corpses.shift();
   }
 
   update(dt: number, localId: number, cam: THREE.Camera) {
@@ -360,7 +363,12 @@ export class GameView {
         this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 1.6 + Math.random() * 1.1, true);
       }
       const d = Math.hypot(c.rag.joints.chest.x - camPos.x, c.rag.joints.chest.z - camPos.z);
-      this.kr.draw(c.cls, c.team, { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, this.showBlood ? c.blood : 0, c.mud, d < 10 ? 0 : d < 30 ? 1 : 2, false, c.id * 7 + c.team, d < 45);
+      const lod = d < 10 ? 0 : d < 30 ? 1 : 2;
+      const pose = { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 };
+      // once a body has settled it is posed into the static pool and costs almost nothing
+      if (c.stat < 0 && c.rag.frozen) c.stat = this.kr.addStatic(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, c.id * 7 + c.team);
+      if (c.stat >= 0) this.kr.drawStatic(c.stat, lod, d < 45);
+      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, false, c.id * 7 + c.team, d < 45);
       for (const a of c.arrows) this.arrows.body(c.rag.bones[a.bone], a);
     }
     this.kr.end();

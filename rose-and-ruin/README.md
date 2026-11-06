@@ -92,7 +92,7 @@ Any class can be chosen at the start and again every time you fall.
 
 ### Manners of battle
 
-- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies.
+- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each of the six orders once: when an order falls it is spent, and after all six you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
 
@@ -123,7 +123,7 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
   - a man inside every harness: a continuous skinned body (torso, arms, legs, neck) that bends smoothly at the joints, and a sculpted head with a face, brows, beard and hair; skin tone and hair vary from knight to knight, and four orders wear open-faced helms
   - each class's harness, weapon and body merged into a few meshes skinned on the GPU from a texture of bone matrices, with three levels of detail, so a hundred knights cost a few dozen draw calls
   - tabards in the house colours, and blood and mud that build up per knight
-  - verlet ragdoll deaths whose muscle tone fades as the knight falls; corpses stay on the field and arrows stay stuck in them
+  - verlet ragdoll deaths whose muscle tone fades as the knight falls; every corpse stays on the field for the rest of the battle (settled bodies are posed once into a static pool), and arrows stay stuck in them
 - **Audio** (`src/client/audio`): everything is synthesised with WebAudio, including steel on steel, shield thuds, armour, voices, horns, the bow, footsteps and the battle din. Sounds are HRTF-positioned with stone-yard reverb, under a generative lute-and-drum score.
 - **Multiplayer** (`src/server`, `src/shared/net`):
   - the server runs the matches at 60 Hz and streams compact binary snapshots at 20 Hz, plus events

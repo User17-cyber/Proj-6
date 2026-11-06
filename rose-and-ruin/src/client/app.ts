@@ -62,6 +62,8 @@ export class App implements HudHost, MenuHost {
   private firstPerson = false;
   private portrait = { active: false, pos: new THREE.Vector3(), look: new THREE.Vector3(), dist: 3.6, mapId: '', kx: 0, kz: 0, yaw: 0 };
   private musicMode = '';
+  /** pitched battle: orders the player has fallen as */
+  private usedCls = new Set<ClassId>();
   private endHandled = false;
   private lockHint!: HTMLElement;
   private uiRoot!: HTMLElement;
@@ -199,6 +201,8 @@ export class App implements HudHost, MenuHost {
     this.view.showBlood = this.prefs.blood;
     this.view.firstPerson = false;
     this.endHandled = false;
+    this.usedCls.clear();
+    this.hud.setSpent(this.usedCls, s.settings.mode === 'battle');
     this.killerId = -1;
     this.deathAt = -1;
     this.watchId = -1;
@@ -385,6 +389,7 @@ export class App implements HudHost, MenuHost {
 
   // ======================================================================= HudHost
   respawn(cls: ClassId) {
+    if (this.usedCls.has(cls)) return;
     this.loadout.cls = cls;
     this.prefs.lastClass = cls;
     savePrefs(this.prefs);
@@ -626,6 +631,9 @@ export class App implements HudHost, MenuHost {
           break;
         case 'kill':
           if (e.victim === me) {
+            const vk = s.knights[me];
+            if (vk && s.settings.mode === 'battle') this.usedCls.add(vk.cls);
+            this.hud.setSpent(this.usedCls, s.settings.mode === 'battle');
             this.killerId = e.killer;
             this.deathAt = this.time;
             const k = s.knights[me];

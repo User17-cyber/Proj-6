@@ -204,6 +204,17 @@ export class Hud implements HudSink {
     this.closeChat();
   }
 
+  private spent = new Set<ClassId>();
+  /** Pitched battle: orders the player has already fallen as can't be chosen again. */
+  setSpent(spent: Set<ClassId>, pitched: boolean) {
+    this.spent = new Set(spent);
+    const btns = this.death.querySelectorAll<HTMLButtonElement>('.class-list .classbtn');
+    CLASS_IDS.forEach((c, i) => { const b = btns[i]; if (!b) return; b.disabled = this.spent.has(c); b.classList.toggle('spent', this.spent.has(c)); });
+    const note = this.death.querySelector('.spentnote') as HTMLElement | null;
+    if (note) note.textContent = pitched ? (this.spent.size ? `Each order may take the field once. ${6 - this.spent.size} of 6 remain to you.` : 'In a pitched battle each order may take the field only once.') : '';
+    if (this.spent.has(this.deathCls)) { const free = CLASS_IDS.find((c) => !this.spent.has(c)); if (free) { this.setLoadout(free); this.host.selectClass(free); } }
+  }
+
   setLoadout(cls: ClassId) {
     this.deathCls = cls;
     this.setDeathSel?.(cls);
@@ -313,10 +324,10 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="respawn"><button class="btn">Rejoin the Fight</button><div class="timer"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>6</kbd> · rejoin with <kbd>Space</kbd></div></div></div>`;
+      <div class="respawn"><button class="btn">Rejoin the Fight</button><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>6</kbd> · rejoin with <kbd>Space</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
-    this.setDeathSel = classList(list, this.deathCls, (c) => { this.setLoadout(c); this.host.selectClass(c); });
+    this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c)) return; this.setLoadout(c); this.host.selectClass(c); });
     this.respawnBtn = this.death.querySelector('.btn') as HTMLButtonElement;
     this.respawnTimer = this.death.querySelector('.timer') as HTMLElement;
     this.respawnBtn.addEventListener('click', () => this.host.respawn(this.deathCls));
@@ -327,7 +338,7 @@ export class Hud implements HudSink {
   deathKey(code: string): boolean {
     if (this.death.classList.contains('hidden')) return false;
     const m = /^Digit([1-6])$/.exec(code);
-    if (m) { const c = CLASS_IDS[Number(m[1]) - 1]; this.setLoadout(c); this.host.selectClass(c); return true; }
+    if (m) { const c = CLASS_IDS[Number(m[1]) - 1]; if (!this.spent.has(c)) { this.setLoadout(c); this.host.selectClass(c); } return true; }
     if (code === 'Space' || code === 'Enter') { if (!this.respawnBtn.disabled) this.host.respawn(this.deathCls); return true; }
     return false;
   }

@@ -84,12 +84,15 @@ const groupOf = (m: MatKey): Group => (m === 'tabard' || m === 'shieldFace' ? 'h
 
 // ------------------------------------------------------------------ shaders
 const SKIN_VERT_PARS = /* glsl */ `
-uniform highp sampler2D tBones;
+uniform highp sampler2D tBones; uniform highp sampler2D tBonesStatic; uniform int uDynRows;
 attribute vec2 aBones; attribute float aW; attribute float aMat; attribute float aFlags;
 attribute vec4 aI0; attribute vec4 aI1;
 mat4 rrBone(float slot) {
   int x = int(slot + 0.5) * 3; int y = int(aI0.x + 0.5);
-  vec4 a = texelFetch(tBones, ivec2(x, y), 0), b = texelFetch(tBones, ivec2(x + 1, y), 0), c = texelFetch(tBones, ivec2(x + 2, y), 0);
+  vec4 a, b, c;
+  // rows past the live ones belong to settled corpses, posed once in their own texture
+  if (y >= uDynRows) { y -= uDynRows; a = texelFetch(tBonesStatic, ivec2(x, y), 0); b = texelFetch(tBonesStatic, ivec2(x + 1, y), 0); c = texelFetch(tBonesStatic, ivec2(x + 2, y), 0); }
+  else { a = texelFetch(tBones, ivec2(x, y), 0); b = texelFetch(tBones, ivec2(x + 1, y), 0); c = texelFetch(tBones, ivec2(x + 2, y), 0); }
   return mat4(a.x, b.x, c.x, 0.0, a.y, b.y, c.y, 0.0, a.z, b.z, c.z, 0.0, a.w, b.w, c.w, 1.0);
 }
 mat4 rrSkinM() {
@@ -433,13 +436,23 @@ export class KnightRenderer {
   private lines: { mesh: THREE.InstancedMesh; count: number; cap: number };
   private uniforms: Record<string, THREE.IUniform>;
 
-  constructor(private baker: TextureBaker, readonly capacity: number) {
+  private staticData: Float32Array;
+  private staticTex: THREE.DataTexture;
+  private statics: { cls: ClassId; team: number; blood: number; mud: number; seed: number }[] = [];
+
+  constructor(private baker: TextureBaker, readonly capacity: number, readonly staticCap = 0) {
     this.group.name = 'knights';
     this.boneData = new Float32Array(SLOTS * 3 * 4 * capacity);
     this.boneTex = new THREE.DataTexture(this.boneData, SLOTS * 3, capacity, THREE.RGBAFormat, THREE.FloatType);
     this.boneTex.minFilter = this.boneTex.magFilter = THREE.NearestFilter;
     this.boneTex.generateMipmaps = false;
     this.boneTex.needsUpdate = true;
+    this.staticData = new Float32Array(SLOTS * 3 * 4 * Math.max(1, staticCap));
+    this.staticTex = new THREE.DataTexture(this.staticData, SLOTS * 3, Math.max(1, staticCap), THREE.RGBAFormat, THREE.FloatType);
+    this.staticTex.minFilter = this.staticTex.magFilter = THREE.NearestFilter;
+    this.staticTex.generateMipmaps = false;
+    this.staticTex.needsUpdate = true;
+    const instCap = capacity + staticCap;
     const arr = baker.array(LAYERS, 0.5);
     const palA: THREE.Vector4[] = [], palB: THREE.Vector4[] = [], palC: THREE.Vector4[] = [];
     for (const k of SURF_KEYS) {
@@ -450,7 +463,7 @@ export class KnightRenderer {
       palC.push(new THREE.Vector4(s.rep, s.team, s.ao, 0));
     }
     this.uniforms = {
-      tBones: { value: this.boneTex },
+      tBones: { value: this.boneTex }, tBonesStatic: { value: this.staticTex }, uDynRows: { value: capacity },
       tKnAlb: { value: arr.map }, tKnNrm: { value: arr.normal },
       uPalA: { value: palA }, uPalB: { value: palB }, uPalC: { value: palC },
       uTeamCol: { value: [new THREE.Color(TEAM_COLORS[0][0]), new THREE.Color(TEAM_COLORS[1][0])] },
@@ -477,8 +490,8 @@ export class KnightRenderer {
       const geo = classGeometry(cls);
       const bks: Bucket[] = [];
       for (let b = 0; b < 4; b++) {
-        const i0 = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 4), 4).setUsage(THREE.DynamicDrawUsage) as THREE.InstancedBufferAttribute;
-        const i1 = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 4), 4).setUsage(THREE.DynamicDrawUsage) as THREE.InstancedBufferAttribute;
+        const i0 = new THREE.InstancedBufferAttribute(new Float32Array(instCap * 4), 4).setUsage(THREE.DynamicDrawUsage) as THREE.InstancedBufferAttribute;
+        const i1 = new THREE.InstancedBufferAttribute(new Float32Array(instCap * 4), 4).setUsage(THREE.DynamicDrawUsage) as THREE.InstancedBufferAttribute;
         const bucket: Bucket = { i0, i1, count: 0, geos: [] };
         for (const grp of GROUPS) {
           // near: full detail; mid: clustered; far and shadows: coarse
@@ -525,6 +538,22 @@ export class KnightRenderer {
     this.lines = { mesh: lm, count: 0, cap: capacity * 3 };
   }
 
+  /** A corpse that has come to rest: pose it once; it is then drawn with drawStatic(). Returns -1 when full. */
+  addStatic(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, seed = 0): number {
+    const i = this.statics.length;
+    if (i >= this.staticCap) return -1;
+    writePose(this.staticData, i * SLOTS * 12, d);
+    this.statics.push({ cls, team, blood, mud, seed });
+    this.staticTex.needsUpdate = true;
+    return i;
+  }
+  drawStatic(i: number, lod: number, shadow: boolean) {
+    const st = this.statics[i];
+    if (!st) return;
+    this.enqueue(st.cls, st.team, this.capacity + i, st.blood, st.mud, lod, false, st.seed, shadow);
+  }
+  clearStatic() { this.statics.length = 0; }
+
   begin() {
     this.rows = 0;
     for (const bks of this.buckets.values()) for (const b of bks) b.count = 0;
@@ -538,13 +567,12 @@ export class KnightRenderer {
   draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean, seed = 0, shadow = true) {
     if (this.rows >= this.capacity) return;
     const row = this.rows++;
-    const D = this.boneData;
-    const o0 = row * SLOTS * 12;
-    for (let i = 0; i < BONE_COUNT; i++) writeRows(D, o0 + i * 12, _m.multiplyMatrices(d.bones[i], BIND.inv[i]));
-    writeRows(D, o0 + SLOT_WEAPON * 12, d.weapon ?? HIDDEN);
-    writeRows(D, o0 + SLOT_OFFHAND * 12, d.offhand);
-    if (d.daggerOut && d.weapon) writeRows(D, o0 + SLOT_DAGGER * 12, d.weapon);
-    else writeRows(D, o0 + SLOT_DAGGER * 12, _m.multiplyMatrices(d.bones[B.pelvis], SHEATH));
+    writePose(this.boneData, row * SLOTS * 12, d);
+    this.enqueue(cls, team, row, blood, mud, lod, hideHead, seed, shadow);
+    if (cls === 'longbowman') this.bowString(d);
+  }
+
+  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean, seed: number, shadow: boolean) {
     const h = hash(seed);
     const beard = (h & 255) / 255, skin = ((h >>> 8) & 255) / 255, hair = ((h >>> 16) & 255) / 255;
     const bks = this.buckets.get(cls)!;
@@ -555,7 +583,6 @@ export class KnightRenderer {
     };
     put(bks[Math.max(0, Math.min(2, lod))]);
     if (shadow) put(bks[3]);
-    if (cls === 'longbowman') this.bowString(d);
   }
 
   private line(a: THREE.Vector3, b: THREE.Vector3, r: number) {
@@ -599,6 +626,15 @@ export class KnightRenderer {
 
   /** draw calls the knights cost in the main view this frame */
   get drawCalls() { let n = 0; for (const bks of this.buckets.values()) for (const b of bks.slice(0, 3)) if (b.count) n += b.geos.length; return n; }
+}
+
+/** All 20 matrix slots of one knight's pose. */
+function writePose(D: Float32Array, o0: number, d: KnightDrawable) {
+  for (let i = 0; i < BONE_COUNT; i++) writeRows(D, o0 + i * 12, _m.multiplyMatrices(d.bones[i], BIND.inv[i]));
+  writeRows(D, o0 + SLOT_WEAPON * 12, d.weapon ?? HIDDEN);
+  writeRows(D, o0 + SLOT_OFFHAND * 12, d.offhand);
+  if (d.daggerOut && d.weapon) writeRows(D, o0 + SLOT_DAGGER * 12, d.weapon);
+  else writeRows(D, o0 + SLOT_DAGGER * 12, _m.multiplyMatrices(d.bones[B.pelvis], SHEATH));
 }
 
 /** Write the top three rows of a matrix (the affine part) as three RGBA texels. */

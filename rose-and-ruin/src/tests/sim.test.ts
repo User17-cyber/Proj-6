@@ -102,5 +102,26 @@ if (!only) {
   runBattle(MAPS[0].id, 'conquest', 20, 120, 2);
   runBattle(MAPS[0].id, 'laststand', 20, 240, 0);
 }
+// pitched battle: a player fights as each order once, then is out
+{
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'battle', teamSize: 20, seed: 3 }, buildMap('bodiam'));
+  const me = m.addPlayer('Tester', 1, 0, 'vanguard');
+  for (let i = 0; i < 60 * 7; i++) m.step();
+  const seen: string[] = [];
+  for (let life = 0; life < 6; life++) {
+    if (!me.alive) { fail(`life ${life}: player not alive`); break; }
+    seen.push(me.cls);
+    me.spawnProt = 0; me.invulnT = 0;
+    m.damage(me, null, 9999, { zone: 1, dtype: 0, kind: 0, x: me.x, y: me.y + 1, z: me.z, dx: 0, dy: 0, dz: 1 });
+    m.requestSpawn(me.id, me.cls); // asking for a spent order is refused
+    if (me.wantSpawn) fail('a spent order was accepted');
+    const free = m.freeClass(me);
+    if (free) m.requestSpawn(me.id, free);
+    for (let i = 0; i < 60 * 8 && !me.alive && free; i++) m.step();
+  }
+  if (new Set(seen).size !== 6) fail(`orders reused: ${seen.join(',')}`);
+  if (me.alive || isFinite(me.respawnT)) fail('player could respawn after all six orders fell');
+  console.log(`pitched lives: ${seen.join(' > ')}; out after six`);
+}
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all simulation checks passed');

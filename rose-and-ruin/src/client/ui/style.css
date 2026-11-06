@@ -424,3 +424,6 @@ select.textin option { background: #1c1a18; color: var(--parch); }
     radial-gradient(circle at 18% 75%, rgba(100, 8, 4, 0.9) 0 6%, transparent 7%),
     radial-gradient(closest-side, rgba(85, 4, 2, 0.96) 0%, rgba(118, 9, 5, 0.9) 55%, rgba(90, 6, 3, 0.7) 78%, rgba(60, 2, 1, 0) 92%);
   filter: blur(0.4px); mix-blend-mode: multiply; }
+.classbtn.spent { opacity: 0.35; cursor: not-allowed; filter: grayscale(1); }
+.classbtn.spent .cn { text-decoration: line-through; }
+.death .spentnote { min-height: 18px; }
