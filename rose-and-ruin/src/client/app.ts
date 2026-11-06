@@ -454,7 +454,7 @@ export class App implements HudHost, MenuHost {
     const tab = I.keys.has('Tab');
     if (tab !== this.boardHeld) { this.boardHeld = tab; this.hud.showBoard(tab); }
     // death screen choices
-    if (this.hud.deathOpen) for (const code of ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
+    if (this.hud.deathOpen) for (const code of ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
     if (s.online && !this.hud.chatting && I.consumeKey(this.prefs.bindings.chat)) { this.hud.openChat(); this.input.enabled = false; }
     if (I.consumeKey(this.prefs.bindings.camera) && me) {
       this.firstPerson = !this.firstPerson;

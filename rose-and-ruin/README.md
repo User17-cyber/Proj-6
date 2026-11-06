@@ -54,7 +54,7 @@ From the great hall:
 | --- | --- |
 | Move | W A S D |
 | Light attack / heavy attack (hold) | Left mouse |
-| Guard and parry (archers: aim) | Right mouse |
+| Guard, raise shield and parry (archers: aim) | Right mouse or 3 |
 | Thrust (archers: rondel stab) | R or middle mouse |
 | Kick (breaks a guard) | F |
 | Abilities | Q, E |

@@ -6,11 +6,13 @@ import { Btn } from '../shared/types';
 export interface Bindings {
   forward: string; back: string; left: string; right: string;
   sprint: string; jump: string; kick: string; ability1: string; ability2: string; thrust: string;
+  /** raise the shield / guard (as well as right mouse) */
+  guard: string;
   camera: string; scoreboard: string; chat: string;
 }
 export const DEFAULT_BINDINGS: Bindings = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
-  sprint: 'ShiftLeft', jump: 'Space', kick: 'KeyF', ability1: 'KeyQ', ability2: 'KeyE', thrust: 'KeyR',
+  sprint: 'ShiftLeft', jump: 'Space', kick: 'KeyF', ability1: 'KeyQ', ability2: 'KeyE', thrust: 'KeyR', guard: 'Digit3',
   camera: 'KeyV', scoreboard: 'Tab', chat: 'Enter',
 };
 
@@ -79,6 +81,7 @@ export class Input {
     if (code === b.ability1) return Btn.Ability1;
     if (code === b.ability2) return Btn.Ability2;
     if (code === b.thrust) return Btn.Thrust;
+    if (code === b.guard) return Btn.Block;
     return 0;
   }
   private latch(b: number) { if (this.enabled) this.latched |= b; }
@@ -99,6 +102,7 @@ export class Input {
     if (k.has(B.ability1)) b |= Btn.Ability1;
     if (k.has(B.ability2)) b |= Btn.Ability2;
     if (k.has(B.thrust)) b |= Btn.Thrust;
+    if (k.has(B.guard)) b |= Btn.Block;
     return b;
   }
   /** RMB is "block" for melee and "aim" for archers. */

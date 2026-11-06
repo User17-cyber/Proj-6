@@ -284,7 +284,7 @@ export class Menus {
           <div class="opt"><label>Ambience</label>${range('ambience', 0, 1, 0.05, p.volumes.ambience, pct)}</div>
         </div>
         <h3 class="title-caps" style="color:var(--gold);font-size:14px;margin:22px 0 8px">Keys <span class="hint">(click, then press a key)</span></h3>
-        <div class="controls-grid">${bindRow('forward', 'Advance')}${bindRow('back', 'Fall back')}${bindRow('left', 'Step left')}${bindRow('right', 'Step right')}${bindRow('sprint', 'Sprint')}${bindRow('jump', 'Jump')}${bindRow('kick', 'Kick')}${bindRow('thrust', 'Thrust')}${bindRow('ability1', 'First ability')}${bindRow('ability2', 'Second ability')}${bindRow('camera', 'Change view')}</div>
+        <div class="controls-grid">${bindRow('forward', 'Advance')}${bindRow('back', 'Fall back')}${bindRow('left', 'Step left')}${bindRow('right', 'Step right')}${bindRow('sprint', 'Sprint')}${bindRow('jump', 'Jump')}${bindRow('kick', 'Kick')}${bindRow('thrust', 'Thrust')}${bindRow('guard', 'Guard / raise shield')}${bindRow('ability1', 'First ability')}${bindRow('ability2', 'Second ability')}${bindRow('camera', 'Change view')}</div>
       </div>
       <div class="sheet-foot"><button class="btn iron" data-a="reset">Restore defaults</button><button class="btn" data-a="close">Done</button></div>`;
     };
@@ -349,12 +349,12 @@ export class Menus {
           <div><span>Move</span><span>${k(b.forward)}${k(b.left)}${k(b.back)}${k(b.right)}</span></div>
           <div><span>Light attack (aim with your swing)</span><kbd>Left click</kbd></div>
           <div><span>Heavy attack</span><kbd>Hold left</kbd></div>
-          <div><span>Guard / parry · Aim bow</span><kbd>Right click</kbd></div>
+          <div><span>Guard / raise shield / parry · Aim bow</span><span><kbd>Right click</kbd> ${k(b.guard)}</span></div>
           <div><span>Thrust · Rondel stab</span><span>${k(b.thrust)} <kbd>Middle</kbd></span></div>
           <div><span>Kick (breaks guard)</span>${k(b.kick)}</div>
           <div><span>Abilities</span><span>${k(b.ability1)}${k(b.ability2)}</span></div>
           <div><span>Sprint · Jump</span><span>${k(b.sprint)}${k(b.jump)}</span></div>
-          <div><span>Feint (cancel a windup)</span><kbd>Right click</kbd></div>
+          <div><span>Feint (cancel a windup)</span><span><kbd>Right click</kbd> ${k(b.guard)}</span></div>
           <div><span>Over the shoulder / visor</span>${k(b.camera)}</div>
           <div><span>Roll of the fallen</span><kbd>Tab</kbd></div>
           <div><span>Speak (multiplayer)</span><kbd>Enter</kbd></div>
