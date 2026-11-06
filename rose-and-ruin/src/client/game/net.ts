@@ -289,29 +289,38 @@ export class NetSession implements SessionView {
       const s = this.ensure(id);
       const k0 = s0.byId.get(id) ?? k1;
       const isMe = id === this.localId;
-      // the local knight shows the freshest state; others the interpolated past
-      const src = isMe ? latest.byId.get(id) ?? k1 : k1;
-      const wasAlive = s.alive;
-      s.alive = src.alive;
-      s.cls = CLASS_IDS[src.cls] ?? s.cls; s.team = src.team as Team;
+      // life and death change when the view reaches the later snapshot, after the
+      // kill/spawn event (released up to one tick ahead) has been shown
+      const aliveNow = a >= 1 ? k1.alive : k0.alive;
+      s.alive = aliveNow;
+      const base = k1.alive ? k1 : k0;
+      s.cls = CLASS_IDS[base.cls] ?? s.cls; s.team = base.team as Team;
       s.maxHp = CLASSES[s.cls].hp; s.maxStamina = CLASSES[s.cls].stamina;
-      if (!src.alive) { s.act = Act.Dead; continue; }
+      if (!aliveNow) { s.act = Act.Dead; continue; }
+      // dead entries carry no state: only blend between two living samples
+      const both = k0.alive && k1.alive;
+      let src = k1.alive ? k1 : k0;
+      if (isMe) { const L = latest.byId.get(id); if (L && L.alive) src = L; }
       s.act = src.act;
-      if (isMe) {
+      if (isMe && this.pk.alive) {
         const pk = this.pk;
         s.x = pk.x + this.corr.x; s.y = pk.y + this.corr.y; s.z = pk.z + this.corr.z;
         s.vx = pk.vx; s.vy = pk.vy; s.vz = pk.vz; s.onGround = pk.onGround; s.sprinting = pk.sprinting;
         s.yaw = this.input && s.act !== Act.Stun && s.act !== Act.Knockdown && s.act !== Act.Release ? this.input.yaw : pk.yaw;
         s.pitch = this.input ? this.input.pitch : src.pitch;
         s.actT = src.actT + this.snapAge;
-      } else {
-        const jump = !k0.alive || (k1.x - k0.x) ** 2 + (k1.z - k0.z) ** 2 > 9 || !wasAlive;
+      } else if (both) {
+        const jump = (k1.x - k0.x) ** 2 + (k1.z - k0.z) ** 2 > 9;
         const t = jump ? 1 : a;
         s.x = k0.x + (k1.x - k0.x) * t; s.y = k0.y + (k1.y - k0.y) * t; s.z = k0.z + (k1.z - k0.z) * t;
         s.yaw = k0.yaw + wrapAngle(k1.yaw - k0.yaw) * t;
         s.pitch = k0.pitch + (k1.pitch - k0.pitch) * t;
         s.vx = k1.vx; s.vy = k1.vy; s.vz = k1.vz; s.onGround = k1.onGround; s.sprinting = k1.sprinting;
         s.actT = k1.act === k0.act && k0.actT <= k1.actT ? k0.actT + (k1.actT - k0.actT) * t : Math.max(0, k1.actT - (s1.tick - rt) * DT);
+      } else {
+        s.x = src.x; s.y = src.y; s.z = src.z; s.yaw = src.yaw; s.pitch = src.pitch;
+        s.vx = src.vx; s.vy = src.vy; s.vz = src.vz; s.onGround = src.onGround; s.sprinting = src.sprinting;
+        s.actT = src.actT;
       }
       s.actDur = src.actDur; s.atk = src.atk; s.heavy = src.heavy; s.charge = src.charge; s.draw = src.draw;
       s.abilitySlot = src.abilitySlot; s.knockT = src.knockT; s.stunT = src.stunT; s.bulwarkT = src.bulwarkT;
@@ -325,6 +334,14 @@ export class NetSession implements SessionView {
       me.respawnT = y.respawnT >= NEVER ? 9999 : Math.max(0, y.respawnT - this.snapAge);
       me.nextCls = CLASS_IDS[y.nextCls] ?? me.nextCls;
     }
+  }
+
+  /** After a long pause (loading a castle): drop the backlog and rejoin the present. */
+  catchUp() {
+    this.events.length = 0;
+    this.ready.length = 0;
+    this.renderTick = this.latestTick - INTERP;
+    this.acc = 0;
   }
 
   drainEvents(): SimEvent[] { const e = this.ready; this.ready = []; return e; }

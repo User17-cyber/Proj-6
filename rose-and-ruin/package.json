@@ -9,7 +9,8 @@
     "build": "vite build && node scripts/build-server.mjs",
     "start": "node dist/server.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node scripts/build-tests.mjs && node dist-test/sim.test.mjs"
+    "build:server": "node scripts/build-server.mjs",
+    "test": "node scripts/build-tests.mjs && node scripts/build-server.mjs && node dist-test/sim.test.mjs && node dist-test/net.test.mjs && node dist-test/predict.test.mjs"
   },
   "dependencies": {
     "ws": "^8.22.1"

@@ -336,7 +336,11 @@ export class App implements HudHost, MenuHost {
         rooms: (rooms) => { this.mpState = { ...this.mpState, rooms }; this.menus.setMpState(this.mpState); },
         created: () => { this.menus.toast('Your banner is raised. Choose it from the list to join.'); this.net?.send({ t: 'list' }); },
         joined: (s) => { void this.enterNet(s); },
-        error: (msg) => this.menus.toast(msg),
+        error: (msg) => {
+          this.menus.toast(msg);
+          // a refused join leaves us on the loading screen: back to the muster list
+          if (this.mode === 'loading' && !(this.session instanceof NetSession)) { this.menus.hideLoading(); this.mode = 'menu'; this.menus.showMultiplayer(); }
+        },
       });
     }
     this.net.connect(url, this.prefs.name || 'Sir Knight');
@@ -368,6 +372,7 @@ export class App implements HudHost, MenuHost {
     this.hud.setLoadout(this.loadout.cls);
     this.rig.mode = this.firstPerson ? 'first' : 'third';
     await this.warmShaders();
+    s.catchUp();
     this.menus.hideLoading();
     this.mode = 'battle';
     this.input.enabled = true;
@@ -531,7 +536,10 @@ export class App implements HudHost, MenuHost {
     if (!s.online) {
       if (this.hitStop > 0) { this.hitStop -= dt; s.timeScale = 0.2; } else s.timeScale = this.baseScale;
     }
-    if (this.mode === 'battle') this.battleInput(s);
+    if (this.mode === 'battle') {
+      this.input.enabled = !this.hud.paused && !this.hud.chatting && !this.hud.deathOpen && !this.hud.endOpen;
+      this.battleInput(s);
+    }
     s.update(dt);
     if (s instanceof NetSession && s.lost && this.mode === 'battle') { this.menus.toast('The connection to the muster was lost.'); this.leave(); return; }
     const events = s.drainEvents();
@@ -554,8 +562,8 @@ export class App implements HudHost, MenuHost {
         timeScale: this.baseScale, online: s.online, firstPerson: this.firstPerson,
       };
       this.hud.update(dt, hf);
-      // the death screen needs the mouse
-      if (this.hud.deathOpen || this.hud.endOpen) { if (this.input.locked) this.input.exitLock(); this.input.enabled = this.hud.endOpen ? false : this.input.enabled; }
+      // the death and end screens need the mouse
+      if ((this.hud.deathOpen || this.hud.endOpen) && this.input.locked) this.input.exitLock();
       const needLock = !this.spectating && me && me.alive && !this.input.locked && !this.hud.paused && !this.hud.chatting && !this.hud.endOpen;
       this.lockHint.classList.toggle('hidden', !needLock);
       if (this.spectating && (this.specCam === 'free' || this.specCam === 'follow') && !this.input.locked) this.lockHint.classList.add('hidden');

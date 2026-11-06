@@ -38,3 +38,7 @@ Typos are forgiven (edit-distance matching), plurals and alternate names work ("
 - `drillion/js/data/*.js`: countries, capitals, sea life, space, elements, myth, gems and coins
 - `drillion/tools/test-engine.js`: engine checks (`node drillion/tools/test-engine.js`)
 - `drillion/tools/build.js`: bundles everything into one file, `drillion/dist/drillion.html`
+
+# Rose & Ruin
+
+A large-scale medieval knight battle game set at the castles of the Wars of the Roses, with six knight classes, bots, a bots-only spectator mode and online multiplayer. See [`rose-and-ruin/README.md`](rose-and-ruin/README.md) for how to run and play it.

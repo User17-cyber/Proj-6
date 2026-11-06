@@ -297,6 +297,8 @@ export class GameView {
     const k = this.s.knights[id];
     const v = this.views[id];
     if (!k || !v || !v.anim.hasFirstFrame) return;
+    // one corpse per death (the kill event and the state change can both report it)
+    if (!v.wasAlive) return;
     const ranged = CLASSES[k.cls].ranged;
     const rag = new Ragdoll(v.anim.joints, v.anim.prevJoints, 1 / 60, ranged ? null : v.anim.weapon, { dx, dy: Math.max(dy, 0.05), dz, force, zone });
     // arrows ride along on the ragdoll's bones

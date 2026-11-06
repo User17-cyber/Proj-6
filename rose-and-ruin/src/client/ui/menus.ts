@@ -443,11 +443,13 @@ export class Menus {
     const msg = { offline: 'Not connected.', connecting: 'Riding to the muster…', online: 'Connected. Choose a muster to join, or raise your own banner.', error: this.mp.message ?? 'The muster could not be reached.' }[this.mp.status];
     st.textContent = this.mp.status === 'error' ? `${msg} Multiplayer needs the Rose & Ruin server running (npm start).` : msg;
     create.disabled = this.mp.status !== 'online';
-    if (this.mp.status !== 'online') { rooms.innerHTML = ''; return; }
-    rooms.innerHTML = this.mp.rooms.length ? this.mp.rooms.map((r) => {
+    if (this.mp.status !== 'online') { rooms.innerHTML = ''; rooms.dataset.h = ''; return; }
+    const html = this.mp.rooms.length ? this.mp.rooms.map((r) => {
       const def = MAPS.find((d) => d.id === r.mapId);
       return `<div class="room"><div><b class="title-caps" style="color:var(--gold-hi)">${esc(r.name)}</b><div class="hint">${esc(def?.name ?? r.mapId)} · ${MODE_INFO[r.mode].name} · ${r.teamSize} per house · ${DIFFICULTY_NAMES[r.difficulty] ?? ''} bots · ${r.phase === 'live' ? `${Math.ceil(r.timeLeft / 60)} min left` : r.phase}</div></div><div class="title-caps">${r.humans} ⚑</div><button class="btn small" data-room="${esc(r.id)}">Join</button></div>`;
     }).join('') : '<div class="hint">No musters yet. Raise the first banner.</div>';
+    // only touch the DOM when something changed, so a click is never lost to a refresh
+    if (rooms.dataset.h !== html) { rooms.innerHTML = html; rooms.dataset.h = html; }
   }
 
   // ------------------------------------------------------------------ loading
