@@ -45,6 +45,8 @@ export class Match {
   private usedNames = new Set<string>();
   private bleedTimer = 0;
   paused = false;
+  /** keep the hosts mustered (no countdown) until released, e.g. until the player is ready */
+  hold = false;
   /** A* searches bots may still run this tick */
   aiBudget = 0;
 
@@ -308,7 +310,7 @@ export class Match {
     if (this.paused) return;
     this.tick++;
     this.time += DT;
-    this.phaseT += DT;
+    if (!(this.hold && this.phase === 'warmup')) this.phaseT += DT;
     if (this.phase === 'warmup' && this.phaseT >= WARMUP_TIME) {
       this.phase = 'live'; this.phaseT = 0;
       this.emit({ t: 'horn', team: -1, kind: 0 });

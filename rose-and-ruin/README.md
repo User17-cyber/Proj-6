@@ -40,8 +40,8 @@ This runs the headless simulation checks (pose reach, map connectivity, a 150-se
 
 From the great hall:
 
-- **Take the Field**: choose castle, manner of battle, army size, bot prowess, house, time limit, reserves and friendly fire, then pick your knight in the armoury.
-- **Watch the Battle**: the same battle with bots only. A director camera chooses shots; you can follow any knight or fly freely, and slow or speed up time.
+- **Take the Field**: choose castle, manner of battle, army size, bot prowess, house, time limit, reserves and friendly fire, then pick your knight in the armoury. The hosts stay drawn up until you press Space (or click) to sound the charge.
+- **Watch the Battle**: start a battle of bots alone; it begins as soon as it loads. A director camera chooses shots; you can follow any knight or fly freely, and slow or speed up time.
 - **Join a Muster**: connect to a server, join a running battle or raise your own. Bots fill every place no player holds.
 
 ### Controls

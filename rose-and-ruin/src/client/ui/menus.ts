@@ -85,7 +85,7 @@ export class Menus {
     const s = el('screen menu-main');
     const items: [string, string, string, string][] = [
       ['battle', 'Take the Field', 'Fight at the head of a host of knights', 'battle'],
-      ['spectate', 'Watch the Battle', 'Command nothing; witness everything', 'spectate'],
+      ['spectate', 'Watch the Battle', 'Start a battle of bots alone and witness it', 'spectate'],
       ['multiplayer', 'Join a Muster', 'Fight alongside and against other players', 'mp'],
       ['armoury', 'The Armoury', 'Six orders of knighthood and their arms', 'armoury'],
       ['codex', 'Codex of Arms', 'Controls, and the art of the fight', 'codex'],

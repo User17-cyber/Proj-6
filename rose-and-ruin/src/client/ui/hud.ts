@@ -419,8 +419,13 @@ export class Hud implements HudSink {
     if (s.phase === 'warmup') {
       this.warm.classList.remove('hidden');
       const [w1, w2] = Array.from(this.warm.children) as HTMLElement[];
-      w1.textContent = 'The hosts are mustering';
-      w2.textContent = String(Math.max(1, Math.ceil(6 - s.phaseT)));
+      if (s.held) {
+        w1.textContent = 'Your host awaits your command';
+        w2.innerHTML = '<span style="font-family:var(--caps);font-size:22px;letter-spacing:.12em">Press Space or click to sound the charge</span>';
+      } else {
+        w1.textContent = 'The hosts are mustering';
+        w2.textContent = String(Math.max(1, Math.ceil(6 - s.phaseT)));
+      }
     } else this.warm.classList.add('hidden');
     // spectator bar
     if (f.spectating || (me && !me.alive && !this.deathOpen && this.deadSince >= 0 && me.respawnT > 900)) {

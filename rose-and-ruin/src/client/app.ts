@@ -215,9 +215,8 @@ export class App implements HudHost, MenuHost {
   private startAttract() {
     const map = this.world!.map;
     const s = new LocalSession({ ...DEFAULT_SETTINGS, mapId: map.def.id, teamSize: 20, difficulty: 2, timeLimit: 3600, mode: 'battle', ticketScale: 10, seed: (Math.random() * 1e9) | 0 }, null);
-    // let the hosts close in before the menu appears
-    for (let i = 0; i < 60 * 9; i++) s.match.step();
-    s.match.events.length = 0;
+    // the hall's backdrop: both hosts drawn up and waiting; nothing fights until you choose to
+    s.match.hold = true;
     s.update(0);
     this.present(s, false);
     this.attract = true;
@@ -251,6 +250,9 @@ export class App implements HudHost, MenuHost {
     this.menus.setLoading(0.92, 'Arraying the battle lines');
     await nextFrame();
     const s = new LocalSession(m, player);
+    // with a knight of your own, the battle waits for you to sound the charge;
+    // a bots-only battle (Watch the Battle) starts by itself
+    if (player) s.match.hold = true;
     this.present(s, true);
     this.attract = false;
     this.spectating = !player;
@@ -452,6 +454,10 @@ export class App implements HudHost, MenuHost {
     if (I.consumeKey(this.prefs.bindings.camera) && me) {
       this.firstPerson = !this.firstPerson;
       this.rig.mode = this.firstPerson ? 'first' : 'third';
+    }
+    // sound the charge once you are ready
+    if (s instanceof LocalSession && s.held && me && me.alive && this.input.locked && !this.hud.paused) {
+      if (I.consumeKey('Space') || I.consumeKey('Enter') || (I.latched & Btn.Attack)) { s.release(); I.clearLatched(); this.audio.play('hornShort', { bus: 'ui', vol: 0.6, rateVar: 0 }); }
     }
     const spectatorKeys = this.spectating || (me && !me.alive && me.respawnT > 900 && this.time - this.deathAt > 3);
     if (spectatorKeys) this.spectatorKeys(s);

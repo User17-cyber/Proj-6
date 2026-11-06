@@ -43,6 +43,8 @@ export interface SessionView {
   timeScale: number;
   paused: boolean;
   readonly online: boolean;
+  /** the hosts wait in muster for the player to sound the charge */
+  readonly held?: boolean;
   update(dt: number): void;
   drainEvents(): SimEvent[];
   setInput(f: InputFrame): void;
@@ -128,6 +130,13 @@ export class LocalSession implements SessionView {
 
   get phase() { return this.match.phase; }
   get phaseT() { return this.match.phaseT; }
+  get held() { return this.match.hold && this.match.phase === 'warmup'; }
+  /** Sound the charge: a short countdown, then battle. */
+  release(countdown = 3) {
+    if (!this.match.hold) return;
+    this.match.hold = false;
+    this.match.phaseT = Math.max(this.match.phaseT, 6 - countdown);
+  }
   get timeLeft() { return this.match.timeLeft; }
   get winner() { return this.match.winner; }
   get teams() { return this.match.teams; }

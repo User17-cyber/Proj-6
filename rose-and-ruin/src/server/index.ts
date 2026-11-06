@@ -148,6 +148,8 @@ class Room {
     c.room = null;
     this.rosterSig = '';
     this.broadcastChat('Herald', -1, `${c.name} has left the field.`);
+    // an empty muster waits, freshly drawn up, for the next player to arrive
+    if (!this.clients.size) this.newMatch({ ...this.settings, seed: (Math.random() * 1e9) | 0 });
   }
 
   broadcastChat(name: string, team: number, text: string) {
