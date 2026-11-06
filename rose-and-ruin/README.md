@@ -4,6 +4,10 @@ A large-scale medieval knight battle game for the browser, set during the Wars o
 
 ## Run it
 
+**Quickest:** download `RoseAndRuin.html` and open it in Chrome, Edge or Firefox: it runs offline from your disk, with nothing to install. Single player and bots-only battles work this way; multiplayer needs the server below. Build that file yourself with `npm run build:standalone` (it lands in `dist/`).
+
+**From source:**
+
 You need Node 20 or newer.
 
 ```bash

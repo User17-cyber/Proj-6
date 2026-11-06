@@ -15,9 +15,11 @@ export interface SkyManifestEntry {
 }
 
 const BASE = './assets/sky/';
+/** The standalone download carries its skies inline (window.__ASSETS: path -> data URL). */
+const asset = (name: string) => (globalThis as unknown as { __ASSETS?: Record<string, string> }).__ASSETS?.[BASE + name] ?? BASE + name;
 let manifestP: Promise<Record<SkyId, SkyManifestEntry>> | null = null;
 export function skyManifest() {
-  if (!manifestP) manifestP = fetch(BASE + 'manifest.json').then((r) => r.json());
+  if (!manifestP) manifestP = fetch(asset('manifest.json')).then((r) => r.json());
   return manifestP;
 }
 
@@ -90,11 +92,11 @@ async function loadEnvHdr(hdr: HDRLoader, sky: string): Promise<THREE.DataTextur
   let buf: ArrayBuffer | null = null;
   const isRadiance = (b: ArrayBuffer) => { const u = new Uint8Array(b, 0, Math.min(2, b.byteLength)); return u[0] === 0x23 && u[1] === 0x3f; }; // "#?"
   try {
-    const r = await fetch(BASE + sky + '_env.hdr');
+    const r = await fetch(asset(sky + '_env.hdr'));
     if (r.ok) { const b = await r.arrayBuffer(); if (isRadiance(b)) buf = b; }
   } catch { /* fall back to the packed copy */ }
   if (!buf) {
-    const r = await fetch(BASE + sky + '_env.hdr.json');
+    const r = await fetch(asset(sky + '_env.hdr.json'));
     if (!r.ok) throw new Error(`sky ${sky}: environment map missing`);
     const bin = atob(((await r.json()) as { data: string }).data);
     const u = new Uint8Array(bin.length);
@@ -115,7 +117,7 @@ export async function buildSky(renderer: THREE.WebGLRenderer, atm: Atmosphere): 
   hdr.setDataType(THREE.FloatType);
   const [envTex, bgTex] = await Promise.all([
     loadEnvHdr(hdr, atm.sky),
-    new THREE.TextureLoader().loadAsync(BASE + atm.sky + '_bg.jpg'),
+    new THREE.TextureLoader().loadAsync(asset(atm.sky + '_bg.jpg')),
   ]);
   bgTex.colorSpace = THREE.NoColorSpace;
   bgTex.generateMipmaps = false;

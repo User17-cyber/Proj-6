@@ -10,6 +10,7 @@
     "start": "node dist/server.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build:server": "node scripts/build-server.mjs",
+    "build:standalone": "vite build && node scripts/build-standalone.mjs",
     "test": "node scripts/build-tests.mjs && node scripts/build-server.mjs && node dist-test/sim.test.mjs && node dist-test/net.test.mjs && node dist-test/predict.test.mjs"
   },
   "dependencies": {
