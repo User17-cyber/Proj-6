@@ -58,6 +58,8 @@ export class GameView {
     this.particles.quality = r.settings.quality;
     this.decals = new Decals(r.settings.quality >= 2 ? 500 : 250);
     this.arrows = new Arrows(world.baker);
+    this.particles.group.userData.noReflect = true;
+    this.decals.mesh.userData.noReflect = true;
     world.root.add(this.kr.group, this.particles.group, this.decals.mesh, this.arrows.group);
     const W = world.map.world;
     this.ground = (x, z, y) => W.groundAt(x, z, y);

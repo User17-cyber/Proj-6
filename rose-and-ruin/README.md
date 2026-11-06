@@ -112,7 +112,8 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
   - three.js with physically based materials, using textures baked on the GPU at load
   - real HDRI skies for image-based light, cascaded sun shadows, N8AO ambient occlusion
   - height fog with sun in-scattering, bloom, an AgX filmic grade, SMAA, and depth of field in the armoury
-  - splat-mapped terrain with distance LODs, instanced vegetation and grass, and moats and the sea
+  - splat-mapped terrain with distance LODs, and instanced vegetation and grass
+  - moats, rivers and the sea that mirror the castles and the knights through planar reflections
 - **Knights** (`src/client/knights`):
   - a 17-bone procedural skeleton with IK arms and legs, planted feet, and instanced armour pieces per class
   - tabards in the house colours, and blood and mud that build up per knight

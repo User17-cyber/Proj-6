@@ -266,7 +266,7 @@ export function buildVegetation(map: BuiltMap, baker: TextureBaker, quality: num
 
   // meadow grass
   const grass = quality >= 1 ? buildGrass(map, quality, heightTex, splatTex) : null;
-  if (grass) group.add(grass.mesh);
+  if (grass) { grass.mesh.name = 'grass'; grass.mesh.userData.noReflect = true; group.add(grass.mesh); }
 
   let lastX = Infinity, lastZ = Infinity;
   return {

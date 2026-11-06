@@ -218,12 +218,16 @@ export class Renderer {
     this.csm?.updateFrustums();
   }
 
+  /** passes rendered before the main frame (planar reflections) */
+  readonly preRender: (() => void)[] = [];
+
   render(dt: number) {
     G.uTime.value += dt;
     G.uCamPos.value.copy(this.camera.position);
     this.grade.u('gtime').value = (this.grade.u('gtime').value + dt) % 100;
     this.camera.updateMatrixWorld();
     this.csm?.update();
+    for (const f of this.preRender) f();
     this.composer.render(dt);
   }
 

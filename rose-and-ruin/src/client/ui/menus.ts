@@ -94,7 +94,7 @@ export class Menus {
     s.innerHTML = `<div class="side">
       <div class="logo"><h1 class="gold-text">Rose <span class="amp">&amp;</span> Ruin</h1><div class="tag">The Wars of the Roses · 1455 – 1487</div></div>
       <div class="menu-list">${items.map(([ic, name, sub, a]) => `<button class="menu-item" data-a="${a}">${icon(ic)}${name}<small>${sub}</small></button>`).join('')}</div>
-      <div class="menu-foot">${esc(TEAM_HOUSE[0])} · <i>${TEAM_MOTTO[0]}</i><br>${esc(TEAM_HOUSE[1])} · <i>${TEAM_MOTTO[1]}</i></div>
+      <div class="menu-foot">${touchOnly() ? '<b style="color:var(--gold-hi)">Fighting needs a mouse and keyboard; on this device you can watch the battles.</b><br>' : ''}${esc(TEAM_HOUSE[0])} · <i>${TEAM_MOTTO[0]}</i><br>${esc(TEAM_HOUSE[1])} · <i>${TEAM_MOTTO[1]}</i></div>
     </div><div class="menu-caption"><div class="place"></div><div class="when"></div></div>`;
     s.querySelector('.menu-list')!.addEventListener('click', (e) => {
       const a = (e.target as HTMLElement).closest('button')?.dataset.a;
@@ -490,6 +490,10 @@ export class Menus {
   }
 
   roseImg(team: number, size = 64) { return `<img src="${roseDataUrl(team, size)}" width="${size}" height="${size}" alt="">`; }
+}
+
+function touchOnly(): boolean {
+  try { return matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches; } catch { return false; }
 }
 
 export function defaultServer(): string {

@@ -144,7 +144,8 @@ export class NetSession implements SessionView {
     this.settings = settings;
     this.map = buildMap(settings.mapId);
     this.localId = knightId;
-    this.objectives = this.map.objectives.map((def) => ({ def, owner: def.owner, progress: def.owner === 0 ? -1 : def.owner === 1 ? 1 : 0, contested: false, n0: 0, n1: 0 }));
+    // banners only matter in conquest (as in the server's match)
+    this.objectives = (settings.mode === 'conquest' ? this.map.objectives : []).map((def) => ({ def, owner: def.owner, progress: def.owner === 0 ? -1 : def.owner === 1 ? 1 : 0, contested: false, n0: 0, n1: 0 }));
     this.latestTick = this.renderTick = tick;
     this.pk = new Knight(knightId, 0);
   }

@@ -10,7 +10,7 @@ import { buildTerrain, type TerrainView } from './terrain';
 import { buildStructures, structureMaterials } from './structures';
 import { buildProps, flagUniforms, type PropsView } from './props';
 import { buildVegetation, type VegetationView } from './vegetation';
-import { buildWater } from './water';
+import { buildWater, PlanarReflection } from './water';
 import { canvasTexture, drawBanner } from './heraldry';
 import { G, unregisterWorld, beginWorld, endWorld } from './materials';
 
@@ -61,6 +61,10 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
   root.add(veg.group);
   await step(0.88, 'Filling the moat');
   root.add(buildWater(map, baker, terrain.heightTex));
+  // the castle and the knights mirrored in the moat (Medium and up)
+  const reflection = q >= 1 && map.world.water.length ? new PlanarReflection(q >= 2 ? 0.5 : 0.33, q >= 2 ? 1 : 2) : null;
+  const reflect = reflection ? () => reflection.render(r.renderer, r.scene, r.camera, map.world.water, root) : null;
+  if (reflect) r.preRender.push(reflect);
 
   // fire lights: a small pool of point lights follows the camera to the nearest fires
   const fires = map.lights.map((l) => ({ ...l }));
@@ -105,6 +109,8 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
       });
     },
     dispose() {
+      if (reflect) { const i = r.preRender.indexOf(reflect); if (i >= 0) r.preRender.splice(i, 1); }
+      reflection?.dispose();
       r.scene.remove(root);
       root.traverse((o) => {
         const m = o as THREE.Mesh;

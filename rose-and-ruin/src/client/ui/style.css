@@ -1,5 +1,6 @@
 /* Rose & Ruin: medieval UI. Iron and gold leaf for chrome, parchment for reading. */
 :root {
+  color-scheme: dark;
   --ink: #2a1d12;
   --ink-soft: #4a3826;
   --parch: #e8dbbd;
