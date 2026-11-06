@@ -28,7 +28,7 @@
 html, body { margin: 0; height: 100%; background: #0b0908; color: var(--parch); font-family: var(--serif); overflow: hidden; -webkit-font-smoothing: antialiased; }
 #game { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; }
 #ui { position: fixed; inset: 0; pointer-events: none; user-select: none; }
-#ui .screen, #ui .overlay { pointer-events: auto; }
+#ui .screen, #ui .overlay, #ui .sheet-wrap { pointer-events: auto; }
 button { font: inherit; color: inherit; }
 .hidden { display: none !important; }
 
