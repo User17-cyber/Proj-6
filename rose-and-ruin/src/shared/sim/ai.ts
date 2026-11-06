@@ -31,6 +31,10 @@ export class BotBrain {
   pathTX = 0; pathTZ = 0;
   goalIdx = -1;
   goalT = 0;
+  /** distance to the fighting ground last marched toward (pitched battle) */
+  goalDist = 0;
+  /** time spent at an empty fighting ground */
+  idleAtGoal = 0;
   holdAttack = 0;
   holdBlock = 0;
   pressKick = false;
@@ -145,6 +149,7 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
       const [gx, gz, ox, oz] = goal;
       const field = m.nav.field(gx, gz);
       const dg = Math.hypot(gx - k.x, gz - k.z);
+      b.goalDist = m.settings.mode === 'battle' ? dg : 0;
       if (dg > 10 && field && m.nav.flowDir(field, k.x, k.z, _dir)) { wantX = _dir.x; wantZ = _dir.z; }
       else if (dg > 10) { wantX = gx - k.x; wantZ = gz - k.z; }
       else {
@@ -153,6 +158,8 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
         if (dp > 1.5 && m.nav.los(k.x, k.z, px, pz)) { wantX = px - k.x; wantZ = pz - k.z; }
         else if (dp > 1.5 && field && m.nav.flowDir(field, k.x, k.z, _dir)) { wantX = _dir.x; wantZ = _dir.z; }
         else { wantX = Math.sin(m.time * 0.7 + k.id) * 0.3; wantZ = Math.cos(m.time * 0.6 + k.id * 1.7) * 0.3; }
+        // nobody to fight here: after a while move on to another ground
+        if (!m.objectives.length && (b.idleAtGoal += dt) > 7) { b.idleAtGoal = 0; b.goalT = 0; }
       }
       sprint = dg > 25 && k.stamina > 60;
       if (Math.hypot(wantX, wantZ) > 0.1) faceYaw = Math.atan2(-wantX, -wantZ);
@@ -201,9 +208,12 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
 }
 
 function pickTarget(m: Match, k: Knight, b: BotBrain) {
-  const range = k.def.ranged ? 80 : 42;
-  let best = -1, bestScore = Infinity;
+  // a band marching to a distant fighting ground keeps its order and only turns on foes that
+  // come close (or the one it is already fighting), so the battle spreads over the field
   const cur = b.target;
+  const marching = b.goalDist > 35 && m.phaseT < 1e9;
+  const range = k.def.ranged ? (marching ? 36 : 80) : (marching ? (cur >= 0 ? 22 : 13) : 42);
+  let best = -1, bestScore = Infinity;
   m.hash.query(k.x, k.z, range, (e) => {
     if (!e.alive || e.team === k.team) return;
     const d = Math.hypot(e.x - k.x, e.z - k.z);
@@ -230,7 +240,7 @@ function pickTarget(m: Match, k: Knight, b: BotBrain) {
 /** Goal point (shared by many bots, so its flow field is cached) plus this bot's personal offset. */
 function pickGoal(m: Match, k: Knight, b: BotBrain): [number, number, number, number] | null {
   // late in a fight with few foes left (or last stand), hunt the nearest enemy anywhere
-  if (m.settings.mode === 'laststand' || m.phaseT > 45) {
+  if (m.settings.mode === 'laststand' || m.settings.mode === 'duel' || m.phaseT > 45) {
     let alive = 0, best: Knight | null = null, bd = Infinity;
     for (const e of m.knights) {
       if (!e.alive || e.team === k.team) continue;
@@ -238,7 +248,7 @@ function pickGoal(m: Match, k: Knight, b: BotBrain): [number, number, number, nu
       const d = (e.x - k.x) ** 2 + (e.z - k.z) ** 2;
       if (d < bd) { bd = d; best = e; }
     }
-    if (best && (m.settings.mode === 'laststand' || alive <= 6)) {
+    if (best && (m.settings.mode === 'laststand' || m.settings.mode === 'duel' || alive <= 6)) {
       // snap to a coarse grid so bots chasing the same foe share fields
       return [Math.round(best.x / 8) * 8, Math.round(best.z / 8) * 8, 0, 0];
     }
@@ -265,9 +275,31 @@ function pickGoal(m: Match, k: Knight, b: BotBrain): [number, number, number, nu
   if (b.goalIdx < 0 || b.goalIdx >= rally.length || b.goalT <= 0) {
     // lean toward the enemy's half: pick among the points nearest the enemy's spawn
     const es = m.map.spawns[1 - k.team][0];
-    const sorted = rally.map((p, i) => ({ i, d: Math.hypot(p[0] - es.x, p[1] - es.z) + b.rng.range(0, 90) })).sort((p, q) => p.d - q.d);
-    b.goalIdx = sorted[0].i;
-    b.goalT = b.rng.range(10, 20);
+    // each host is split into bands of five, and band n of both hosts is sent to the same
+    // fighting ground, so the battle spreads over the whole field and every ground sees a fight
+    let rank = 0;
+    for (const o of m.knights) if (o.team === k.team && o.id < k.id) rank++;
+    const band = Math.floor(rank / 5);
+    if (b.rng.chance(0.75)) {
+      // the bands' grounds rotate every two minutes, the same for both hosts
+      const epoch = Math.floor(m.time / 120);
+      b.goalIdx = (band * 3 + epoch * 5 + 1) % rally.length;
+    } else {
+      // otherwise go where the foe is: grounds he holds in strength draw the most help
+      let bi = 0, bs = Infinity;
+      rally.forEach((p, i) => {
+        let foes = 0, friends = 0;
+        for (const o of m.knights) {
+          if (!o.alive || o === k || (o.x - p[0]) ** 2 + (o.z - p[1]) ** 2 > 900) continue;
+          if (o.team === k.team) friends++; else foes++;
+        }
+        const sc = Math.hypot(p[0] - k.x, p[1] - k.z) * 0.35 + Math.hypot(p[0] - es.x, p[1] - es.z) * 0.15
+          - 4 * foes - 12 * Math.max(0, foes - friends) + (foes === 0 ? 20 : 0) + b.rng.range(0, 80);
+        if (sc < bs) { bs = sc; bi = i; }
+      });
+      b.goalIdx = bi;
+    }
+    b.goalT = b.rng.range(18, 30);
   }
   const p = rally[b.goalIdx];
   return [p[0], p[1], Math.sin(k.id * 2.4) * 6, Math.cos(k.id * 1.7) * 6];

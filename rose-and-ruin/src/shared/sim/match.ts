@@ -21,6 +21,8 @@ export type MatchPhase = 'warmup' | 'live' | 'ended';
 
 export const WARMUP_TIME = 6;
 export const END_TIME = 14;
+/** single combat: seconds between a round's deciding blow and the next round */
+export const ROUND_PAUSE = 4;
 
 export class Match {
   readonly settings: MatchSettings;
@@ -47,19 +49,26 @@ export class Match {
   paused = false;
   /** keep the hosts mustered (no countdown) until released, e.g. until the player is ready */
   hold = false;
+  /** single combat: current round, the pause after a round is won, and who won it */
+  round = 0;
+  roundT = 0;
+  roundWinner = 0;
   /** A* searches bots may still run this tick */
   aiBudget = 0;
 
   constructor(settings: MatchSettings, map: BuiltMap) {
-    this.settings = settings;
+    // single combat is always one knight a side
+    this.settings = settings.mode === 'duel' ? { ...settings, teamSize: 1, friendlyFire: false } : settings;
+    settings = this.settings;
     this.map = map;
     this.world = map.world;
     this.nav = new NavGrid(map.world);
     this.rng = new Rng(settings.seed ^ 0x51ed270b);
-    const tickets = settings.mode === 'laststand' ? 0 : Math.round(settings.teamSize * settings.ticketScale);
+    const tickets = settings.mode === 'laststand' || settings.mode === 'duel' ? 0 : Math.round(settings.teamSize * settings.ticketScale);
+    const start = settings.mode === 'duel' ? Math.max(1, settings.rounds ?? 5) : tickets;
     this.teams = [
-      { tickets, kills: 0, score: 0, startTickets: tickets },
-      { tickets, kills: 0, score: 0, startTickets: tickets },
+      { tickets, kills: 0, score: 0, startTickets: start },
+      { tickets, kills: 0, score: 0, startTickets: start },
     ];
     if (settings.mode === 'conquest') {
       this.objectives = map.objectives.map((def) => ({ def, owner: def.owner, progress: def.owner === 0 ? -1 : def.owner === 1 ? 1 : 0, contested: false, n0: 0, n1: 0 }));
@@ -89,6 +98,10 @@ export class Match {
   }
 
   pickBotClass(team: Team): ClassId {
+    if (this.settings.mode === 'duel') {
+      const f = this.settings.duelFoe as ClassId;
+      return CLASS_IDS.includes(f) ? f : CLASS_IDS[this.rng.int(CLASS_IDS.length)];
+    }
     // keep the composition close to the target weights
     const counts = new Map<ClassId, number>();
     for (const k of this.knights) if (k.team === team) counts.set(k.nextCls, (counts.get(k.nextCls) ?? 0) + 1);
@@ -167,6 +180,11 @@ export class Match {
 
   // ------------------------------------------------------------------- spawning
   spawnZoneFor(k: Knight) {
+    if (this.settings.mode === 'duel') {
+      // face each other twelve paces apart on the duelling ground
+      const d = this.map.duel;
+      return { x: d.x, z: d.z + (k.team === 0 ? 6 : -6), yaw: k.team === 0 ? 0 : Math.PI, w: 1, d: 1 };
+    }
     const zones = this.map.spawns[k.team];
     if (zones.length === 1 || this.objectives.length === 0) return zones[k.id % zones.length];
     // conquest: spawn at the zone closest to a contested or enemy objective
@@ -193,7 +211,9 @@ export class Match {
     let px = zone.x, pz = zone.z;
     for (let attempt = 0; attempt < 30; attempt++) {
       let lx: number, lz: number;
-      if (formation && attempt === 0) {
+      if (this.settings.mode === 'duel' && attempt === 0) {
+        lx = 0; lz = 0;
+      } else if (formation && attempt === 0) {
         const teamIdx = this.knights.filter((o) => o.team === k.team && o.id < k.id).length;
         const perRow = Math.max(6, Math.ceil(zone.w / 1.8));
         lx = ((teamIdx % perRow) - (perRow - 1) / 2) * 1.6;
@@ -280,7 +300,7 @@ export class Match {
     victim.deathTime = this.time;
     victim.streak = 0;
     const team = this.teams[victim.team];
-    if (this.settings.mode !== 'laststand') team.tickets = Math.max(0, team.tickets - 1);
+    if (this.settings.mode !== 'laststand' && this.settings.mode !== 'duel') team.tickets = Math.max(0, team.tickets - 1);
     // assist: the biggest other contributor in the last 12 seconds
     let assist = -1, best = 24;
     for (const [id, rec] of victim.dmgBy) {
@@ -305,6 +325,16 @@ export class Match {
     this.emit({ t: 'kill', killer: killer ? killer.id : -1, victim: victim.id, assist, weapon: opts.kind === 1 || opts.kind === 5 ? 99 : killer ? CLASS_IDS.indexOf(killer.cls) : -1, head: opts.zone === 0, dx: opts.dx, dy: opts.dy, dz: opts.dz, force });
     // in a pitched battle each order a player falls as is spent; with every order gone, he is out
     if (!victim.bot && this.settings.mode === 'battle') victim.usedCls.add(victim.cls);
+    if (this.settings.mode === 'duel') {
+      // the round is decided; after a breath both fighters take their marks again
+      if (this.phase === 'warmup') { victim.respawnT = 2; victim.wantSpawn = true; return; }
+      if (this.phase === 'live' && this.roundT <= 0) {
+        this.roundT = ROUND_PAUSE;
+        this.roundWinner = killer && killer.team !== victim.team ? killer.team : 1 - victim.team;
+      }
+      victim.respawnT = this.roundT;
+      return;
+    }
     const canRespawn = this.settings.mode !== 'laststand' && team.tickets > 0 && (victim.bot || this.freeClass(victim) !== null);
     victim.respawnT = canRespawn ? (victim.bot ? 7 + this.rng.range(0, 3) : 6) : Infinity;
     if (victim.bot) victim.nextCls = this.rng.chance(0.25) ? this.pickBotClass(victim.team) : victim.cls;
@@ -336,7 +366,7 @@ export class Match {
     for (const k of this.knights) {
       if (!k.active) continue;
       if (!k.alive) {
-        if (this.phase !== 'ended' && isFinite(k.respawnT)) {
+        if (this.phase !== 'ended' && isFinite(k.respawnT) && (this.settings.mode !== 'duel' || this.phase === 'warmup')) {
           k.respawnT -= DT;
           // humans respawn when they ask to (death screen), bots when their timer runs out
           if (k.respawnT <= 0 && (k.bot || k.wantSpawn)) this.spawn(k);
@@ -387,6 +417,7 @@ export class Match {
       return;
     }
     if (this.phase !== 'live') return;
+    if (this.settings.mode === 'duel') return this.updateDuel();
     // conquest capture
     if (this.objectives.length) {
       for (const o of this.objectives) {
@@ -435,6 +466,31 @@ export class Match {
       const a = this.teams[0].tickets + alive[0] * 0.01, b = this.teams[1].tickets + alive[1] * 0.01;
       return this.end(a === b ? -1 : a > b ? 0 : 1);
     }
+  }
+
+  private updateDuel() {
+    if (this.round === 0) {
+      this.round = 1;
+      this.emit({ t: 'round', n: 1, winner: -1, score0: 0, score1: 0 });
+    }
+    for (const k of this.knights) if (!k.alive && this.roundT > 0) k.respawnT = this.roundT;
+    if (this.roundT <= 0) return;
+    this.roundT -= DT;
+    if (this.roundT > 0) return;
+    this.roundT = 0;
+    const w = this.roundWinner;
+    // rounds won travel to clients as the teams' tickets
+    this.teams[w].tickets++;
+    const need = Math.max(1, this.settings.rounds ?? 5);
+    if (this.teams[w].tickets >= need) return this.end(w);
+    this.round++;
+    // both fighters back to their marks, whole again; a random foe changes his order
+    for (const k of this.knights) {
+      if (!k.active) continue;
+      if (k.bot) k.nextCls = this.pickBotClass(k.team);
+      this.spawn(k, true);
+    }
+    this.emit({ t: 'round', n: this.round, winner: w, score0: this.teams[0].tickets, score1: this.teams[1].tickets });
   }
 
   end(winner: number) {

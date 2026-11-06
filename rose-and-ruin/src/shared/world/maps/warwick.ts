@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village, fields, woodlandRing } from './common';
+import { village, fields, woodlandRing, ground } from './common';
 
 // Warwick: the Kingmaker's seat above the Avon, with Caesar's and Guy's towers flanking
 // the gatehouse and barbican, and the old Saxon mound in the west of the courtyard.
@@ -85,13 +85,21 @@ export const warwick: MapDef = {
     for (const z of [-24, -14, 2, 12]) b.prop('mantlet', 104, z, Math.PI / 2, 1);
     b.prop('trebuchet', 128, -52, Math.PI / 2 + 0.3, 1);
     village(b, 120, -112, 14, 32);
+    b.front([120, -112]);
+    ground(b, 'meadow', -152, -60, 26);
+    ground(b, 'hillfort', -130, -176, 20);
+    ground(b, 'chapel', 192, -60, 18);
+    ground(b, 'crossroads', 40, -192, 20);
+    ground(b, 'meadow', 190, -170, 20);
     fields(b, -90, 80, -150, -75, 36, 0.5);
-    b.forest({ kind: 'rect', x: -170, z: -40, hx: 50, hz: 120 }, 140, { minSpacing: 6 });
-    b.forest({ kind: 'rect', x: 0, z: -210, hx: 240, hz: 40 }, 160, { minSpacing: 6 });
-    woodlandRing(b, { kind: 'rect', x: 40, z: -50, hx: 140, hz: 110 }, 240, 40);
+    b.forest({ kind: 'rect', x: -170, z: 20, hx: 22, hz: 22 }, 30, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: -236, z: -60, hx: 16, hz: 200 }, 80, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: 0, z: -238, hx: 250, hz: 16 }, 110, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: 238, z: -60, hx: 14, hz: 200 }, 70, { minSpacing: 6 });
+    woodlandRing(b, { kind: 'rect', x: 10, z: -80, hx: 215, hz: 140 }, 255, 20);
 
 
-    b.bounds(-100, 176, -152, 50);
+    b.bounds(-204, 216, -218, 54);
     b.cinematic(130, 30, 30, 40, 28, -10);
     b.cinematic(-20, 30, -110, 20, 24, -20);
     b.cinematic(-60, 40, 30, 20, 24, -10);

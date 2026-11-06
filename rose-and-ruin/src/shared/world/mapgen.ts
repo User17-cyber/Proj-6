@@ -88,6 +88,8 @@ export interface BuiltMap {
   /** points of interest for bots in battle mode: lanes the fighting gravitates to */
   rally: [number, number][];
   seaLevel: number | null;
+  /** open ground for single combat */
+  duel: { x: number; z: number };
   camera: { x: number; y: number; z: number; tx: number; ty: number; tz: number }[];
 }
 
@@ -107,6 +109,7 @@ export class MapBuilder {
   readonly rally: [number, number][] = [];
   readonly cameras: BuiltMap['camera'] = [];
   seaLevel: number | null = null;
+  duelSpot: { x: number; z: number } | null = null;
   private keepOut: Shape[] = [];
 
   constructor(seedName: string, size = 512, res = 512) {
@@ -560,6 +563,7 @@ export class MapBuilder {
       objectives: this.objectives,
       rally: this.rally,
       seaLevel: this.seaLevel,
+      duel: this.duelSpot ?? { x: this.spawns[0][0].x, z: this.spawns[0][0].z - 14 },
       camera: this.cameras,
     };
   }

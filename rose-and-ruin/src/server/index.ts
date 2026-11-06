@@ -235,7 +235,7 @@ function sanitizeName(s: unknown): string {
 
 function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSettings {
   const d = DEFAULT_SETTINGS;
-  const modes: GameMode[] = ['battle', 'conquest', 'laststand'];
+  const modes: GameMode[] = ['battle', 'conquest', 'laststand', 'duel'];
   const n = (v: unknown, lo: number, hi: number, def: number) => { const x = Number(v); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x))) : def; };
   return {
     mapId: MAPS.some((m) => m.id === s?.mapId) ? s!.mapId! : d.mapId,
@@ -246,6 +246,8 @@ function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSettings 
     timeLimit: n(s?.timeLimit, 300, 3600, d.timeLimit),
     seed: n(s?.seed, 0, 2 ** 31 - 1, 1),
     ticketScale: n(s?.ticketScale, 2, 10, d.ticketScale),
+    rounds: n(s?.rounds, 1, 15, d.rounds ?? 5),
+    duelFoe: CLASS_IDS.includes(s?.duelFoe as ClassId) ? s!.duelFoe : 'random',
   };
 }
 

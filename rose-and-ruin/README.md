@@ -98,8 +98,14 @@ Any class can be chosen at the start and again every time you fall (keys 1 to 8 
 - **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each of the eight orders once: when an order falls it is spent, and after all eight you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
+- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round, and you may change your order between rounds. Online, two players can duel each other.
+
+Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 
 ### The castles
+
+Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with open fighting grounds around it: a trampled meadow, a hill ringed by a broken palisade, a ruined chapel and its churchyard, a crossroads, and the nearby village. In a pitched battle the hosts split into bands that are sent to different grounds, so fights break out across the whole field, not only at the walls.
+
 
 - **Bodiam Castle**, East Sussex, 1483: a moated quadrangular castle with bridges, barbican and a breach.
 - **Harlech Castle**, Gwynedd, 1468: a concentric fortress on a crag, with a great gatehouse.

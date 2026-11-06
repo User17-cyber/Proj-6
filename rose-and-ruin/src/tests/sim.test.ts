@@ -148,5 +148,26 @@ if (!only) {
   if (!me.alive || me.shieldHp !== SHIELDS.heater.hp) fail(`a fresh shield on respawn (alive ${me.alive}, hp ${me.shieldHp})`);
   console.log(`shields: pavise ${full} splintered after ${Math.ceil(full / 60)} blows; fresh heater on respawn`);
 }
+// single combat: one knight a side on the duelling ground, first to three rounds
+for (const def of MAPS) {
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', teamSize: 24, rounds: 3, difficulty: 2, seed: 11 }, buildMap(def.id));
+  if (m.knights.length !== 2) fail(`duel ${def.id}: ${m.knights.length} knights`);
+  const [a, b] = m.knights;
+  const gap = Math.hypot(a.x - b.x, a.z - b.z);
+  if (gap < 8 || gap > 16) fail(`duel ${def.id}: fighters start ${gap.toFixed(1)} m apart`);
+  if (!m.nav.isWalkable(m.map.duel.x, m.map.duel.z)) fail(`duel ${def.id}: duelling ground not walkable`);
+  const rounds: string[] = [];
+  for (let i = 0; i < 60 * 600 && m.phase !== 'ended'; i++) {
+    m.step();
+    for (const e of m.events) if (e.t === 'round') {
+      rounds.push(`${e.score0}-${e.score1}`);
+      for (const k of m.knights) if (!k.alive || k.hp !== k.def.hp) fail(`duel ${def.id}: round ${e.n} began with a fighter not whole`);
+    }
+    m.events.length = 0;
+  }
+  const t = m.teams;
+  if (m.phase !== 'ended' || Math.max(t[0].tickets, t[1].tickets) !== 3) fail(`duel ${def.id}: did not finish (${m.phase}, ${t[0].tickets}-${t[1].tickets}, ${(m.time / 60).toFixed(0)} min)`);
+  console.log(`duel ${def.id.padEnd(9)} ${a.cls} vs ${b.cls}: rounds ${rounds.join(' > ')} final ${t[0].tickets}-${t[1].tickets} in ${m.time.toFixed(0)}s, winner ${m.winner}`);
+}
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all simulation checks passed');

@@ -254,6 +254,17 @@ export class GameView {
           A.play('hornShort', { bus: 'ui', vol: 0.45, rate: e.team === 0 ? 1 : 0.9, rateVar: 0 });
           break;
         }
+        case 'round': {
+          const me = localId >= 0 ? K[localId] : null;
+          const won = e.winner >= 0 ? K.find((k) => k.team === e.winner) : null;
+          if (e.winner >= 0 && won) {
+            const mine = me && me.team === e.winner;
+            this.hud?.notify(`${mine ? 'You take' : `${won.name} takes`} the round · ${e.score0}–${e.score1}`, e.winner, true);
+          }
+          this.hud?.notify(`Round ${e.n} · fight!`, -1, true);
+          A.play('hornShort', { bus: 'ui', vol: 0.5, rateVar: 0 });
+          break;
+        }
         case 'shieldBreak': {
           const att = e.by >= 0 ? K[e.by] : null;
           const nx = att ? e.x - att.x : 0, nz = att ? e.z - att.z : 0, l = Math.hypot(nx, nz) || 1;

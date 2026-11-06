@@ -329,7 +329,7 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="respawn"><button class="btn">Rejoin the Fight</button><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>6</kbd> · rejoin with <kbd>Space</kbd></div></div></div>`;
+      <div class="respawn"><button class="btn">Rejoin the Fight</button><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>8</kbd> · rejoin with <kbd>Space</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
     this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c)) return; this.setLoadout(c); this.host.selectClass(c); });
@@ -378,7 +378,8 @@ export class Hud implements HudSink {
     const sorted = [...s.knights].sort((a, b) => b.score - a.score);
     const mvp = sorted[0];
     const t0 = s.teams[0], t1 = s.teams[1];
-    const sub = w < 0 ? 'Neither house yields the field' : `The field belongs to the ${TEAM_HOUSE[w]}`;
+    const duel = s.settings.mode === 'duel';
+    const sub = duel ? `Single combat won ${Math.max(t0.tickets, t1.tickets)} rounds to ${Math.min(t0.tickets, t1.tickets)}` : w < 0 ? 'Neither house yields the field' : `The field belongs to the ${TEAM_HOUSE[w]}`;
     this.end.innerHTML = `<div class="wrap">
       <img src="${this.roses[w >= 0 ? w : 0]}" width="72" height="72" alt="" style="filter:drop-shadow(0 4px 10px #000)">
       <h1 style="color:${color};text-shadow:0 6px 30px rgba(0,0,0,.9)">${title}</h1>
@@ -386,11 +387,11 @@ export class Hud implements HudSink {
       ${me ? `<div class="stats">
         <div class="stat"><b>${me.kills}</b><span>Slain</span></div>
         <div class="stat"><b>${me.deaths}</b><span>Fallen</span></div>
-        <div class="stat"><b>${me.assists}</b><span>Assists</span></div>
-        <div class="stat"><b>${me.score}</b><span>Renown</span></div></div>` : `<div class="stats">
+        ${duel ? `<div class="stat"><b>${t0.tickets}–${t1.tickets}</b><span>Rounds</span></div>` : `<div class="stat"><b>${me.assists}</b><span>Assists</span></div>
+        <div class="stat"><b>${me.score}</b><span>Renown</span></div>`}</div>` : `<div class="stats">
         <div class="stat"><b style="color:${TEAM_CSS_LIGHT[0]}">${t0.kills}</b><span>Lancaster kills</span></div>
         <div class="stat"><b style="color:${TEAM_CSS_LIGHT[1]}">${t1.kills}</b><span>York kills</span></div></div>`}
-      ${mvp ? `<div class="mvp parchment">${icon('crown', '')} <b class="title-caps">Champion of the Field</b><br><span style="font-size:20px">${esc(mvp.name)}</span> — ${esc(CLASSES[mvp.cls].name)} of ${TEAM_NAMES[mvp.team]} · ${mvp.kills} slain · ${mvp.score} renown</div>` : ''}
+      ${mvp && !duel ? `<div class="mvp parchment">${icon('crown', '')} <b class="title-caps">Champion of the Field</b><br><span style="font-size:20px">${esc(mvp.name)}</span> — ${esc(CLASSES[mvp.cls].name)} of ${TEAM_NAMES[mvp.team]} · ${mvp.kills} slain · ${mvp.score} renown</div>` : ''}
       <div class="btns">${s.online ? '' : '<button class="btn" data-a="again">Fight Again</button>'}<button class="btn iron" data-a="board">Roll of the Fallen</button><button class="btn iron" data-a="leave">Return to the Hall</button></div></div>`;
     const svg = this.end.querySelector('.mvp svg') as SVGElement | null;
     if (svg) { svg.setAttribute('width', '22'); svg.setAttribute('height', '22'); svg.style.fill = 'var(--gold-lo)'; svg.style.verticalAlign = '-4px'; }
@@ -417,11 +418,11 @@ export class Hud implements HudSink {
       const ks = s.knights.filter((k) => k.team === t).sort((a, b) => b.score - a.score || b.kills - a.kills);
       const alive = ks.filter((k) => k.alive).length;
       const rows = ks.map((k) => `<tr class="${k.id === s.localId ? 'me' : ''} ${k.alive ? '' : 'dead'}"><td>${icon(k.cls)}</td><td>${esc(k.name)}${k.bot ? '' : ' <span style="color:#7d6128">⚑</span>'}</td><td>${k.kills}</td><td>${k.deaths}</td><td>${k.assists}</td><td>${k.score}</td></tr>`).join('');
-      const tk = s.settings.mode === 'laststand' ? `${alive} standing` : `${s.teams[t].tickets} reserves`;
+      const tk = s.settings.mode === 'laststand' ? `${alive} standing` : s.settings.mode === 'duel' ? `${s.teams[t].tickets} rounds` : `${s.teams[t].tickets} reserves`;
       return `<div><div class="house t${t}"><img src="${this.roses[t]}" alt="">${TEAM_HOUSE[t]} · <span style="font-size:14px">${tk}</span></div>
         <table><thead><tr><th></th><th>Knight</th><th>Slain</th><th>Fallen</th><th>Assist</th><th>Renown</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }).join('');
-    box.innerHTML = `<h2>${esc(s.map.def.name)} · ${s.settings.mode === 'battle' ? 'Pitched Battle' : s.settings.mode === 'conquest' ? 'Conquest' : 'Last Stand'}</h2><div class="cols">${cols}</div>`;
+    box.innerHTML = `<h2>${esc(s.map.def.name)} · ${({ battle: 'Pitched Battle', conquest: 'Conquest', laststand: 'Last Stand', duel: 'Single Combat' } as const)[s.settings.mode]}</h2><div class="cols">${cols}</div>`;
   }
 
   // ------------------------------------------------------------------ frame
@@ -481,7 +482,7 @@ export class Hud implements HudSink {
       if (!this.death.classList.contains('hidden')) {
         const t = Math.max(0, me.respawnT);
         this.respawnBtn.disabled = t > 0;
-        this.respawnTimer.textContent = t > 0 ? `Reinforcements muster in ${Math.ceil(t)}` : 'The line awaits you';
+        this.respawnTimer.textContent = s.settings.mode === 'duel' ? (t > 0 ? `The next round begins in ${Math.ceil(t)}` : 'To your marks') : t > 0 ? `Reinforcements muster in ${Math.ceil(t)}` : 'The line awaits you';
       }
     } else {
       if (!this.death.classList.contains('hidden')) this.death.classList.add('hidden');
@@ -572,12 +573,13 @@ export class Hud implements HudSink {
     const alive = [0, 0];
     for (const k of s.knights) if (k.alive) alive[k.team]++;
     const v = [0, 1].map((t) => (last ? alive[t] : s.teams[t].tickets));
-    const lbl = last ? 'standing' : 'reserves';
+    const duel = s.settings.mode === 'duel';
+    const lbl = last ? 'standing' : duel ? 'rounds' : 'reserves';
     const l = `<div><div>${v[0]}</div><small>${lbl}</small></div><img src="${this.roses[0]}" alt="">`;
     const r = `<img src="${this.roses[1]}" alt=""><div><div>${v[1]}</div><small>${lbl}</small></div>`;
     if (this.sideL.dataset.h !== l) { this.sideL.innerHTML = l; this.sideL.dataset.h = l; }
     if (this.sideR.dataset.h !== r) { this.sideR.innerHTML = r; this.sideR.dataset.h = r; }
-    const clock = s.phase === 'warmup' ? 'Muster' : s.phase === 'ended' ? 'Ended' : fmtTime(s.timeLeft);
+    const clock = s.phase === 'warmup' ? (duel ? 'To Your Marks' : 'Muster') : s.phase === 'ended' ? 'Ended' : duel ? `Round ${s.teams[0].tickets + s.teams[1].tickets + 1}` : fmtTime(s.timeLeft);
     if (this.clock.textContent !== clock) this.clock.textContent = clock;
     const st = last ? Math.max(1, s.settings.teamSize) : Math.max(1, s.teams[0].startTickets);
     const bars = this.tbar.children as HTMLCollectionOf<HTMLElement>;
@@ -676,7 +678,8 @@ export class Hud implements HudSink {
       const label = ally || f.spectating ? k.name : `${k.name}`;
       if (n.textContent !== label) n.textContent = label;
       const hpEl = el.lastElementChild as HTMLElement;
-      const showHp = !ally || f.spectating || k.hp < k.maxHp;
+      // in battle only the foe's vigour is shown; spectators see every knight's
+      const showHp = !ally || f.spectating;
       hpEl.style.display = showHp ? '' : 'none';
       (hpEl.firstElementChild as HTMLElement).style.width = `${Math.max(0, (k.hp / k.maxHp) * 100).toFixed(0)}%`;
       const sc = Math.max(0.65, Math.min(1, 9 / Math.max(1, d)));

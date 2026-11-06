@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village, fields, woodlandRing } from './common';
+import { village, fields, woodlandRing, ground } from './common';
 
 // Bodiam: a quadrangular castle rising from a broad moat. Two bridges and a siege
 // causeway lead in; the armies camp on the north and south banks.
@@ -105,17 +105,26 @@ export const bodiam: MapDef = {
 
     // ---- countryside
     village(b, -150, 10, 10, 22);
+    b.front([-150, 10]);
+    ground(b, 'meadow', 158, 40, 26);
+    ground(b, 'hillfort', -150, -128, 20);
+    ground(b, 'chapel', 146, -140, 18);
+    ground(b, 'crossroads', -138, 146, 20);
+    ground(b, 'meadow', 10, 168, 22);
     b.avoid({ kind: 'rect', x: 0, z: -6, hx: 82, hz: 70 });
     fields(b, -125, -90, -130, 130, 40, 0.45);
     fields(b, 95, 125, -130, 130, 40, 0.5);
-    b.forest({ kind: 'rect', x: 170, z: 0, hx: 60, hz: 240 }, 220, { minSpacing: 5 });
-    b.forest({ kind: 'rect', x: -200, z: 0, hx: 50, hz: 240 }, 160, { minSpacing: 6 });
-    b.forest({ kind: 'rect', x: 0, z: -205, hx: 240, hz: 45 }, 160, { minSpacing: 6 });
-    b.forest({ kind: 'rect', x: 0, z: 210, hx: 240, hz: 40 }, 140, { minSpacing: 6 });
-    woodlandRing(b, { kind: 'rect', x: 0, z: 0, hx: 130, hz: 140 }, 250, 60);
+    // copses inside the field of battle, and the wildwood beyond it
+    b.forest({ kind: 'rect', x: 165, z: -60, hx: 22, hz: 30 }, 40, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: -170, z: 80, hx: 18, hz: 24 }, 30, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: 230, z: 0, hx: 24, hz: 250 }, 160, { minSpacing: 5 });
+    b.forest({ kind: 'rect', x: -230, z: 0, hx: 24, hz: 250 }, 140, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: 0, z: -228, hx: 250, hz: 24 }, 140, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: 0, z: 228, hx: 250, hz: 24 }, 120, { minSpacing: 6 });
+    woodlandRing(b, { kind: 'rect', x: 0, z: 0, hx: 202, hz: 202 }, 255, 40);
     for (const [x, z] of [[-70, -95], [64, -104], [-90, 95], [86, 88], [-100, -40], [104, 40], [-58, 100], [70, -120]] as const) b.tree(x, z, b.rng.range(1.1, 1.5), 0);
 
-    b.bounds(-126, 126, -136, 136);
+    b.bounds(-200, 200, -198, 198);
     b.cinematic(-70, 26, -90, 0, 10, -5);
     b.cinematic(85, 14, 40, 0, 8, 0);
     b.cinematic(-40, 9, 70, 0, 8, -10);

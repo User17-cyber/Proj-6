@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village, fields, woodlandRing, boulders } from './common';
+import { village, fields, woodlandRing, boulders, ground } from './common';
 
 // Harlech: Edward I's concentric fortress on a crag above the marshes of Cardigan Bay.
 // The Yorkists storm up the east road and through a breach in the outer curtain.
@@ -85,13 +85,21 @@ export const harlech: MapDef = {
     b.carve({ kind: 'rect', x: -230, z: 0, hx: 80, hz: 300 }, -2, 30);
     b.paint({ kind: 'rect', x: -130, z: 0, hx: 40, hz: 260 }, 2, 1, 14, 0.8);
     b.avoid({ kind: 'rect', x: 0, z: 0, hx: 62, hz: 54 });
+    b.front([150, -45]);
+    ground(b, 'meadow', 140, -112, 26);
+    ground(b, 'hillfort', 196, 92, 20);
+    ground(b, 'chapel', -88, 100, 18);
+    ground(b, 'crossroads', 78, 168, 20);
+    ground(b, 'meadow', -84, -104, 22);
     boulders(b, { kind: 'rect', x: -10, z: 60, hx: 50, hz: 20 }, 14);
     fields(b, 70, 160, 60, 125, 32, 0.5);
-    b.forest({ kind: 'rect', x: 120, z: -110, hx: 70, hz: 40 }, 90, { minSpacing: 6, kinds: [0, 2, 2] });
-    b.forest({ kind: 'rect', x: 210, z: 40, hx: 40, hz: 200 }, 160, { minSpacing: 6, kinds: [0, 2] });
-    woodlandRing(b, { kind: 'rect', x: 50, z: 30, hx: 120, hz: 110 }, 240, 50);
+    b.forest({ kind: 'rect', x: 40, z: -130, hx: 40, hz: 18 }, 40, { minSpacing: 6, kinds: [0, 2, 2] });
+    b.forest({ kind: 'rect', x: 120, z: -178, hx: 120, hz: 22 }, 90, { minSpacing: 6, kinds: [0, 2, 2] });
+    b.forest({ kind: 'rect', x: 244, z: 40, hx: 12, hz: 220 }, 80, { minSpacing: 6, kinds: [0, 2] });
+    b.forest({ kind: 'rect', x: 60, z: 226, hx: 180, hz: 24 }, 90, { minSpacing: 6, kinds: [0, 2] });
+    woodlandRing(b, { kind: 'rect', x: 55, z: 25, hx: 180, hz: 180 }, 255, 30);
 
-    b.bounds(-62, 168, -72, 132);
+    b.bounds(-118, 232, -152, 200);
     b.cinematic(120, 30, -50, 20, 32, 0);
     b.cinematic(60, 22, 80, 10, 32, 10);
     b.cinematic(-20, 48, 0, 30, 30, 0);

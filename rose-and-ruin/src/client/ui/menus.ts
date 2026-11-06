@@ -33,6 +33,7 @@ const MODE_INFO: Record<GameMode, { name: string; text: string }> = {
   battle: { name: 'Pitched Battle', text: 'Each house fields a reserve of men. Every knight who falls spends one; the house whose reserves are spent and whose last knight dies loses the field.' },
   conquest: { name: 'Conquest', text: 'Seize and hold the banners of the castle. A house holding more banners bleeds its enemy\'s reserves away; slain knights cost reserves too.' },
   laststand: { name: 'Last Stand', text: 'No reinforcements. Every knight has one life; the last house with men standing wins. Short, brutal, decisive.' },
+  duel: { name: 'Single Combat', text: 'You against one knight on open ground, round after round, to hone your guard, your timing and your feints. Both fighters return whole after each round; the first to win the agreed number of rounds carries the day.' },
 };
 
 const TIPS = [
@@ -125,6 +126,7 @@ export class Menus {
     wrap.appendChild(sheet);
     const render = () => {
       const def = MAPS.find((d) => d.id === m.mapId) ?? MAPS[0];
+      const duel = m.mode === 'duel';
       const seg = (key: string, opts: [string | number, string][], cur: string | number) =>
         `<div class="seg" data-k="${key}">${opts.map(([v, l]) => `<button data-v="${v}" class="${String(v) === String(cur) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
       sheet.innerHTML = `
@@ -133,13 +135,15 @@ export class Menus {
           <div class="maps">${MAPS.map((d) => `<button class="mapcard ${d.id === m.mapId ? 'sel' : ''}" data-map="${d.id}">${mapArt(d)}<div class="meta"><div class="nm">${esc(d.name)}</div><div class="loc">${esc(d.location)} · ${esc(d.year)}</div></div></button>`).join('')}</div>
           <div class="map-blurb parchment"><b>${esc(def.name)}</b> — ${esc(def.blurb)}<br><i style="font-size:14px;color:var(--ink-soft)">${esc(def.history)}</i></div>
           <div class="opts">
-            <div class="opt"><label>Manner of battle</label>${seg('mode', [['battle', 'Pitched'], ['conquest', 'Conquest'], ['laststand', 'Last Stand']], m.mode)}<div class="hint">${MODE_INFO[m.mode].text}</div></div>
-            <div class="opt"><label>Knights per house</label><div class="range"><input type="range" min="20" max="64" step="2" value="${m.teamSize}" data-k="teamSize"><output>${m.teamSize}</output></div><div class="hint">${m.teamSize * 2} knights on the field. Larger hosts ask more of your machine.</div></div>
+            <div class="opt"><label>Manner of battle</label>${seg('mode', [['battle', 'Pitched'], ['conquest', 'Conquest'], ['laststand', 'Last Stand'], ['duel', 'Single Combat']], m.mode)}<div class="hint">${MODE_INFO[m.mode].text}</div></div>
+            ${duel ? `<div class="opt"><label>First to</label>${seg('rounds', [[3, '3 rounds'], [5, '5 rounds'], [10, '10 rounds']], m.rounds ?? 5)}</div>
+            <div class="opt"><label>Your foe</label><select class="textin" data-k="duelFoe" style="color:var(--parch)"><option value="random" ${(m.duelFoe ?? 'random') === 'random' ? 'selected' : ''}>Any order (changes each round)</option>${CLASS_IDS.map((c) => `<option value="${c}" ${m.duelFoe === c ? 'selected' : ''}>${esc(CLASSES[c].name)}, ${esc(CLASSES[c].title)}</option>`).join('')}</select></div>` : ''}
+            ${duel ? '' : `<div class="opt"><label>Knights per house</label><div class="range"><input type="range" min="20" max="64" step="2" value="${m.teamSize}" data-k="teamSize"><output>${m.teamSize}</output></div><div class="hint">${m.teamSize * 2} knights on the field. Larger hosts ask more of your machine.</div></div>`}
             <div class="opt"><label>Foes' prowess</label>${seg('difficulty', DIFFICULTY_NAMES.map((n, i) => [i, n] as [number, string]), m.difficulty)}</div>
             ${spectate ? '' : `<div class="opt"><label>Your house</label>${seg('team', [[0, 'Lancaster'], [1, 'York'], [-1, 'Either']], this.loadoutTeam)}</div>`}
-            <div class="opt"><label>Time limit</label>${seg('timeLimit', [[600, '10 min'], [900, '15 min'], [1200, '20 min'], [1800, '30 min']], m.timeLimit)}</div>
-            ${m.mode === 'laststand' ? '' : `<div class="opt"><label>Reserves</label>${seg('ticketScale', [[3, 'Few'], [5, 'Many'], [8, 'Vast']], m.ticketScale)}</div>`}
-            <div class="opt"><label>Friendly fire</label>${seg('friendlyFire', [['false', 'Off'], ['true', 'On']], String(m.friendlyFire))}</div>
+            ${duel ? '' : `<div class="opt"><label>Time limit</label>${seg('timeLimit', [[600, '10 min'], [900, '15 min'], [1200, '20 min'], [1800, '30 min']], m.timeLimit)}</div>`}
+            ${m.mode === 'laststand' || duel ? '' : `<div class="opt"><label>Reserves</label>${seg('ticketScale', [[3, 'Few'], [5, 'Many'], [8, 'Vast']], m.ticketScale)}</div>`}
+            ${duel ? '' : `<div class="opt"><label>Friendly fire</label>${seg('friendlyFire', [['false', 'Off'], ['true', 'On']], String(m.friendlyFire))}</div>`}
           </div>
         </div>
         <div class="sheet-foot"><button class="btn iron" data-a="back">Back</button><button class="btn" data-a="go">${spectate ? 'Watch the Battle' : 'Choose Your Knight'}</button></div>`;
@@ -158,6 +162,7 @@ export class Menus {
         else if (k === 'team') this.loadoutTeam = Number(v) as Team | -1;
         else if (k === 'timeLimit') m.timeLimit = Number(v);
         else if (k === 'ticketScale') m.ticketScale = Number(v);
+        else if (k === 'rounds') m.rounds = Number(v);
         else if (k === 'friendlyFire') m.friendlyFire = v === 'true';
         this.host.ui('tick');
         render();
@@ -175,6 +180,10 @@ export class Menus {
         if (spectate) { this.close(); this.host.startSpectate(m); }
         else this.showArmoury('battle', (cls, team) => { this.close(); this.host.startBattle(m, cls, team); }, () => this.showSetup(false));
       }
+    });
+    sheet.addEventListener('change', (e) => {
+      const t = e.target as HTMLSelectElement;
+      if (t.dataset.k === 'duelFoe') { m.duelFoe = t.value; this.host.ui('tick'); }
     });
     sheet.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;

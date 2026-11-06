@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village } from './common';
+import { village, ground } from './common';
 
 // The Tower of London: the White Tower ringed by two curtains and a broad moat on the Thames.
 // Fauconberg's Lancastrians force the Byward gate and fight through the wards.
@@ -91,6 +91,12 @@ export const tower: MapDef = {
     village(b, -40, -170, 18, 46, true);
     village(b, 160, -60, 16, 40, true);
 
+    b.front([-170, -60], [-40, -170]);
+    ground(b, 'hillfort', -205, -150, 18);
+    ground(b, 'chapel', -118, -150, 16);
+    ground(b, 'meadow', -212, 72, 22);
+    ground(b, 'crossroads', 30, -190, 18);
+
     b.spawn(0, -140, 60, -Math.PI / 2, 24, 14);
     b.spawn(0, -140, 20, -Math.PI / 2, 24, 14);
     b.spawn(1, -26, -28, Math.PI, 22, 10);
@@ -101,7 +107,7 @@ export const tower: MapDef = {
     b.objective('Tower Green', 'C', -30, -22, 10, 1);
     b.front([-68, 62], [14, 62], [14, 42], [-48, 22], [-30, -22], [-100, 60]);
 
-    b.bounds(-156, 86, -82, 78);
+    b.bounds(-236, 86, -214, 78);
     b.cinematic(-130, 22, 90, -40, 14, 30);
     b.cinematic(70, 30, 66, 0, 18, 0);
     b.cinematic(-60, 14, 40, 14, 12, 50);

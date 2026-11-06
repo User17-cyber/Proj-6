@@ -81,3 +81,71 @@ export function woodlandRing(b: MapBuilder, inner: Shape, outerR: number, count:
 export function boulders(b: MapBuilder, s: Shape, count: number) {
   b.scatterProps(s, 'rock', count, [0.6, 1.8]);
 }
+
+export type GroundKind = 'meadow' | 'hillfort' | 'chapel' | 'crossroads';
+
+/**
+ * An open fighting ground away from the castle: levelled, worn and lightly dressed so a
+ * press of knights has room to fight. Registers itself as a battle front so bots go there.
+ * Call before forests, fields and hedges so they keep clear of it.
+ */
+export function ground(b: MapBuilder, kind: GroundKind, x: number, z: number, r = 24) {
+  const rng = b.rng;
+  const y = b.h(x, z);
+  if (kind === 'hillfort') {
+    // a low grassy hill ringed by a broken palisade, with gaps for the assault
+    const top = y + 5.5;
+    b.mound(x, z, r * 0.62, r * 1.45, top);
+    b.flatten({ kind: 'circle', x, z, r: r * 0.55 }, top, 2);
+    const R = r * 0.58, gaps = 4, a0 = rng.range(0, Math.PI);
+    for (let g = 0; g < gaps; g++) {
+      const from = a0 + (g / gaps) * Math.PI * 2 + 0.32, to = a0 + ((g + 1) / gaps) * Math.PI * 2 - 0.32;
+      const pts: [number, number][] = [];
+      for (let t = 0; t <= 5; t++) { const a = from + (to - from) * (t / 5); pts.push([x + Math.cos(a) * R, z + Math.sin(a) * R]); }
+      b.palisade(pts, 2.6);
+    }
+    b.paint({ kind: 'circle', x, z, r: R - 2 }, 0, 0.5, 4, 0.8);
+    b.prop('banner', x, z, 0, 1.3);
+    b.prop('brazier', x + 4, z + 3, 0, 1);
+    b.prop('logs', x - 5, z - 2, rng.range(0, 3), 1);
+    b.prop('sacks', x + 2, z - 5, rng.range(0, 3), 1);
+    b.avoid({ kind: 'circle', x, z, r: r * 1.5 });
+  } else if (kind === 'chapel') {
+    // a ruined chapel and its churchyard
+    b.flatten({ kind: 'circle', x, z, r }, y, 10, 0.85);
+    const rot = rng.range(-0.3, 0.3);
+    b.building(x, z, rot, 8, 15, { style: 'ruin', roof: 'none', wallH: 5 });
+    b.rubble(x + Math.cos(rot) * 7, z - Math.sin(rot) * 7, 3.5, 1.4, 'rubble');
+    b.prop('cross', x - 8, z + 9, 0, 1);
+    for (let i = 0; i < 10; i++) b.prop('rock', x + rng.range(-r, r) * 0.7, z + rng.range(-r, r) * 0.7, rng.range(0, 6), rng.range(0.35, 0.6));
+    b.paint({ kind: 'circle', x, z, r: r * 0.6 }, 0, 0.45, 5, 0.9);
+    b.avoid({ kind: 'circle', x, z, r: r + 4 });
+  } else if (kind === 'crossroads') {
+    b.flatten({ kind: 'circle', x, z, r }, y, 10, 0.8);
+    b.path([[x - r * 2, z - 3], [x + r * 2, z + 3]], 5);
+    b.path([[x + 2, z - r * 2], [x - 2, z + r * 2]], 5);
+    b.prop('well', x + 5, z + 5, 0, 1);
+    b.prop('cross', x - 4, z - 4, 0, 1);
+    b.prop('cart', x + 8, z - 6, rng.range(0, 3), 1);
+    b.prop('stall', x - 9, z + 7, rng.range(0, 3), 1);
+    b.prop('hay', x - 7, z + 10, rng.range(0, 3), 1);
+    b.prop('barrel', x + 9, z + 9, 0, 1); b.prop('barrel', x + 9.8, z + 8.3, 0, 1);
+    b.paint({ kind: 'circle', x, z, r: 9 }, 0, 0.8, 4, 0.8);
+    b.avoid({ kind: 'circle', x, z, r: r + 4 });
+  } else {
+    // a trampled meadow where the lines meet: stakes, mantlets and the wreck of a cart
+    // (the first meadow of each castle is also its ground for single combat)
+    b.duelSpot ??= { x, z };
+    b.flatten({ kind: 'circle', x, z, r }, y, 14, 0.65);
+    b.paint({ kind: 'circle', x, z, r: r * 0.7 }, 0, 0.4, r * 0.4, 1);
+    for (let i = 0; i < 4; i++) {
+      const a = rng.range(0, Math.PI * 2), d = rng.range(0.55, 0.9) * r;
+      b.prop(rng.pick(['stakes', 'mantlet', 'stakes'] as const), x + Math.cos(a) * d, z + Math.sin(a) * d, a + Math.PI / 2, 1);
+    }
+    b.prop('cart', x + rng.range(-6, 6), z + rng.range(-6, 6), rng.range(0, 6), 1);
+    b.prop('banner', x + rng.range(-4, 4), z + rng.range(-4, 4), 0, 1.2);
+    b.scatterProps({ kind: 'circle', x, z, r }, 'rock', 6, [0.5, 1.1]);
+    b.avoid({ kind: 'circle', x, z, r: r + 4 });
+  }
+  b.front([x, z]);
+}

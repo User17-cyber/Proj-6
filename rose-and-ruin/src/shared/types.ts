@@ -60,7 +60,7 @@ export function emptyInput(): InputFrame {
   return { seq: 0, mx: 0, mz: 0, yaw: 0, pitch: 0, buttons: 0 };
 }
 
-export type GameMode = 'battle' | 'conquest' | 'laststand';
+export type GameMode = 'battle' | 'conquest' | 'laststand' | 'duel';
 export type Difficulty = 0 | 1 | 2 | 3;
 export const DIFFICULTY_NAMES = ['Recruit', 'Veteran', 'Champion', 'Legend'] as const;
 
@@ -74,6 +74,9 @@ export interface MatchSettings {
   seed: number;
   /** ticket multiplier for battle/conquest (tickets = teamSize * this) */
   ticketScale: number;
+  /** single combat: rounds needed to win, and the foe's order ('random' changes every round) */
+  rounds?: number;
+  duelFoe?: string;
 }
 
 export const DEFAULT_SETTINGS: MatchSettings = {
@@ -85,6 +88,8 @@ export const DEFAULT_SETTINGS: MatchSettings = {
   timeLimit: 15 * 60,
   seed: 1,
   ticketScale: 5,
+  rounds: 5,
+  duelFoe: 'random',
 };
 
 export type HitZone = 0 | 1 | 2; // head, torso, legs
@@ -110,4 +115,6 @@ export type SimEvent =
   | { t: 'heal'; k: number; amt: number }
   | { t: 'horn'; team: number; kind: number }
   | { t: 'streak'; k: number; n: number }
-  | { t: 'end'; winner: number };
+  | { t: 'end'; winner: number }
+  /** single combat: a round was won (winner -1 for the first round) and the next begins */
+  | { t: 'round'; n: number; winner: number; score0: number; score1: number };

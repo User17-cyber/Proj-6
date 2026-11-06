@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village, fields, woodlandRing } from './common';
+import { village, fields, woodlandRing, ground } from './common';
 
 // Bamburgh: a long fortress on a basalt crag above the North Sea. Warwick's guns have
 // smashed a breach in the west wall; the Yorkists also force the gate road from the south.
@@ -90,16 +90,25 @@ export const bamburgh: MapDef = {
     b.camp(-130, -40, -Math.PI / 2, 1, 2, 4);
     b.camp(-128, 70, -Math.PI / 2, 1, 2, 3);
     village(b, -95, 130, 9, 20);
+    b.front([-95, 130]);
+    ground(b, 'meadow', -196, -60, 26);
+    ground(b, 'hillfort', -190, 156, 20);
+    ground(b, 'chapel', -64, -176, 18);
+    ground(b, 'crossroads', -128, 210, 20);
+    ground(b, 'meadow', -150, -170, 22);
     fields(b, -150, -100, -150, 100, 34, 0.45);
 
 
     // boats drawn up on the beach
     for (let i = 0; i < 6; i++) b.prop('boat', 86 + b.rng.range(-3, 3), -60 + i * 24, b.rng.range(-0.4, 0.4) + Math.PI / 2, 1);
     b.avoid({ kind: 'poly', pts: crag });
-    b.forest({ kind: 'rect', x: -200, z: 0, hx: 50, hz: 240 }, 150, { minSpacing: 6 });
-    woodlandRing(b, { kind: 'rect', x: -40, z: 20, hx: 130, hz: 190 }, 250, 50);
+    b.forest({ kind: 'rect', x: -200, z: 60, hx: 18, hz: 30 }, 30, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: -244, z: 0, hx: 12, hz: 250 }, 90, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: -80, z: -240, hx: 170, hz: 14 }, 70, { minSpacing: 6 });
+    b.forest({ kind: 'rect', x: -80, z: 244, hx: 170, hz: 12 }, 60, { minSpacing: 6 });
+    woodlandRing(b, { kind: 'rect', x: -70, z: 5, hx: 165, hz: 230 }, 255, 20);
 
-    b.bounds(-152, 78, -152, 196);
+    b.bounds(-232, 80, -228, 234);
     b.cinematic(-110, 18, 30, 0, 30, 10);
     b.cinematic(70, 14, -40, 0, 34, -20);
     b.cinematic(60, 20, 160, 10, 30, 90);
