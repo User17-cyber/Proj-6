@@ -10,7 +10,7 @@ import { mapArt } from './mapArt';
 import { classDetailHtml, classList, esc, keyLabel } from './classInfo';
 import { roseDataUrl } from '../render/heraldry';
 import { QUALITY_NAMES, type Quality } from '../render/renderer';
-import { DEFAULT_BINDINGS, type Bindings } from '../input';
+import { BIND_ACTIONS, DEFAULT_BINDINGS, type BindAction, type Bindings } from '../input';
 import { savePrefs, type Prefs } from '../prefs';
 
 export interface RoomInfo { id: string; name: string; mapId: string; mode: GameMode; teamSize: number; humans: number; phase: string; timeLeft: number; difficulty: number }
@@ -261,6 +261,15 @@ export class Menus {
     const pct = (x: number) => `${Math.round(x * 100)}%`;
     const fmts: Record<string, (x: number) => string> = { renderScale: pct, fov: (x) => `${x}°`, sensitivity: (x) => x.toFixed(2), master: pct, music: pct, sfx: pct, ambience: pct };
     const bindRow = (k: keyof Bindings, label: string) => `<div><span>${label}</span><button class="btn iron small" data-bind="${k}">${keyLabel(p.bindings[k])}</button></div>`;
+    // which of the player's own keybinds is waiting for a key (-1: none)
+    let capturing = -1;
+    const clash = (code: string, i: number) => {
+      const main = (Object.keys(p.bindings) as (keyof Bindings)[]).find((k) => p.bindings[k] === code);
+      const dup = p.customBinds.findIndex((c, j) => j !== i && c.code === code);
+      const names: Record<string, string> = { forward: 'Advance', back: 'Fall back', left: 'Step left', right: 'Step right', sprint: 'Sprint', jump: 'Jump', kick: 'Kick', thrust: 'Thrust', guard: 'Guard', ability1: 'First ability', ability2: 'Second ability', camera: 'Change view', scoreboard: 'Scoreboard', chat: 'Chat' };
+      if (!code) return '';
+      return main ? `<span class="hint cb-note">This key also does ${esc(names[main] ?? main)}; both will happen.</span>` : dup >= 0 ? '<span class="hint cb-note">This key is bound twice; both actions will happen.</span>' : '';
+    };
     const render = () => {
       sheet.innerHTML = `<div class="sheet-head"><h2 class="gold-text">Settings</h2><button class="close-x" data-a="close" aria-label="Close">×</button></div>
       <div class="sheet-body">
@@ -285,6 +294,15 @@ export class Menus {
         </div>
         <h3 class="title-caps" style="color:var(--gold);font-size:14px;margin:22px 0 8px">Keys <span class="hint">(click, then press a key)</span></h3>
         <div class="controls-grid">${bindRow('forward', 'Advance')}${bindRow('back', 'Fall back')}${bindRow('left', 'Step left')}${bindRow('right', 'Step right')}${bindRow('sprint', 'Sprint')}${bindRow('jump', 'Jump')}${bindRow('kick', 'Kick')}${bindRow('thrust', 'Thrust')}${bindRow('guard', 'Guard / raise shield')}${bindRow('ability1', 'First ability')}${bindRow('ability2', 'Second ability')}${bindRow('camera', 'Change view')}</div>
+        <h3 class="title-caps" style="color:var(--gold);font-size:14px;margin:22px 0 4px">Your own keybinds</h3>
+        <div class="hint" style="margin-bottom:8px">Add as many extra keys as you like, each to any action. They work alongside the keys above. Mouse side buttons can be bound too.</div>
+        <div class="custom-binds">${p.customBinds.length ? p.customBinds.map((c, i) => `<div class="cb-row">
+          <button class="btn iron small" data-cbkey="${i}">${capturing === i ? 'Press a key…' : c.code ? esc(keyLabel(c.code)) : 'Choose a key'}</button>
+          <span class="cb-arrow">→</span>
+          <select class="textin" data-cbact="${i}" style="color:var(--parch)">${BIND_ACTIONS.map(([a, l]) => `<option value="${a}" ${a === c.action ? 'selected' : ''}>${l}</option>`).join('')}</select>
+          <button class="close-x cb-del" data-cbdel="${i}" aria-label="Remove keybind" title="Remove">×</button>
+          ${clash(c.code, i)}</div>`).join('') : '<div class="hint">No keybinds of your own yet.</div>'}</div>
+        <button class="btn iron small" data-a="addbind" style="margin-top:8px">+ Add a keybind</button>
       </div>
       <div class="sheet-foot"><button class="btn iron" data-a="reset">Restore defaults</button><button class="btn" data-a="close">Done</button></div>`;
     };
@@ -293,6 +311,15 @@ export class Menus {
     let binding: keyof Bindings | null = null;
     const onKey = (e: KeyboardEvent) => {
       if (!wrap.isConnected) { window.removeEventListener('keydown', onKey, true); return; }
+      if (capturing >= 0) {
+        e.preventDefault(); e.stopPropagation();
+        const c = p.customBinds[capturing];
+        if (e.code === 'Escape') { if (c && !c.code) p.customBinds.splice(capturing, 1); }
+        else if (c) c.code = e.code;
+        capturing = -1;
+        changed(); render();
+        return;
+      }
       if (!binding) return;
       e.preventDefault(); e.stopPropagation();
       if (e.code !== 'Escape') { p.bindings[binding] = e.code; changed(); }
@@ -300,10 +327,31 @@ export class Menus {
       render();
     };
     window.addEventListener('keydown', onKey, true);
+    // mouse side buttons can be captured for the player's own keybinds
+    const onMouse = (e: MouseEvent) => {
+      if (!wrap.isConnected) { window.removeEventListener('mousedown', onMouse, true); return; }
+      if (capturing < 0 || e.button < 3) return;
+      e.preventDefault(); e.stopPropagation();
+      const c = p.customBinds[capturing];
+      if (c) c.code = `Mouse${e.button}`;
+      capturing = -1;
+      changed(); render();
+    };
+    window.addEventListener('mousedown', onMouse, true);
+    sheet.addEventListener('change', (e) => {
+      const t = e.target as HTMLSelectElement;
+      if (t.dataset.cbact === undefined) return;
+      const c = p.customBinds[Number(t.dataset.cbact)];
+      if (c) { c.action = t.value as BindAction; changed(); }
+    });
     sheet.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
       const bb = t.closest('[data-bind]') as HTMLElement | null;
       if (bb) { binding = bb.dataset.bind as keyof Bindings; bb.textContent = 'Press a key…'; return; }
+      const ck = t.closest('[data-cbkey]') as HTMLElement | null;
+      if (ck) { capturing = Number(ck.dataset.cbkey); this.host.ui('tick'); render(); return; }
+      const cd = t.closest('[data-cbdel]') as HTMLElement | null;
+      if (cd) { p.customBinds.splice(Number(cd.dataset.cbdel), 1); capturing = -1; this.host.ui('tick'); changed(); render(); return; }
       const b = t.closest('.seg button') as HTMLElement | null;
       if (b) {
         const k = (b.parentElement as HTMLElement).dataset.k!;
@@ -318,6 +366,7 @@ export class Menus {
       }
       const a = (t.closest('[data-a]') as HTMLElement | null)?.dataset.a;
       if (a === 'close') { this.host.ui('tick'); if (overlay) wrap.remove(); onClose(); }
+      if (a === 'addbind') { p.customBinds.push({ code: '', action: 'guard' }); capturing = p.customBinds.length - 1; this.host.ui('tick'); render(); return; }
       if (a === 'reset') { p.bindings = { ...DEFAULT_BINDINGS }; p.sensitivity = 1; p.invertY = false; changed(); render(); }
     });
     sheet.addEventListener('input', (e) => {

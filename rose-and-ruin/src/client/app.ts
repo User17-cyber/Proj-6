@@ -111,6 +111,7 @@ export class App implements HudHost, MenuHost {
     this.input.sensitivity = this.prefs.sensitivity;
     this.input.invertY = this.prefs.invertY;
     this.input.bindings = { ...this.prefs.bindings };
+    this.input.custom = this.prefs.customBinds.map((c) => ({ ...c }));
     this.input.onLockChange = (locked) => this.onLock(locked);
     // automated tests: behave as if the pointer were captured
     if (this.params.has('testlock')) { (window as unknown as { __app: App }).__app = this; this.input.locked = true; this.input.requestLock = () => { this.input.locked = true; }; this.input.exitLock = () => { /* stay captured */ }; }
@@ -328,6 +329,7 @@ export class App implements HudHost, MenuHost {
     this.input.sensitivity = p.sensitivity;
     this.input.invertY = p.invertY;
     this.input.bindings = { ...p.bindings };
+    this.input.custom = p.customBinds.map((c) => ({ ...c }));
     this.audio.setVolumes(p.volumes);
     if (this.view) this.view.showBlood = p.blood;
     this.firstPerson = p.firstPerson;
@@ -456,7 +458,7 @@ export class App implements HudHost, MenuHost {
     // death screen choices
     if (this.hud.deathOpen) for (const code of ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
     if (s.online && !this.hud.chatting && I.consumeKey(this.prefs.bindings.chat)) { this.hud.openChat(); this.input.enabled = false; }
-    if (I.consumeKey(this.prefs.bindings.camera) && me) {
+    if (I.consumeAction('camera', this.prefs.bindings.camera) && me) {
       this.firstPerson = !this.firstPerson;
       this.rig.mode = this.firstPerson ? 'first' : 'third';
     }

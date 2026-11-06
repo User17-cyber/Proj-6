@@ -4,7 +4,7 @@
 import type { GfxSettings, Quality } from './render/renderer';
 import type { ClassId } from '../shared/data/classes';
 import { DEFAULT_SETTINGS, type MatchSettings } from '../shared/types';
-import { DEFAULT_BINDINGS, type Bindings } from './input';
+import { BIND_ACTIONS, DEFAULT_BINDINGS, type Bindings, type CustomBind } from './input';
 
 export interface Prefs {
   name: string;
@@ -21,6 +21,8 @@ export interface Prefs {
   match: MatchSettings;
   server: string;
   bindings: Bindings;
+  /** the player's own extra keybinds */
+  customBinds: CustomBind[];
 }
 
 const KEY = 'rose-and-ruin.prefs.v1';
@@ -68,6 +70,7 @@ export function defaultPrefs(): Prefs {
     match: { ...DEFAULT_SETTINGS },
     server: '',
     bindings: { ...DEFAULT_BINDINGS },
+    customBinds: [],
   };
 }
 
@@ -83,6 +86,7 @@ export function loadPrefs(): Prefs {
       volumes: { ...d.volumes, ...(p.volumes ?? {}) },
       match: { ...d.match, ...(p.match ?? {}) },
       bindings: { ...d.bindings, ...(p.bindings ?? {}) },
+      customBinds: Array.isArray(p.customBinds) ? p.customBinds.filter((c) => c && typeof c.code === 'string' && c.code !== '' && BIND_ACTIONS.some(([a]) => a === c.action)) : [],
     };
   } catch {
     return d;

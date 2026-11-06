@@ -67,7 +67,7 @@ From the great hall:
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
 
-Keys can be rebound in Settings.
+Keys can be rebound in Settings. Under **Your own keybinds** you can also add as many extra keys as you like (mouse side buttons too), each to any action: attack, guard, thrust, kick, either ability, sprint, jump, movement or change view. They work alongside the main keys and are saved in your browser.
 
 ### Combat
 

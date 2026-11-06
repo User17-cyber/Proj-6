@@ -15,6 +15,10 @@ export function keyLabel(code: string): string {
   if (code.startsWith('Digit')) return code.slice(5);
   if (code === 'ShiftLeft' || code === 'ShiftRight') return 'Shift';
   if (code === 'Space') return 'Space';
+  if (code === 'Mouse3') return 'Mouse back';
+  if (code === 'Mouse4') return 'Mouse forward';
+  if (code.startsWith('Numpad')) return 'Num ' + code.slice(6);
+  if (code.startsWith('Arrow')) return code.slice(5) + ' arrow';
   return code;
 }
 
