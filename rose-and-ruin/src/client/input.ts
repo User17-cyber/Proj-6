@@ -84,7 +84,10 @@ export class Input {
   private latch(b: number) { if (this.enabled) this.latched |= b; }
 
   /** Buttons for the next simulation step (held | latched presses). */
-  buttons(): number {
+  buttons(): number { return this.held() | this.latched; }
+
+  /** Buttons physically held right now. */
+  held(): number {
     let b = 0;
     const k = this.keys, B = this.bindings;
     if (this.mouse & 1) b |= Btn.Attack;
@@ -96,7 +99,7 @@ export class Input {
     if (k.has(B.ability1)) b |= Btn.Ability1;
     if (k.has(B.ability2)) b |= Btn.Ability2;
     if (k.has(B.thrust)) b |= Btn.Thrust;
-    return b | this.latched;
+    return b;
   }
   /** RMB is "block" for melee and "aim" for archers. */
   get rmb() { return (this.mouse & 4) !== 0; }

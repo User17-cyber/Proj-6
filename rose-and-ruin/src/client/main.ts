@@ -1,10 +1,18 @@
+import '@fontsource/cinzel/400.css';
+import '@fontsource/cinzel/700.css';
+import '@fontsource/cinzel-decorative/700.css';
+import '@fontsource/cinzel-decorative/900.css';
+import '@fontsource/im-fell-english/400.css';
+import '@fontsource/im-fell-english/400-italic.css';
+import './ui/style.css';
 import { Renderer } from './render/renderer';
 import { buildWorldView } from './render/world';
 import { buildMap } from '../shared/world/maps/index';
 import { setupParade, paradeCamera } from './debugKnights';
+import { App } from './app';
 
-// Temporary world viewer (replaced by the full app).
-async function boot() {
+// ?view=<map> opens the bare world viewer used for rendering tests; otherwise the game.
+async function viewer() {
   const params = new URLSearchParams(location.search);
   const mapId = params.get('view') ?? 'bodiam';
   const camIdx = Number(params.get('cam') ?? 0);
@@ -53,4 +61,6 @@ async function boot() {
   };
   loop();
 }
-boot().catch((e) => { console.error(e); (window as unknown as { __error: string }).__error = String(e?.stack ?? e); });
+const fail = (e: unknown) => { console.error(e); (window as unknown as { __error: string }).__error = String((e as Error)?.stack ?? e); };
+if (new URLSearchParams(location.search).has('view')) viewer().catch(fail);
+else new App().boot().catch(fail);

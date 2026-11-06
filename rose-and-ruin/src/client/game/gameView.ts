@@ -51,7 +51,8 @@ export class GameView {
   private lastBodyArrowFor = new Map<number, THREE.Vector3>();
 
   constructor(private r: Renderer, private world: WorldView, private s: SessionView, private audio: AudioEngine, private hud: HudSink | null) {
-    const cap = Math.max(64, s.knights.length + 80);
+    // room for the largest battle (64 a side) plus the fallen
+    const cap = Math.max(240, s.knights.length + 100);
     this.kr = new KnightRenderer(world.baker, cap);
     this.particles = new Particles(r.settings.quality >= 2 ? 5000 : 2500);
     this.particles.quality = r.settings.quality;
@@ -62,6 +63,18 @@ export class GameView {
     this.ground = (x, z, y) => W.groundAt(x, z, y);
     this.ground2 = (x, z) => W.groundAt(x, z, 999);
     this.particles.ambient = Math.min(1, 0.35 + world.sky.envIntensity * 0.5);
+  }
+
+  /** Start presenting a new session on the same world (keeps GPU buffers). */
+  reset(s: SessionView, hud: HudSink | null) {
+    this.s = s;
+    this.hud = hud;
+    this.views = [];
+    this.corpses = [];
+    this.arrows.clear();
+    this.decals.clear();
+    this.particles.clear();
+    this.combatNear = 0;
   }
 
   private view(id: number): KView {
@@ -326,7 +339,7 @@ export class GameView {
         if (moved > (sp > 5 ? 1.3 : 0.9)) {
           v.lastStepX = k.x; v.lastStepZ = k.z;
           this.audio.play(HEAVY.has(k.cls) ? 'stepArmour' : 'step', { pos: k, vol: k.id === localId ? 0.35 : 0.5, maxDist: 25 });
-          if (sp > 5 && Math.random() < 0.3) this.particles.dust(k.x, k.y, k.z, 0.12);
+          if (sp > 5 && Math.random() < 0.12) this.particles.dust(k.x, k.y, k.z, 0.06);
         }
       }
     }

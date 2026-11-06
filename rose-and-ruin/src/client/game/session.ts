@@ -23,6 +23,9 @@ export interface KnightState {
   lastHurt: number;
 }
 
+/** Input frame as the app maintains it: held buttons plus one-step presses. */
+export interface LiveInput extends InputFrame { held: number; pulse: number }
+
 export interface ObjectiveView { def: ObjectiveDef; owner: number; progress: number; contested: boolean; n0: number; n1: number }
 
 export interface SessionView {
@@ -79,6 +82,8 @@ export class LocalSession implements SessionView {
   private input: InputFrame | null = null;
   timeScale = 1;
   paused = false;
+  /** most simulation steps per frame before the clock is allowed to slip */
+  maxSteps = 8;
 
   constructor(settings: MatchSettings, player: { name: string; team: Team | -1; cls: ClassId } | null) {
     this.settings = settings;
@@ -131,9 +136,9 @@ export class LocalSession implements SessionView {
 
   update(dt: number) {
     if (this.paused) { this.sync(1); return; }
-    this.acc += Math.min(dt, 0.1) * this.timeScale;
+    this.acc += Math.min(dt, 0.1 * this.maxSteps / 8) * this.timeScale;
     let steps = 0;
-    while (this.acc >= DT && steps < 8) {
+    while (this.acc >= DT && steps < this.maxSteps) {
       this.savePrev();
       if (this.localId >= 0 && this.input) this.match.setInput(this.localId, this.input);
       this.match.step();
@@ -141,10 +146,11 @@ export class LocalSession implements SessionView {
       this.match.events.length = 0;
       this.acc -= DT;
       steps++;
-      // presses are latched for one step only
-      if (this.input) this.input.buttons &= ~(this.input as InputFrame & { pulse?: number }).pulse!;
+      // presses last for one step only; held buttons stay down
+      const li = this.input as LiveInput | null;
+      if (li && li.pulse) { li.buttons = li.held ?? (li.buttons & ~li.pulse); li.pulse = 0; }
     }
-    if (steps === 8) this.acc = 0;
+    if (steps === this.maxSteps) this.acc = 0;
     this.sync(this.acc / DT);
   }
 

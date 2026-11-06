@@ -151,6 +151,8 @@ export class Particles {
     this.group.add(this.alpha.mesh, this.add.mesh);
   }
 
+  clear() { this.alpha.list.length = 0; this.add.list.length = 0; }
+
   spawn(kind: PK, x: number, y: number, z: number, vx: number, vy: number, vz: number, life: number, size: number, color: [number, number, number, number], o: Partial<P> = {}) {
     const p: P = { kind, x, y, z, vx, vy, vz, life, max: life, size, grow: 0, rot: Math.random() * 6.28, spin: 0, r: color[0], g: color[1], b: color[2], a: color[3], drag: 0.5, grav: 0, ...o };
     (kind === PK.Spark || kind === PK.Fire || kind === PK.Ember ? this.add : this.alpha).add(p);
@@ -181,9 +183,11 @@ export class Particles {
   }
 
   dust(x: number, y: number, z: number, amount: number, color: [number, number, number] = [0.45, 0.4, 0.33]) {
-    for (let i = 0; i < 4 + amount * 10; i++) {
+    const n = Math.round(2 + amount * 10);
+    const alpha = 0.14 + 0.3 * Math.min(1, amount);
+    for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, s = Math.random() * 2.5 * amount;
-      this.spawn(PK.Dust, x + Math.cos(a) * 0.3, y + 0.1, z + Math.sin(a) * 0.3, Math.cos(a) * s, 0.4 + Math.random() * 0.8 * amount, Math.sin(a) * s, 1.2 + Math.random() * 1.4, 0.35 + Math.random() * 0.5 * amount, [color[0], color[1], color[2], 0.45], { grow: 0.9, drag: 1.6, spin: (Math.random() - 0.5) });
+      this.spawn(PK.Dust, x + Math.cos(a) * 0.3, y + 0.1, z + Math.sin(a) * 0.3, Math.cos(a) * s, 0.3 + Math.random() * 0.8 * amount, Math.sin(a) * s, 1.0 + Math.random() * 1.2, 0.22 + Math.random() * 0.5 * amount, [color[0], color[1], color[2], alpha], { grow: 0.35 + amount * 0.6, drag: 1.6, spin: (Math.random() - 0.5) });
     }
   }
 
