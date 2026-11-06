@@ -27,6 +27,8 @@ export interface MenuHost {
   mpCreate(m: MatchSettings): void;
   mpJoin(roomId: string, team: Team | -1, cls: ClassId): void;
   quit?(): void;
+  /** abandon a battle that is still loading */
+  cancelLoading(): void;
 }
 
 const MODE_INFO: Record<GameMode, { name: string; text: string }> = {
@@ -523,7 +525,10 @@ export class Menus {
       <div class="when">${esc(def.location)} · ${esc(def.year)}</div><div class="rule"></div>
       <p class="hist">${esc(def.history)}</p>
       <div class="loadbar"><i></i></div><div class="loadlabel"></div>
-      <div class="tip"><b class="title-caps">Counsel</b> ${esc(tip)}</div></div>`;
+      <div class="tip"><b class="title-caps">Counsel</b> ${esc(tip)}</div>
+      <button class="btn iron small loadcancel" data-a="cancel">Turn Back</button></div>`;
+    s.style.pointerEvents = 'auto';
+    (s.querySelector('[data-a="cancel"]') as HTMLButtonElement).addEventListener('click', () => { this.host.ui('tick'); this.host.cancelLoading(); });
     this.root.appendChild(s);
     this.loading = s;
   }

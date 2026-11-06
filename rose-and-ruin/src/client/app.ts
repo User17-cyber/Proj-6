@@ -243,7 +243,25 @@ export class App implements HudHost, MenuHost {
     await this.enterLocal(m, null, 'The hosts take the field');
   }
 
+  /** bumped to abandon a load in progress (Turn Back on the loading screen) */
+  private loadToken = 0;
+  /** the load in progress is an online muster (leaving it tells the server) */
+  private loadingNet = false;
+  /** the player turned back while a join was on its way: leave the muster when it answers */
+  private netTurnedBack = false;
+  cancelLoading() {
+    if (this.mode !== 'loading') return;
+    this.loadToken++;
+    if (this.loadingNet) { this.net?.leave(); this.netTurnedBack = true; }
+    this.loadingNet = false;
+    this.menus.hideLoading();
+    this.leave();
+  }
+
   private async enterLocal(m: MatchSettings, player: { name: string; team: Team | -1; cls: ClassId } | null, subtitle: string) {
+    const token = ++this.loadToken;
+    const gone = () => token !== this.loadToken;
+    this.loadingNet = false;
     this.mode = 'loading';
     this.previewKnight?.show(false);
     this.portrait.active = false;
@@ -252,8 +270,10 @@ export class App implements HudHost, MenuHost {
     await nextFrame();
     this.disposeSession();
     await this.loadWorld(m.mapId, (p, l) => this.menus.setLoading(p * 0.9, l));
+    if (gone()) return;
     this.menus.setLoading(0.92, 'Arraying the battle lines');
     await nextFrame();
+    if (gone()) return;
     const s = new LocalSession(m, player);
     // with a knight of your own, the battle waits for you to sound the charge;
     // a bots-only battle (Watch the Battle) starts by itself
@@ -271,6 +291,7 @@ export class App implements HudHost, MenuHost {
     }
     this.menus.setLoading(0.97, 'Lighting the torches');
     await this.warmShaders();
+    if (gone()) return;
     this.menus.hideLoading();
     this.mode = 'battle';
     this.input.enabled = true;
@@ -345,7 +366,8 @@ export class App implements HudHost, MenuHost {
         state: (status, message) => { this.mpState = { ...this.mpState, status, message }; this.menus.setMpState(this.mpState); if (status === 'error' && this.mode === 'battle' && this.session?.online) this.menus.toast(message ?? 'Connection lost'); },
         rooms: (rooms) => { this.mpState = { ...this.mpState, rooms }; this.menus.setMpState(this.mpState); },
         created: () => { this.menus.toast('Your banner is raised. Choose it from the list to join.'); this.net?.send({ t: 'list' }); },
-        joined: (s) => { void this.enterNet(s); },
+        // a muster that answers after the player turned back is left at once
+        joined: (s) => { if (this.netTurnedBack) { this.netTurnedBack = false; this.net?.leave(); return; } void this.enterNet(s); },
         error: (msg) => {
           this.menus.toast(msg);
           // a refused join leaves us on the loading screen: back to the muster list
@@ -361,10 +383,15 @@ export class App implements HudHost, MenuHost {
     this.loadout = { cls, team };
     this.menus.showLoading(getMap(this.mpState.rooms.find((r) => r.id === room)?.mapId ?? MAPS[0].id), 'Riding to the muster');
     this.mode = 'loading';
+    this.loadingNet = true;
+    this.netTurnedBack = false;
+    this.loadToken++;
     this.net?.join(room, this.prefs.name || 'Sir Knight', team, cls);
   }
 
   private async enterNet(s: NetSession) {
+    const token = this.loadToken;
+    const gone = () => token !== this.loadToken;
     this.mode = 'loading';
     this.previewKnight?.show(false);
     this.portrait.active = false;
@@ -374,6 +401,7 @@ export class App implements HudHost, MenuHost {
     if (this.session && this.session !== s) { const old = this.session; this.session = null; if (!(old instanceof NetSession)) old.dispose(); }
     this.hud.detach();
     await this.loadWorld(s.settings.mapId, (p, l) => this.menus.setLoading(p * 0.9, l));
+    if (gone()) return;
     s.onChat = (name, team, text) => this.hud.chat(name, team, text);
     this.present(s, true);
     this.attract = false;
@@ -382,6 +410,8 @@ export class App implements HudHost, MenuHost {
     this.hud.setLoadout(this.loadout.cls);
     this.rig.mode = this.firstPerson ? 'first' : 'third';
     await this.warmShaders();
+    if (gone()) return;
+    this.loadingNet = false;
     s.catchUp();
     this.menus.hideLoading();
     this.mode = 'battle';
@@ -403,8 +433,19 @@ export class App implements HudHost, MenuHost {
   resume() {
     this.hud.showPause(false);
     if (this.session && !this.session.online) this.session.paused = false;
+    // back to the death screen (pointer free to choose an order) or into the fight
+    const me = this.localKnight();
+    if (!this.spectating && me && !me.alive) return;
     this.input.enabled = true;
     this.input.requestLock();
+  }
+  /** Open the pause menu (with Leave the Battle) from any state of a battle. */
+  openPause() {
+    if (this.mode !== 'battle' || !this.session || this.hud.paused || this.hud.chatting || this.hud.endOpen) return;
+    this.hud.showPause(true);
+    if (!this.session.online) this.session.paused = true;
+    this.input.enabled = false;
+    this.input.exitLock();
   }
   leave() {
     this.hud.showPause(false);
@@ -432,11 +473,7 @@ export class App implements HudHost, MenuHost {
     if (locked || this.mode !== 'battle' || !this.session) return;
     const me = this.localKnight();
     // losing the pointer mid-fight opens the pause menu
-    if (!this.spectating && me && me.alive && !this.hud.deathOpen && !this.hud.endOpen && !this.hud.chatting) {
-      this.hud.showPause(true);
-      if (!this.session.online) this.session.paused = true;
-      this.input.enabled = false;
-    }
+    if ((this.spectating || (me && me.alive)) && !this.hud.deathOpen && !this.hud.endOpen && !this.hud.chatting) this.openPause();
   }
 
   private onKeyDown(e: KeyboardEvent) {
@@ -444,6 +481,8 @@ export class App implements HudHost, MenuHost {
     if (e.code === 'F3') { e.preventDefault(); this.perf.toggle(); return; }
     if (this.mode !== 'battle') return;
     if (e.code === 'Escape' && this.hud.paused) { this.resume(); return; }
+    // Esc opens the menu at any moment: mustering, fighting, fallen or watching
+    if (e.code === 'Escape' && !this.hud.chatting) { this.openPause(); return; }
     if (e.code === 'Tab') e.preventDefault();
   }
 

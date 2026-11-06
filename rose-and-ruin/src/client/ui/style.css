@@ -361,6 +361,7 @@ button { font: inherit; color: inherit; }
 .endscreen .mvp { margin: 10px auto 22px; padding: 12px 22px; display: inline-block; }
 .endscreen .btns { display: flex; gap: 14px; justify-content: center; }
 
+.death .respawn-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .pause .wrap { width: 380px; padding: 26px; display: flex; flex-direction: column; gap: 12px; }
 .pause h2 { margin: 0 0 8px; text-align: center; font-family: var(--caps); letter-spacing: 0.25em; }
 
@@ -443,3 +444,5 @@ select.textin option { background: #1c1a18; color: var(--parch); }
 .cb-row .cb-arrow { color: var(--gold); }
 .cb-row .cb-del { position: static; width: 28px; height: 28px; font-size: 20px; line-height: 1; }
 .cb-row .cb-note { grid-column: 1 / -1; margin-top: -2px; }
+
+.loading .loadcancel { margin-top: 18px; }

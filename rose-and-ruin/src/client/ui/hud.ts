@@ -329,11 +329,12 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="respawn"><button class="btn">Rejoin the Fight</button><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>8</kbd> · rejoin with <kbd>Space</kbd></div></div></div>`;
+      <div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>8</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
     this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c)) return; this.setLoadout(c); this.host.selectClass(c); });
-    this.respawnBtn = this.death.querySelector('.btn') as HTMLButtonElement;
+    this.respawnBtn = this.death.querySelector('[data-a="rejoin"]') as HTMLButtonElement;
+    (this.death.querySelector('[data-a="leave"]') as HTMLButtonElement).addEventListener('click', () => this.host.leave());
     this.respawnTimer = this.death.querySelector('.timer') as HTMLElement;
     this.respawnBtn.addEventListener('click', () => this.host.respawn(this.deathCls));
     this.setLoadout(this.deathCls);
@@ -355,7 +356,7 @@ export class Hud implements HudSink {
       <button class="btn" data-a="resume">Return to Battle</button>
       <button class="btn iron" data-a="settings">Settings</button>
       <button class="btn iron" data-a="codex">Codex of Arms</button>
-      <button class="btn iron" data-a="leave">Quit the Field</button></div>`;
+      <button class="btn iron" data-a="leave">Leave the Battle</button></div>`;
     this.pause.addEventListener('click', (e) => {
       const a = (e.target as HTMLElement).closest('button')?.dataset.a;
       if (a === 'resume') this.host.resume();
@@ -457,7 +458,7 @@ export class Hud implements HudSink {
       const [w1, w2] = Array.from(this.warm.children) as HTMLElement[];
       if (s.held) {
         w1.textContent = 'Your host awaits your command';
-        w2.innerHTML = '<span style="font-family:var(--caps);font-size:22px;letter-spacing:.12em">Press Space or click to sound the charge</span>';
+        w2.innerHTML = '<span style="font-family:var(--caps);font-size:22px;letter-spacing:.12em">Press Space or click to sound the charge</span><br><span style="font-size:14px;opacity:.75">Esc for the menu, or to leave the field</span>';
       } else {
         w1.textContent = 'The hosts are mustering';
         w2.textContent = String(Math.max(1, Math.ceil(6 - s.phaseT)));
@@ -467,7 +468,7 @@ export class Hud implements HudSink {
     if (f.spectating || (me && !me.alive && !this.deathOpen && this.deadSince >= 0 && me.respawnT > 900)) {
       this.spec.classList.remove('hidden');
       const who = watched ? `<span style="color:${TEAM_CSS_LIGHT[watched.team]}">${esc(watched.name)}</span> · ${esc(CLASSES[watched.cls].name)} · ${Math.max(0, Math.round(watched.hp))} vigour` : esc(f.camLabel);
-      const html = `<div class="who">${who}</div><div class="keys"><kbd>1</kbd> director <kbd>2</kbd> follow <kbd>3</kbd> free <kbd>←</kbd><kbd>→</kbd> knight <kbd>-</kbd><kbd>+</kbd> pace ×${f.timeScale.toFixed(2).replace(/\.?0+$/, '')}${s.paused ? ' · paused' : ''} <kbd>P</kbd> pause <kbd>Tab</kbd> roll</div>`;
+      const html = `<div class="who">${who}</div><div class="keys"><kbd>1</kbd> director <kbd>2</kbd> follow <kbd>3</kbd> free <kbd>←</kbd><kbd>→</kbd> knight <kbd>-</kbd><kbd>+</kbd> pace ×${f.timeScale.toFixed(2).replace(/\.?0+$/, '')}${s.paused ? ' · paused' : ''} <kbd>P</kbd> pause <kbd>Tab</kbd> roll <kbd>Esc</kbd> menu</div>`;
       if (this.spec.dataset.h !== html) { this.spec.innerHTML = html; this.spec.dataset.h = html; }
     } else this.spec.classList.add('hidden');
     // death screen
