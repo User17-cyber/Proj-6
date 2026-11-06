@@ -11,8 +11,8 @@ export const bodiam: MapDef = {
   blurb: 'A moated jewel of a castle, its towers mirrored in still water. Hold the bridges, storm the breach.',
   history: 'Built in 1385 by Sir Edward Dalyngrigge, Bodiam was held in 1483 by Sir Thomas Lewknor for Buckingham\'s rebellion. King Richard III sent the Earl of Surrey to besiege it.',
   atmosphere: {
-    sky: 'golden', sunAzimuth: 150, sunIntensity: 3.6, envIntensity: 1.0, exposure: 0.95,
-    fogColor: [0.78, 0.74, 0.66], fogDensity: 0.0024, fogHeight: 25, haze: 0.35, wind: 0.35,
+    sky: 'golden', sunAzimuth: 150, sunIntensity: 6.1, envIntensity: 0.68, exposure: 0.95,
+    fogColor: [0.78, 0.74, 0.66], fogDensity: 0.0012, fogHeight: 25, haze: 0.35, wind: 0.35,
     grassTint: [1.0, 0.98, 0.86], ambientSound: 'meadow', dust: 0.25,
   },
   card: { sky: ['#f3c97c', '#7aa3c9'], ground: '#4c5b2a', silhouette: '#2d2a26' },

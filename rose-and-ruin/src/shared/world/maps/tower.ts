@@ -11,8 +11,8 @@ export const tower: MapDef = {
   blurb: 'Fight through the wards beneath the White Tower as the sun sets red over the Thames.',
   history: 'In May 1471 Thomas Neville, the Bastard of Fauconberg, led Kentish men and sailors against London for Lancaster. The Yorkist garrison of the Tower sallied out and broke them. Within the week Henry VI died in the Tower.',
   atmosphere: {
-    sky: 'sunset', sunAzimuth: 200, sunIntensity: 2.8, envIntensity: 0.95, exposure: 1.05,
-    fogColor: [0.8, 0.6, 0.45], fogDensity: 0.0032, fogHeight: 30, haze: 0.55, wind: 0.25,
+    sky: 'sunset', sunAzimuth: 200, sunIntensity: 4.7, envIntensity: 0.65, exposure: 1.05,
+    fogColor: [0.8, 0.6, 0.45], fogDensity: 0.0016, fogHeight: 30, haze: 0.55, wind: 0.25,
     grassTint: [1.0, 0.92, 0.8], ambientSound: 'city', dust: 0.2,
   },
   card: { sky: ['#f2a65a', '#5e6f8c'], ground: '#4a4632', silhouette: '#2b2420' },

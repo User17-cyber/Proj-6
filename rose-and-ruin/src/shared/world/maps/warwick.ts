@@ -11,8 +11,8 @@ export const warwick: MapDef = {
   blurb: 'The Kingmaker\'s fortress above the Avon. Storm the barbican and take the ancient mound.',
   history: 'In 1469 Richard Neville, Earl of Warwick ("the Kingmaker"), turned on Edward IV and held the captive king here. Within a year he had changed sides to Lancaster altogether.',
   atmosphere: {
-    sky: 'noon', sunAzimuth: 140, sunElevation: 52, sunIntensity: 3.4, envIntensity: 1.0, exposure: 0.9,
-    fogColor: [0.72, 0.78, 0.86], fogDensity: 0.0021, fogHeight: 35, haze: 0.3, wind: 0.4,
+    sky: 'noon', sunAzimuth: 140, sunElevation: 52, sunIntensity: 5.7, envIntensity: 0.68, exposure: 0.9,
+    fogColor: [0.72, 0.78, 0.86], fogDensity: 0.0010, fogHeight: 35, haze: 0.3, wind: 0.4,
     grassTint: [1.0, 1.04, 0.92], ambientSound: 'meadow', dust: 0.15,
   },
   card: { sky: ['#9cc0e3', '#e8f0f6'], ground: '#55692f', silhouette: '#2e2b25' },

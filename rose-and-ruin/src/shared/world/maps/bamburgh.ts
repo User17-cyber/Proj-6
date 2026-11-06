@@ -11,8 +11,8 @@ export const bamburgh: MapDef = {
   blurb: 'A basalt crag over the North Sea, its west wall broken open by the King\'s great guns.',
   history: 'Bamburgh was the last Lancastrian stronghold in the north. In 1464 the Earl of Warwick turned the royal bombards "Newcastle" and "London" on its walls: the first English castle to fall to gunpowder.',
   atmosphere: {
-    sky: 'dawn', sunAzimuth: 95, sunIntensity: 2.0, envIntensity: 1.1, exposure: 1.15,
-    fogColor: [0.74, 0.64, 0.66], fogDensity: 0.0055, fogHeight: 18, haze: 0.7, wind: 0.55,
+    sky: 'dawn', sunAzimuth: 95, sunIntensity: 3.4, envIntensity: 0.75, exposure: 1.15,
+    fogColor: [0.74, 0.64, 0.66], fogDensity: 0.0027, fogHeight: 18, haze: 0.7, wind: 0.55,
     grassTint: [0.95, 0.92, 0.88], ambientSound: 'coast', dust: 0.05,
   },
   card: { sky: ['#e8a7a0', '#6f6a93'], ground: '#4a4a35', silhouette: '#241f24' },

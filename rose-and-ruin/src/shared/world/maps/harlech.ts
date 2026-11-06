@@ -11,8 +11,8 @@ export const harlech: MapDef = {
   blurb: 'A concentric fortress on a wind-scoured crag. Seven years under siege; tonight it falls or holds.',
   history: 'Harlech held out for Lancaster from 1461 to 1468, the longest siege in British history and the inspiration for "Men of Harlech". It finally yielded to William Herbert, Earl of Pembroke.',
   atmosphere: {
-    sky: 'overcast', sunAzimuth: 210, sunIntensity: 2.2, envIntensity: 1.15, exposure: 1.0,
-    fogColor: [0.62, 0.66, 0.7], fogDensity: 0.0038, fogHeight: 45, haze: 0.5, wind: 0.85,
+    sky: 'overcast', sunAzimuth: 210, sunIntensity: 3.8, envIntensity: 0.78, exposure: 1.0,
+    fogColor: [0.62, 0.66, 0.7], fogDensity: 0.0019, fogHeight: 45, haze: 0.5, wind: 0.85,
     grassTint: [0.92, 1.0, 0.9], ambientSound: 'wind', dust: 0.1,
   },
   card: { sky: ['#8b98a6', '#d7dde2'], ground: '#46523a', silhouette: '#26282b' },

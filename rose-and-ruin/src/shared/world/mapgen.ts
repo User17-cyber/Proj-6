@@ -204,7 +204,7 @@ export class MapBuilder {
   plateau(s: Shape, height: number, blend: number, rough = 0) {
     const n = this.noise2;
     this.apply(s, blend, (h, w, x, z, d) => {
-      const r = rough * (n.fbm(x / 7, z / 7, 3) * 0.6 + n.ridged(x / 23, z / 23, 3) * 0.6);
+      const r = rough * (n.fbm(x / 7, z / 7, 3) * 0.6 + n.ridged(x / 23, z / 23, 3) * 0.6 + n.fbm(x / 2.5, z / 2.5, 2) * 0.35);
       const ww = d <= 0 ? 1 : w;
       const target = height + (d > 0 ? r * Math.min(1, d / 3) : r * 0.1);
       return Math.max(h, lerp(h, target, ww));
