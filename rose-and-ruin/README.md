@@ -1,6 +1,6 @@
 # Rose & Ruin
 
-A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 20 to 64 knights each at five real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
+A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 80 knights each at five real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
 
 ## Run it
 

@@ -92,7 +92,7 @@ async function main() {
   check(await waitFor(() => a.msgs.some((m) => m.t === 'created'), 3000), 'creating a room with junk settings is sanitised');
   const status = await fetch(`http://localhost:${PORT}/status`).then((r) => r.json()) as { rooms: { teamSize: number; mapId: string }[] };
   const made = status.rooms[status.rooms.length - 1];
-  check(made.teamSize === 64 && made.mapId === 'bodiam', `junk settings clamped (${made.teamSize}, ${made.mapId})`);
+  check(made.teamSize === 80 && made.mapId === 'bodiam', `junk settings clamped (${made.teamSize}, ${made.mapId})`);
   a.ws.close(); b.ws.close();
 }
 
