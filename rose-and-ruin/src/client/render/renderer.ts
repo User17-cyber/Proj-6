@@ -66,6 +66,17 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   outputColor = vec4(pow(clamp(g, 0.0, 1.0), vec3(2.2)), inputColor.a);
 }`;
 
+/** Replace NaN/inf pixels and clamp extreme highlights before bloom. */
+class SanitizeEffect extends Effect {
+  constructor() {
+    super('SanitizeEffect', `void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
+  vec3 c = inputColor.rgb;
+  if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
+  outputColor = vec4(min(max(c, vec3(0.0)), vec3(256.0)), inputColor.a);
+}`);
+  }
+}
+
 export class GradeEffect extends Effect {
   constructor() {
     super('GradeEffect', GRADE_FRAG, {
@@ -107,6 +118,7 @@ export class Renderer {
   private emaMs = 16.7;
   private adaptT = 0;
   private frame = 0;
+  private pendingResize = false;
 
   constructor(readonly canvas: HTMLCanvasElement, settings: GfxSettings) {
     this.settings = settings;
@@ -121,7 +133,7 @@ export class Renderer {
     this.scene.background = new THREE.Color(0x777777);
     this.buildComposer();
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('resize', () => { this.pendingResize = true; });
   }
 
   private buildComposer() {
@@ -150,6 +162,9 @@ export class Renderer {
     this.dofPass.enabled = false;
     this.composer.addPass(this.dofPass);
     this.bloom = new BloomEffect({ luminanceThreshold: 1.05, luminanceSmoothing: 0.4, intensity: this.settings.bloom ? 0.6 : 0, mipmapBlur: true, radius: 0.72, levels: q >= 2 ? 8 : 6 });
+    // keep sun glints from overflowing the half-float buffer: an infinite or NaN pixel
+    // would be smeared across the whole screen by the bloom blur as a black flash
+    this.composer.addPass(new EffectPass(this.camera, new SanitizeEffect()));
     this.composer.addPass(new EffectPass(this.camera, this.bloom, this.grade));
     this.composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: q >= 2 ? SMAAPreset.HIGH : SMAAPreset.MEDIUM })));
   }
@@ -220,7 +235,7 @@ export class Renderer {
    * while they keep up with ~57 fps. Changes are coarse and spaced out (resizing is costly).
    */
   adapt(frameMs: number) {
-    if (this.settings.adaptive === false) { if (this.dyn !== 1) { this.dyn = 1; this.resize(); } return; }
+    if (this.settings.adaptive === false) { if (this.dyn !== 1) { this.dyn = 1; this.pendingResize = true; } return; }
     if (frameMs > 250) return; // a hitch (loading, tab switch) is not a trend
     this.emaMs = this.emaMs * 0.93 + frameMs * 0.07;
     this.adaptT += frameMs;
@@ -229,7 +244,8 @@ export class Renderer {
     if (this.emaMs > 22.5 && this.dyn > 0.5) next = Math.max(0.5, Math.round(this.dyn * 0.85 * 20) / 20);
     else if (this.emaMs < 17.6 && this.dyn < 1) next = Math.min(1, Math.round(this.dyn * 1.12 * 20) / 20);
     this.adaptT = 0;
-    if (next !== this.dyn) { this.dyn = next; this.resize(); }
+    // resizing clears the canvas, so it waits for the start of the next frame (no blank frame)
+    if (next !== this.dyn) { this.dyn = next; this.pendingResize = true; }
   }
 
   resize() {
@@ -252,6 +268,7 @@ export class Renderer {
   readonly preRender: (() => void)[] = [];
 
   render(dt: number) {
+    if (this.pendingResize) { this.pendingResize = false; this.resize(); }
     this.frame++;
     // far shadow cascades hold static scenery and distant crowds: refresh them every third frame
     if (this.csm) {
