@@ -57,6 +57,7 @@ export function setupParade(r: Renderer, world: WorldView, params: URLSearchPara
     for (const e of ks) {
       if (dieAt >= 0 && time > dieAt && !e.rag) {
         e.rag = new Ragdoll(e.anim.joints, e.anim.prevJoints, dt, e.k.def.ranged ? null : e.anim.weapon, { dx: Math.sin(e.k.yaw), dy: 0.1, dz: Math.cos(e.k.yaw), force: 2.5, zone: 1 });
+        e.rag.height = e.k.def.size.height; e.rag.girth = e.k.def.size.girth;
       }
       if (e.rag) {
         e.rag.step(1 / 60, ground, W);

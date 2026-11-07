@@ -93,6 +93,19 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 | Pavisier | War spear and hand pavise | Shield Bash, Iron Bulwark |
 | Knight Bachelor | Flanged mace and heater shield | Shield Bash, Battle Charge |
 
+Each order is built differently, and its hitboxes, reach and footprint in the crowd follow its build. The bigger a knight, the further his weapon reaches and the easier he is to hit:
+
+| Class | Height | Build |
+| --- | --- | --- |
+| Banneret | 1.94 m | very broad |
+| Vanguard | 1.91 m | broad |
+| Halberdier | 1.87 m | lean |
+| Knight Bachelor | 1.84 m | sturdy |
+| Man-at-Arms | 1.80 m | average |
+| Pavisier | 1.80 m | thickset |
+| Longbowman | 1.73 m | wiry |
+| Knight-Errant | 1.71 m | slight |
+
 Any class can be chosen at the start and again every time you fall (keys 1 to 8 in the armoury).
 
 ### Manners of battle

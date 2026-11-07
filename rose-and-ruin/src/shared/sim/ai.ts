@@ -81,7 +81,7 @@ export class BotBrain {
   }
 }
 
-const reachOf = (k: Knight) => (k.weapon.attacks[0].hitEnd ?? k.weapon.hitEnd) + 0.55;
+const reachOf = (k: Knight) => ((k.weapon.attacks[0].hitEnd ?? k.weapon.hitEnd) + 0.55) * k.def.size.height;
 const _dir = { x: 0, z: 0 };
 
 export function updateBot(m: Match, k: Knight, b: BotBrain) {

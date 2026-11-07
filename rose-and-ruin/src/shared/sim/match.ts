@@ -384,11 +384,14 @@ export class Match {
 
   private separate() {
     const ks = this.knights;
-    const rr = KNIGHT_RADIUS * 2;
+    // the broadest knights reach 0.38 * 1.12; query wide enough for any pair
+    const rmax = KNIGHT_RADIUS * 2.3;
     for (const a of ks) {
       if (!a.alive || a.knockT > 0) continue;
-      this.hash.query(a.x, a.z, rr, (b) => {
+      const ra = a.radius;
+      this.hash.query(a.x, a.z, rmax, (b) => {
         if (b.id <= a.id || !b.alive || b.knockT > 0) return;
+        const rr = ra + b.radius;
         const dx = b.x - a.x, dz = b.z - a.z;
         const d2 = dx * dx + dz * dz;
         if (d2 >= rr * rr || Math.abs(a.y - b.y) > 1.4) return;
@@ -404,7 +407,7 @@ export class Match {
     // re-resolve against the static world after crowd pushing
     for (const k of ks) {
       if (!k.alive) continue;
-      this.world.resolveCylinder(k, KNIGHT_RADIUS, 1.8);
+      this.world.resolveCylinder(k, k.radius, 1.8 * k.def.size.height);
       const b = this.world.bounds;
       k.x = clamp(k.x, b.minX + 0.5, b.maxX - 0.5);
       k.z = clamp(k.z, b.minZ + 0.5, b.maxZ - 0.5);

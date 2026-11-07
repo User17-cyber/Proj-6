@@ -111,6 +111,11 @@ export class Knight {
   }
 
   get maxHp() { return this.def.hp; }
+  /** body height relative to a 1.8 m man, and girth */
+  get scale() { return this.def.size.height; }
+  get girth() { return this.def.size.girth; }
+  /** collision radius in the crowd and against walls */
+  get radius() { return KNIGHT_RADIUS * this.def.size.girth; }
   /** the shield still in hand, if any */
   get shield(): ShieldDef | null { return this.def.shield && this.shieldHp > 0 ? SHIELDS[this.def.shield] : null; }
   get shieldBroken() { return this.def.shield !== null && this.shieldHp <= 0; }
@@ -142,21 +147,26 @@ export function hitVolumes(k: Knight, v: HitVolumes): HitVolumes {
   const { x, y, z } = k;
   if (k.knockT > 0) {
     // lying on the back, head away from the facing direction
-    const bx = Math.sin(k.yaw), bz = Math.cos(k.yaw); // backward
-    v.legsA.x = x - bx * 0.2; v.legsA.y = y + 0.22; v.legsA.z = z - bz * 0.2;
-    v.legsB.x = x - bx * 0.9; v.legsB.y = y + 0.18; v.legsB.z = z - bz * 0.9;
-    v.torsoA.x = x + bx * 0.1; v.torsoA.y = y + 0.26; v.torsoA.z = z + bz * 0.1;
-    v.torsoB.x = x + bx * 0.6; v.torsoB.y = y + 0.26; v.torsoB.z = z + bz * 0.6;
-    v.head.x = x + bx * 0.92; v.head.y = y + 0.22; v.head.z = z + bz * 0.92;
+    const s = k.def.size.height, g = k.def.size.girth;
+    const bx = Math.sin(k.yaw) * s, bz = Math.cos(k.yaw) * s; // backward
+    v.headR = 0.15 * s; v.torsoR = 0.26 * g * s; v.legsR = 0.2 * g * s;
+    v.legsA.x = x - bx * 0.2; v.legsA.y = y + 0.22 * g; v.legsA.z = z - bz * 0.2;
+    v.legsB.x = x - bx * 0.9; v.legsB.y = y + 0.18 * g; v.legsB.z = z - bz * 0.9;
+    v.torsoA.x = x + bx * 0.1; v.torsoA.y = y + 0.26 * g; v.torsoA.z = z + bz * 0.1;
+    v.torsoB.x = x + bx * 0.6; v.torsoB.y = y + 0.26 * g; v.torsoB.z = z + bz * 0.6;
+    v.head.x = x + bx * 0.92; v.head.y = y + 0.22 * g; v.head.z = z + bz * 0.92;
     return v;
   }
   // slight forward offset of the head/chest when attacking
   const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
-  const lean = k.act === Act.Release || k.act === Act.Ability ? 0.12 : 0.04;
-  v.head.x = x + fx * lean; v.head.y = y + 1.63; v.head.z = z + fz * lean;
-  v.torsoA.x = x; v.torsoA.y = y + 0.98; v.torsoA.z = z;
-  v.torsoB.x = x + fx * lean * 0.8; v.torsoB.y = y + 1.44; v.torsoB.z = z + fz * lean * 0.8;
-  v.legsA.x = x; v.legsA.y = y + 0.12; v.legsA.z = z;
-  v.legsB.x = x; v.legsB.y = y + 0.9; v.legsB.z = z;
+  // every order is built differently: heights scale with the man, widths with his girth
+  const s = k.def.size.height, g = k.def.size.girth;
+  const lean = (k.act === Act.Release || k.act === Act.Ability ? 0.12 : 0.04) * s;
+  v.headR = 0.15 * s; v.torsoR = 0.26 * g * s; v.legsR = 0.2 * g * s;
+  v.head.x = x + fx * lean; v.head.y = y + 1.63 * s; v.head.z = z + fz * lean;
+  v.torsoA.x = x; v.torsoA.y = y + 0.98 * s; v.torsoA.z = z;
+  v.torsoB.x = x + fx * lean * 0.8; v.torsoB.y = y + 1.44 * s; v.torsoB.z = z + fz * lean * 0.8;
+  v.legsA.x = x; v.legsA.y = y + 0.12 * s; v.legsA.z = z;
+  v.legsB.x = x; v.legsB.y = y + 0.9 * s; v.legsB.z = z;
   return v;
 }

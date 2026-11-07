@@ -328,6 +328,7 @@ export class GameView {
     const ranged = CLASSES[k.cls].ranged;
     const rag = new Ragdoll(v.anim.joints, v.anim.prevJoints, 1 / 60, ranged ? null : v.anim.weapon, { dx, dy: Math.max(dy, 0.05), dz, force, zone });
     rag.noOffhand = k.shieldBroken;
+    rag.height = CLASSES[k.cls].size.height; rag.girth = CLASSES[k.cls].size.girth;
     // arrows ride along on the ragdoll's bones
     this.corpses.push({ stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + 0.35), mud: v.mud, arrows: v.arrows.slice(), age: 0, pooled: false, id });
     v.arrows.length = 0;

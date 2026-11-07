@@ -4,10 +4,11 @@
 import * as THREE from 'three';
 import type { StaticWorld } from '../shared/world/world';
 import { clamp, lerp } from '../shared/math';
+import { CLASSES, type ClassId } from '../shared/data/classes';
 
 export type CamMode = 'third' | 'first' | 'death' | 'free' | 'follow' | 'director' | 'menu';
 
-export interface FocusKnight { x: number; y: number; z: number; yaw: number; alive: boolean; id: number; team: number }
+export interface FocusKnight { x: number; y: number; z: number; yaw: number; alive: boolean; id: number; team: number; cls?: ClassId }
 
 export class CameraRig {
   mode: CamMode = 'third';
@@ -51,7 +52,7 @@ export class CameraRig {
     } else {
       const targetDist = lerp(2.85 + (sprinting ? 0.35 : 0), 1.55, this.zoom);
       this.dist = lerp(this.dist, targetDist, 1 - Math.exp(-dt * 8));
-      const pivot = _p.set(k.x, k.y + 1.62, k.z).addScaledVector(right, 0.08);
+      const pivot = _p.set(k.x, k.y + 1.62 * (k.cls ? CLASSES[k.cls].size.height : 1), k.z).addScaledVector(right, 0.08);
       const want = _w.copy(pivot).addScaledVector(fwd, -this.dist).addScaledVector(right, lerp(0.58, 0.45, this.zoom)).addScaledVector(_u.set(0, 1, 0), 0.22 - pitch * 0.15);
       this.collide(pivot, want);
       if (this.smoothPos.distanceToSquared(want) > 25) this.smoothPos.copy(want);

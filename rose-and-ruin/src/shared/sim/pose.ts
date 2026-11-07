@@ -122,11 +122,13 @@ export const aimPitchFor = (pitch: number) => clamp(pitch * 0.75, -0.6, 0.45);
 /** World-space blade segment (base and tip) for a pose. */
 export function bladeWorld(
   p: WeaponPose, x: number, y: number, z: number, yaw: number,
-  from: number, to: number, base: V3, tip: V3,
+  from: number, to: number, base: V3, tip: V3, scale = 1,
 ) {
-  rotY(_w, p.gx, p.gy, p.gz, yaw);
+  // a bigger man holds his weapon higher and further out, and it is drawn to his size
+  rotY(_w, p.gx * scale, p.gy * scale, p.gz * scale, yaw);
   const gx = x + _w.x, gy = y + _w.y, gz = z + _w.z;
   rotY(_w, p.dx, p.dy, p.dz, yaw);
+  from *= scale; to *= scale;
   base.x = gx + _w.x * from; base.y = gy + _w.y * from; base.z = gz + _w.z * from;
   tip.x = gx + _w.x * to; tip.y = gy + _w.y * to; tip.z = gz + _w.z * to;
 }

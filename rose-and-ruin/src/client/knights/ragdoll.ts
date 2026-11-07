@@ -3,7 +3,7 @@
 // A short phase of fading muscle tension makes bodies crumple rather than collapse like rags.
 
 import * as THREE from 'three';
-import { JOINT_NAMES, bonesFromJoints, newJoints, BONE_COUNT, type Joints } from './skeleton';
+import { B, JOINT_NAMES, bonesFromJoints, newJoints, BONE_COUNT, type Joints } from './skeleton';
 import type { GroundFn } from './animator';
 import type { StaticWorld } from '../../shared/world/world';
 
@@ -24,6 +24,8 @@ export class Ragdoll {
   hasWeapon: boolean;
   /** the shield splintered before death: nothing in the left hand */
   noOffhand = false;
+  /** the knight's build (height, girth): joints are already to size, the meshes are scaled to match */
+  height = 1; girth = 1;
   private sticks: Stick[] = [];
   private pose: Float32Array;
   t = 0;
@@ -212,7 +214,7 @@ export class Ragdoll {
       const x = _n.crossVectors(y, this.weaponEdge).normalize();
       this.weapon.set(x.x, y.x, this.weaponEdge.x, o.x, x.y, y.y, this.weaponEdge.y, o.y, x.z, y.z, this.weaponEdge.z, o.z, 0, 0, 0, 1);
     }
-    if (this.noOffhand) { this.offhand.makeScale(0, 0, 0); return; }
+    if (this.noOffhand) { this.offhand.makeScale(0, 0, 0); this.applySize(); return; }
     // shield stays strapped to the left forearm, facing out from the body
     const mid = _l.lerpVectors(j.elbowL, j.wristL, 0.55);
     const fore = _m.subVectors(j.wristL, j.elbowL).normalize();
@@ -222,9 +224,19 @@ export class Ragdoll {
     const yv = _o.crossVectors(out, fore).normalize();
     const xv = _a.crossVectors(yv, out).normalize();
     this.offhand.set(xv.x, yv.x, out.x, mid.x, xv.y, yv.y, out.y, mid.y, xv.z, yv.z, out.z, mid.z, 0, 0, 0, 1);
+    this.applySize();
+  }
+
+  private applySize() {
+    const s = this.height, g = this.girth;
+    if (s === 1 && g === 1) return;
+    for (let i = 0; i < this.bones.length; i++) this.bones[i].multiply(i === B.head || i === B.neck ? _sz.makeScale(s, s, s) : _sz.makeScale(s * g, s, s * g));
+    if (this.hasWeapon) this.weapon.multiply(_sz.makeScale(s, s, s));
+    if (!this.noOffhand) this.offhand.multiply(_sz.makeScale(s, s, s));
   }
 }
 
 const _w = { x: 0, y: 0, z: 0 };
+const _sz = new THREE.Matrix4();
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _e = new THREE.Vector3(), _f = new THREE.Vector3();
 const _g = new THREE.Vector3(), _h = new THREE.Vector3(), _i = new THREE.Vector3(), _k = new THREE.Vector3(), _l = new THREE.Vector3(), _m = new THREE.Vector3(), _n = new THREE.Vector3(), _o = new THREE.Vector3();

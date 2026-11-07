@@ -340,7 +340,7 @@ export function movement(world: StaticWorld, k: Knight, dt: number, live: boolea
   k.vy -= GRAVITY * dt;
   let ny = oy + k.vy * dt;
   _p.x = nx; _p.y = Math.max(oy, ny); _p.z = nz;
-  world.resolveCylinder(_p, KNIGHT_RADIUS, 1.8);
+  world.resolveCylinder(_p, k.radius, 1.8 * k.def.size.height);
   nx = _p.x; nz = _p.z;
   if (!stepOk(world, ox, oy, oz, nx, nz)) {
     if (stepOk(world, ox, oy, oz, nx, oz)) nz = oz;

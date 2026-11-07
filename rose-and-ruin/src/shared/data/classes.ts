@@ -88,6 +88,8 @@ export interface ClassDef {
   sprint: number;
   /** push weight in crowds */
   mass: number;
+  /** body size: height (1 = 1.8 m) and girth across the shoulders, belly and limbs */
+  size: { height: number; girth: number };
   armor: readonly [number, number, number]; // damage reduction vs cut, blunt, pierce
   weapon: WeaponId;
   shield: ShieldId | null;
@@ -107,7 +109,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   manatarms: {
     id: 'manatarms', name: 'Man-at-Arms', title: 'Sword & Heater Shield',
     description: 'The backbone of every retinue. A broad shield turns aside blows and arrows alike, and the arming sword answers quickly. Shield Bash breaks stubborn guards; Rally keeps the line standing.',
-    hp: 120, stamina: 100, speed: 4.7, sprint: 6.9, mass: 1.0,
+    hp: 120, stamina: 100, speed: 4.7, sprint: 6.9, mass: 1.0, size: { height: 1.0, girth: 1.0 },
     armor: [0.3, 0.12, 0.22], weapon: 'arming_sword', shield: 'heater', ranged: false,
     abilities: ['shield_bash', 'rally'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 3, defence: 5, speed: 3, reach: 2, difficulty: 1 },
@@ -117,7 +119,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   vanguard: {
     id: 'vanguard', name: 'Vanguard', title: 'Two-Handed Greatsword',
     description: 'First into the breach. The greatsword\'s great arcs strike several foes at once. Whirlwind punishes those who crowd you; Battle Charge throws an enemy to the mud.',
-    hp: 125, stamina: 105, speed: 4.6, sprint: 6.8, mass: 1.1,
+    hp: 125, stamina: 105, speed: 4.6, sprint: 6.8, mass: 1.1, size: { height: 1.06, girth: 1.06 },
     armor: [0.34, 0.12, 0.26], weapon: 'greatsword', shield: null, ranged: false,
     abilities: ['whirlwind', 'charge'], hyperArmor: true, attackSpeed: 1,
     ratings: { attack: 5, defence: 2, speed: 3, reach: 4, difficulty: 3 },
@@ -127,7 +129,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   halberdier: {
     id: 'halberdier', name: 'Halberdier', title: 'Halberd',
     description: 'Master of distance. The halberd hews, hooks and stabs from beyond a sword\'s reach. The Impaling Lunge pins a foe; Hook & Sweep drags a whole rank off its feet.',
-    hp: 115, stamina: 100, speed: 4.5, sprint: 6.7, mass: 1.0,
+    hp: 115, stamina: 100, speed: 4.5, sprint: 6.7, mass: 1.0, size: { height: 1.04, girth: 0.96 },
     armor: [0.26, 0.1, 0.2], weapon: 'halberd', shield: null, ranged: false,
     abilities: ['lunge', 'sweep'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 4, defence: 2, speed: 3, reach: 5, difficulty: 2 },
@@ -137,7 +139,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   banneret: {
     id: 'banneret', name: 'Banneret', title: 'Poleaxe & Full Plate',
     description: 'A lord-knight encased in Milanese plate. Slow, but the hammer of the poleaxe crushes armour that turns any blade. Earthshaker flattens the crowd; Iron Bulwark makes you a wall.',
-    hp: 150, stamina: 95, speed: 4.1, sprint: 6.0, mass: 1.45,
+    hp: 150, stamina: 95, speed: 4.1, sprint: 6.0, mass: 1.45, size: { height: 1.08, girth: 1.12 },
     armor: [0.45, 0.18, 0.36], weapon: 'poleaxe', shield: null, ranged: false,
     abilities: ['earthshaker', 'bulwark'], hyperArmor: true, attackSpeed: 1,
     ratings: { attack: 4, defence: 5, speed: 1, reach: 3, difficulty: 2 },
@@ -147,7 +149,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   longbowman: {
     id: 'longbowman', name: 'Longbowman', title: 'English Longbow & Rondel Dagger',
     description: 'The yeoman archer who won Agincourt. Hold to draw, release to loose; a full draw kills the lightly armoured outright. Arrow Storm rains death on a crowd; Bodkin Point pierces any plate.',
-    hp: 90, stamina: 100, speed: 5.0, sprint: 7.3, mass: 0.85,
+    hp: 90, stamina: 100, speed: 5.0, sprint: 7.3, mass: 0.85, size: { height: 0.96, girth: 0.92 },
     armor: [0.12, 0.06, 0.1], weapon: 'longbow', shield: null, ranged: true,
     abilities: ['volley', 'bodkin'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 4, defence: 1, speed: 4, reach: 5, difficulty: 3 },
@@ -157,7 +159,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   errant: {
     id: 'errant', name: 'Knight-Errant', title: 'Falchion & Buckler',
     description: 'A wandering duelist, lightly armoured and terribly quick. The buckler parries on a generous window. Sidestep slips out of harm\'s way; Bloodletting makes every cut bleed.',
-    hp: 112, stamina: 115, speed: 5.2, sprint: 7.6, mass: 0.9,
+    hp: 112, stamina: 115, speed: 5.2, sprint: 7.6, mass: 0.9, size: { height: 0.95, girth: 0.93 },
     armor: [0.24, 0.1, 0.18], weapon: 'falchion', shield: 'buckler', ranged: false,
     abilities: ['dash', 'bloodletting'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 3, defence: 3, speed: 5, reach: 2, difficulty: 4 },
@@ -167,7 +169,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   pavisier: {
     id: 'pavisier', name: 'Pavisier', title: 'War Spear & Hand Pavise',
     description: 'A wall of painted timber with a spear behind it. The pavise covers him from shin to brow and turns arrow after arrow, but every blow it takes splinters it further. Shield Bash shoves foes off the line; Iron Bulwark roots him in place.',
-    hp: 120, stamina: 105, speed: 4.4, sprint: 6.5, mass: 1.15,
+    hp: 120, stamina: 105, speed: 4.4, sprint: 6.5, mass: 1.15, size: { height: 1.0, girth: 1.08 },
     armor: [0.28, 0.12, 0.22], weapon: 'spear', shield: 'pavise', ranged: false,
     abilities: ['shield_bash', 'bulwark'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 3, defence: 5, speed: 2, reach: 4, difficulty: 2 },
@@ -177,7 +179,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   bachelor: {
     id: 'bachelor', name: 'Knight Bachelor', title: 'Flanged Mace & Heater Shield',
     description: 'A young knight with his spurs freshly won. The mace caves in plate that turns a sword, and a heater shield keeps him alive long enough to use it. Shield Bash opens a guard; Battle Charge carries him into the press.',
-    hp: 130, stamina: 100, speed: 4.6, sprint: 6.8, mass: 1.1,
+    hp: 130, stamina: 100, speed: 4.6, sprint: 6.8, mass: 1.1, size: { height: 1.02, girth: 1.03 },
     armor: [0.36, 0.14, 0.28], weapon: 'mace', shield: 'heater', ranged: false,
     abilities: ['shield_bash', 'charge'], hyperArmor: false, attackSpeed: 1,
     ratings: { attack: 4, defence: 4, speed: 3, reach: 2, difficulty: 2 },

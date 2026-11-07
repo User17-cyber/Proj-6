@@ -39,7 +39,7 @@ export function resolveCombat(m: Match) {
 function bladeAt(k: Knight, a: AttackDef, u: number, from: number, to: number, b: V3, t: V3) {
   releasePose(a, u, pose);
   applyAimPitch(pose, aimPitchFor(k.pitch));
-  bladeWorld(pose, k.x, k.y, k.z, k.yaw, from, to, b, t);
+  bladeWorld(pose, k.x, k.y, k.z, k.yaw, from, to, b, t, k.def.size.height);
 }
 
 function sweep(m: Match, k: Knight) {
@@ -245,7 +245,7 @@ export function looseArrow(m: Match, k: Knight) {
   let dmg = lerp(ARROW.minDamage, ARROW.maxDamage, Math.pow(draw, 1.3));
   const rx = Math.cos(k.yaw), rz = -Math.sin(k.yaw);
   const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
-  const ox = k.x + rx * 0.12 + fx * 0.45, oy = k.y + 1.5, oz = k.z + rz * 0.12 + fz * 0.45;
+  const ox = k.x + rx * 0.12 + fx * 0.45, oy = k.y + 1.5 * k.def.size.height, oz = k.z + rz * 0.12 + fz * 0.45;
   let dx: number, dy: number, dz: number;
   const inp = k.input;
   if (inp.aimX !== undefined && inp.aimY !== undefined && inp.aimZ !== undefined) {

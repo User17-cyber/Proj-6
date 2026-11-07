@@ -361,6 +361,11 @@ export class KnightAnimator {
     } else if (def.shield) {
       this.offhand.makeScale(0, 0, 0); // splintered
     }
+    // each order is built to its own size: the whole figure is scaled about the feet
+    const size = def.size;
+    if (size.height !== 1 || size.girth !== 1) {
+      sizeFigure(J, this.bones, [this.weapon, this.offhand], this.nock, _sz.set(k.x, k.y, k.z), right, size.height, size.girth);
+    }
     this.hasFirstFrame = true;
   }
 
@@ -527,3 +532,34 @@ const _hf = v(), _hr = v(), _hu = v(), _grip = v(), _dir = v(), _og = v(), _lt =
 const _kp = v(), _kpl = v(), _kpr = v(), _gl = v(), _gr = v(), _ffl = v(), _ffr = v(), _tip = v(), _aim = v();
 const _q = new THREE.Quaternion();
 void ARROW;
+
+const _sz = new THREE.Vector3(), _sd = new THREE.Vector3(), _so = new THREE.Vector3(), _sl = new THREE.Matrix4();
+/** Move a point as the figure grows: s taller and broader, girth g wider across the body. */
+function sizePoint(v: THREE.Vector3, root: THREE.Vector3, right: THREE.Vector3, s: number, g: number) {
+  _sd.subVectors(v, root);
+  const lat = _sd.dot(right);
+  v.copy(root).addScaledVector(_sd, s).addScaledVector(right, lat * s * (g - 1));
+}
+/**
+ * Resize a posed figure about its feet: joints and bone origins move outward, each bone's
+ * mesh is scaled along its length (height) and across it (girth), and the head, weapon and
+ * shield keep their proportions. Shared with the ragdoll, so the fallen keep their size.
+ */
+export function sizeFigure(J: Joints | null, bones: THREE.Matrix4[], held: THREE.Matrix4[], nock: THREE.Vector3 | null, root: THREE.Vector3, right: THREE.Vector3, s: number, g: number) {
+  if (J) for (const key in J) sizePoint((J as unknown as Record<string, THREE.Vector3>)[key], root, right, s, g);
+  for (let i = 0; i < bones.length; i++) {
+    const m = bones[i];
+    _so.setFromMatrixPosition(m);
+    sizePoint(_so, root, right, s, g);
+    m.setPosition(_so);
+    const head = i === B.head || i === B.neck;
+    m.multiply(head ? _sl.makeScale(s, s, s) : _sl.makeScale(s * g, s, s * g));
+  }
+  for (const m of held) {
+    _so.setFromMatrixPosition(m);
+    sizePoint(_so, root, right, s, g);
+    m.setPosition(_so);
+    m.multiply(_sl.makeScale(s, s, s));
+  }
+  if (nock) sizePoint(nock, root, right, s, g);
+}
