@@ -168,6 +168,7 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
   - draws finer terrain further out, more trees, denser grass reaching further, sharper texture filtering at grazing angles, and moat reflections at higher resolution redrawn every frame
   
   It is never picked automatically; choose it in Settings.
+- Settings › Colour picks the grade: **Vibrant** (the default) lifts the turf, the heraldry and the sky, **Natural** is neutral, and **Muted** is the grim, washed-out look.
 - Dynamic resolution (on by default) lowers the render scale while frames run long and raises it again when there is headroom.
 - Press **F3** in battle for a frame profiler: frame rate, time per stage, draw calls and triangles.
 

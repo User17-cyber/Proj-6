@@ -282,6 +282,7 @@ export class Menus {
           <div class="opt"><label>Field of view</label>${range('fov', 55, 100, 1, p.gfx.fov, fmts.fov)}</div>
           <div class="opt"><label>Ambient occlusion</label>${tog('ao', p.gfx.ao)}</div>
           <div class="opt"><label>Bloom</label>${tog('bloom', p.gfx.bloom)}</div>
+          <div class="opt"><label>Colour</label><div class="seg" data-k="colour">${['Muted', 'Natural', 'Vibrant'].map((n, i) => `<button data-v="${i}" class="${i === (p.gfx.colour ?? 2) ? 'on' : ''}">${n}</button>`).join('')}</div><div class="hint">Vibrant lifts the turf, the heraldry and the sky; Muted is the grim, washed-out look.</div></div>
           <div class="opt"><label>Dynamic resolution</label>${tog('adaptive', p.gfx.adaptive !== false)}<div class="hint">Lowers the resolution while the battle is too heavy for your machine.</div></div>
           <div class="opt"><label>Mouse sensitivity</label>${range('sensitivity', 0.2, 3, 0.05, p.sensitivity, fmts.sensitivity)}</div>
           <div class="opt"><label>Invert mouse</label>${tog('invertY', p.invertY)}</div>
@@ -360,6 +361,7 @@ export class Menus {
         const v = b.dataset.v!;
         if (k === 'quality') { p.gfx.quality = Number(v) as Quality; p.gfx.shadowQuality = p.gfx.quality; p.gfx.ao = p.gfx.quality >= 1; }
         else if (k === 'ao' || k === 'bloom' || k === 'adaptive') p.gfx[k] = v === '1';
+        else if (k === 'colour') p.gfx.colour = Number(v);
         else if (k === 'invertY' || k === 'blood' || k === 'damageNumbers' || k === 'nameplates' || k === 'firstPerson') (p as unknown as Record<string, boolean>)[k] = v === '1';
         this.host.ui('tick');
         changed();

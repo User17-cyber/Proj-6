@@ -18,7 +18,7 @@ async function viewer() {
   const camIdx = Number(params.get('cam') ?? 0);
   const quality = Number(params.get('q') ?? 2) as 0 | 1 | 2 | 3 | 4;
   const canvas = document.getElementById('game') as HTMLCanvasElement;
-  const r = new Renderer(canvas, { quality, renderScale: 1, ao: quality >= 1 && !params.has('noao'), bloom: !params.has('nobloom'), fov: 62, shadowQuality: quality });
+  const r = new Renderer(canvas, { quality, renderScale: 1, ao: quality >= 1 && !params.has('noao'), bloom: !params.has('nobloom'), fov: 62, shadowQuality: quality, colour: Number(params.get('colour') ?? 2) });
   const map = buildMap(mapId);
   const world = await buildWorldView(r, map, (p, l) => console.log('load', p, l));
   if (params.has('env')) r.scene.environmentIntensity = Number(params.get('env'));

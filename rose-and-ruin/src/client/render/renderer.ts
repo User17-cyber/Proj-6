@@ -22,11 +22,13 @@ export interface GfxSettings {
   shadowQuality: Quality;
   /** lower the resolution automatically when frames run long */
   adaptive?: boolean;
+  /** colour grading: 0 muted (the old gritty look), 1 natural, 2 vibrant */
+  colour?: number;
 }
 
 const GRADE_FRAG = /* glsl */ `
 uniform float exposure; uniform vec3 wb; uniform float contrast; uniform float saturation; uniform float vignette;
-uniform float grain; uniform float gtime; uniform float hurt; uniform float desat; uniform vec3 shadowTint; uniform vec3 highTint; uniform float flash;
+uniform float vibrance; uniform float grain; uniform float gtime; uniform float hurt; uniform float desat; uniform vec3 shadowTint; uniform vec3 highTint; uniform float flash;
 const mat3 LIN709_TO_2020 = mat3(0.6274, 0.0691, 0.0164, 0.3293, 0.9195, 0.0880, 0.0433, 0.0113, 0.8956);
 const mat3 LIN2020_TO_709 = mat3(1.6605, -0.1246, -0.0182, -0.5876, 1.1329, -0.1006, -0.0728, -0.0083, 1.1187);
 vec3 agxContrast(vec3 x) {
@@ -56,6 +58,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   vec3 g = pow(c, vec3(1.0 / 2.2));
   float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
   g = mix(vec3(l), g, saturation * (1.0 - desat));
+  // vibrance: lift the dull colours (turf, cloth, sky) more than those already strong
+  float chroma = max(g.r, max(g.g, g.b)) - min(g.r, min(g.g, g.b));
+  g = max(mix(vec3(l), g, 1.0 + vibrance * (1.0 - desat) * (1.0 - clamp(chroma * 1.6, 0.0, 1.0))), 0.0);
   g = (g - 0.5) * contrast + 0.5;
   g *= mix(shadowTint, highTint, smoothstep(0.05, 0.85, l));
   vec2 d = uv - 0.5;
@@ -86,7 +91,8 @@ export class GradeEffect extends Effect {
         ['exposure', new THREE.Uniform(1)],
         ['wb', new THREE.Uniform(new THREE.Vector3(1, 1, 1))],
         ['contrast', new THREE.Uniform(1.17)],
-        ['saturation', new THREE.Uniform(0.86)],
+        ['saturation', new THREE.Uniform(1.14)],
+        ['vibrance', new THREE.Uniform(0.45)],
         ['vignette', new THREE.Uniform(0.46)],
         ['grain', new THREE.Uniform(0.034)],
         ['gtime', new THREE.Uniform(0)],
@@ -137,6 +143,7 @@ export class Renderer {
     this.camera = new THREE.PerspectiveCamera(settings.fov, 1, 0.08, 6000);
     this.scene.background = new THREE.Color(0x777777);
     this.buildComposer();
+    this.applyColour();
     this.resize();
     window.addEventListener('resize', () => { this.pendingResize = true; });
   }
@@ -200,7 +207,16 @@ export class Renderer {
     this.camera.updateProjectionMatrix();
     if (rebuild) { this.buildComposer(); this.setupShadows(); }
     this.bloom.intensity = s.bloom ? 0.6 : 0;
+    this.applyColour();
     this.resize();
+  }
+
+  /** Muted, natural or vibrant colour. */
+  applyColour() {
+    const c = Math.max(0, Math.min(2, Math.round(this.settings.colour ?? 2)));
+    this.grade.u('saturation').value = [0.86, 1.0, 1.2][c];
+    this.grade.u('vibrance').value = [0, 0.22, 0.55][c];
+    this.grade.u('contrast').value = [1.17, 1.13, 1.12][c];
   }
 
   /** (Re)create cascaded shadows for the current sun. */

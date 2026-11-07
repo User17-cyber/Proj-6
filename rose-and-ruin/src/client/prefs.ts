@@ -57,7 +57,7 @@ export function defaultPrefs(): Prefs {
   const q = defaultQuality();
   return {
     name: '',
-    gfx: { quality: q, renderScale: 1, ao: q >= 1, bloom: true, fov: 70, shadowQuality: q, adaptive: true },
+    gfx: { quality: q, renderScale: 1, ao: q >= 1, bloom: true, fov: 70, shadowQuality: q, adaptive: true, colour: 2 },
     sensitivity: 1,
     invertY: false,
     volumes: { master: 0.8, sfx: 1, music: 0.5, ambience: 0.7 },
