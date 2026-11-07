@@ -83,7 +83,7 @@ export class App implements HudHost, MenuHost {
     }
     this.loadout = { cls: this.prefs.lastClass, team: this.prefs.lastTeam };
     const q = this.params.get('q');
-    if (q !== null) { const v = Math.max(0, Math.min(3, Number(q))) as 0 | 1 | 2 | 3; this.prefs.gfx = { ...this.prefs.gfx, quality: v, shadowQuality: v, ao: v >= 1 }; }
+    if (q !== null) { const v = Math.max(0, Math.min(4, Number(q))) as 0 | 1 | 2 | 3 | 4; this.prefs.gfx = { ...this.prefs.gfx, quality: v, shadowQuality: v, ao: v >= 1 }; }
     this.firstPerson = this.prefs.firstPerson;
   }
 

@@ -214,7 +214,7 @@ export function buildVegetation(map: BuiltMap, baker: TextureBaker, quality: num
   interface Batch { tmpl: Tmpl; kind: number; items: { m: THREE.Matrix4; x: number; z: number }[]; near: THREE.InstancedMesh; far: THREE.InstancedMesh; trunk: THREE.InstancedMesh }
   const batches: Batch[] = [];
   const rng = new Rng(9);
-  const maxTrees = quality <= 0 ? 400 : quality === 1 ? 900 : 2000;
+  const maxTrees = quality <= 0 ? 400 : quality === 1 ? 900 : quality >= 4 ? 3200 : 2000;
   const trees = map.trees.slice(0, maxTrees);
   const lists = new Map<Tmpl, { m: THREE.Matrix4; x: number; z: number; kind: number }[]>();
   for (const t of trees) {
@@ -276,7 +276,7 @@ export function buildVegetation(map: BuiltMap, baker: TextureBaker, quality: num
       const dx = cam.position.x - lastX, dz = cam.position.z - lastZ;
       if (dx * dx + dz * dz < 16) return;
       lastX = cam.position.x; lastZ = cam.position.z;
-      const nearR2 = (quality >= 2 ? 140 : 90) ** 2;
+      const nearR2 = (quality >= 4 ? 220 : quality >= 2 ? 140 : 90) ** 2;
       for (const b of batches) {
         let ni = 0, fi = 0;
         for (const it of b.items) {
@@ -297,9 +297,9 @@ export function buildVegetation(map: BuiltMap, baker: TextureBaker, quality: num
 function buildGrass(map: BuiltMap, quality: number, heightTex: THREE.DataTexture, splatTex: THREE.DataTexture) {
   const hf = map.world.terrain;
   // patches of blades around the camera; High keeps about 450k triangles, Ultra a million
-  const grid = quality >= 3 ? 60 : quality === 2 ? 46 : 34;
+  const grid = quality >= 4 ? 80 : quality >= 3 ? 60 : quality === 2 ? 46 : 34;
   const cell = 1.25;
-  const blades = quality >= 3 ? 48 : quality === 2 ? 36 : 26;
+  const blades = quality >= 4 ? 64 : quality >= 3 ? 48 : quality === 2 ? 36 : 26;
   // one patch of blades; each blade 3 segments (8 verts)
   const rng = new Rng(77);
   const pos: number[] = [], nrm: number[] = [], uv: number[] = [], data: number[] = [], idx: number[] = [], roots: number[] = [];

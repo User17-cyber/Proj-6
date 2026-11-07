@@ -442,7 +442,8 @@ export class KnightRenderer {
   private staticTex: THREE.DataTexture;
   private statics: { cls: ClassId; team: number; blood: number; mud: number; seed: number }[] = [];
 
-  constructor(private baker: TextureBaker, readonly capacity: number, readonly staticCap = 0) {
+  /** detail: Ultimate's doubled armour, mail and cloth texture resolution */
+  constructor(private baker: TextureBaker, readonly capacity: number, readonly staticCap = 0, detail = false) {
     this.group.name = 'knights';
     this.boneData = new Float32Array(SLOTS * 3 * 4 * capacity);
     this.boneTex = new THREE.DataTexture(this.boneData, SLOTS * 3, capacity, THREE.RGBAFormat, THREE.FloatType);
@@ -455,7 +456,7 @@ export class KnightRenderer {
     this.staticTex.generateMipmaps = false;
     this.staticTex.needsUpdate = true;
     const instCap = capacity + staticCap;
-    const arr = baker.array(LAYERS, 0.5);
+    const arr = baker.array(LAYERS, detail ? 1 : 0.5);
     const palA: THREE.Vector4[] = [], palB: THREE.Vector4[] = [], palC: THREE.Vector4[] = [];
     for (const k of SURF_KEYS) {
       const s = SURFS[k];
@@ -482,7 +483,7 @@ export class KnightRenderer {
     const uber = (side: THREE.Side) => prepare(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 1, normalMap: flatN, side }), [share, skinPatch, uberPatch], ['knightUber', String(side)]);
     const front = uber(THREE.FrontSide), cloth = uber(THREE.DoubleSide);
     const atlas = heraldryAtlas();
-    const clothSet = baker.get('cloth', undefined, '', 0.5);
+    const clothSet = baker.get('cloth', undefined, detail ? 'hd' : '', detail ? 1 : 0.5);
     const herald = prepare(new THREE.MeshStandardMaterial({ map: atlas, normalMap: clothSet.normal, normalScale: new THREE.Vector2(0.5, 0.5), roughness: 0.95, side: THREE.DoubleSide }), [share, skinPatch, packedPbrPatch, heraldPatch], ['knightHerald']);
     const depth = new THREE.MeshDepthMaterial();
     depth.onBeforeCompile = (s) => { share(s as THREE.WebGLProgramParametersWithUniforms); depthSkinPatch(s as THREE.WebGLProgramParametersWithUniforms); };

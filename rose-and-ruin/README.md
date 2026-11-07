@@ -159,6 +159,15 @@ The simulation is shared TypeScript code (`src/shared`) that runs in the browser
 ### Performance
 
 - Settings › Graphics quality picks shadows, grass density, ambient occlusion and reflections. The default is chosen from your GPU (integrated GPUs start at Medium).
+- **Ultimate** is the top graphics level, for powerful graphics cards. On top of Ultra it:
+  - supersamples the image (1.5 to 2 rendered pixels for every pixel on screen)
+  - casts soft-edged shadows from four 4096-pixel cascades out to 600 m
+  - doubles the ambient occlusion samples and uses the strongest anti-aliasing
+  - adds shafts of sunlight through towers, trees and crowds
+  - doubles the texture resolution of armour, mail and cloth, and keeps knights at full detail out to 30 m (shadows to 140 m)
+  - draws finer terrain further out, more trees, denser grass reaching further, sharper texture filtering at grazing angles, and moat reflections at higher resolution redrawn every frame
+  
+  It is never picked automatically; choose it in Settings.
 - Dynamic resolution (on by default) lowers the render scale while frames run long and raises it again when there is headroom.
 - Press **F3** in battle for a frame profiler: frame rate, time per stage, draw calls and triangles.
 

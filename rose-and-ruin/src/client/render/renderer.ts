@@ -2,14 +2,16 @@
 // grading + SMAA. Quality presets trade resolution, shadow cascades and effects.
 
 import * as THREE from 'three';
-import { EffectComposer, RenderPass, EffectPass, BloomEffect, SMAAEffect, SMAAPreset, Effect, DepthOfFieldEffect } from 'postprocessing';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, SMAAEffect, SMAAPreset, Effect, DepthOfFieldEffect, GodRaysEffect, BlendFunction } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
 import { CSM } from 'three/examples/jsm/csm/CSM.js';
 import { setCsm, G } from './materials';
 import { PASS } from './passes';
 
-export type Quality = 0 | 1 | 2 | 3;
-export const QUALITY_NAMES = ['Low', 'Medium', 'High', 'Ultra'] as const;
+export type Quality = 0 | 1 | 2 | 3 | 4;
+export const QUALITY_NAMES = ['Low', 'Medium', 'High', 'Ultra', 'Ultimate'] as const;
+/** Ultimate: supersampling, soft long-range shadows, sun shafts, the finest textures and detail */
+export const ULTIMATE = 4;
 
 export interface GfxSettings {
   quality: Quality;
@@ -106,6 +108,9 @@ export class Renderer {
   composer!: EffectComposer;
   grade = new GradeEffect();
   private bloom!: BloomEffect;
+  /** Ultimate's sun shafts, cast from a disc placed along the sun's direction */
+  private godRays: GodRaysEffect | null = null;
+  private readonly sunDisc = new THREE.Mesh(new THREE.SphereGeometry(70, 16, 12), new THREE.MeshBasicMaterial({ color: 0xfff1d6, fog: false, depthWrite: false }));
   private ao: N8AOPostPass | null = null;
   private dofPass: EffectPass | null = null;
   dof: DepthOfFieldEffect | null = null;
@@ -147,8 +152,8 @@ export class Renderer {
       ao.configuration.aoRadius = 1.6;
       ao.configuration.distanceFalloff = 0.9;
       ao.configuration.intensity = 2.4;
-      ao.configuration.aoSamples = q >= 3 ? 12 : q === 2 ? 8 : 6;
-      ao.configuration.denoiseSamples = q >= 3 ? 6 : 4;
+      ao.configuration.aoSamples = q >= 4 ? 24 : q >= 3 ? 12 : q === 2 ? 8 : 6;
+      ao.configuration.denoiseSamples = q >= 4 ? 8 : q >= 3 ? 6 : 4;
       ao.configuration.denoiseRadius = 10;
       ao.configuration.halfRes = false;
       ao.configuration.depthAwareUpsampling = true;
@@ -161,12 +166,21 @@ export class Renderer {
     this.dofPass = new EffectPass(this.camera, this.dof);
     this.dofPass.enabled = false;
     this.composer.addPass(this.dofPass);
-    this.bloom = new BloomEffect({ luminanceThreshold: 1.05, luminanceSmoothing: 0.4, intensity: this.settings.bloom ? 0.6 : 0, mipmapBlur: true, radius: 0.72, levels: q >= 2 ? 8 : 6 });
+    this.bloom = new BloomEffect({ luminanceThreshold: 1.05, luminanceSmoothing: 0.4, intensity: this.settings.bloom ? 0.6 : 0, mipmapBlur: true, radius: 0.72, levels: q >= 4 ? 9 : q >= 2 ? 8 : 6 });
     // keep sun glints from overflowing the half-float buffer: an infinite or NaN pixel
     // would be smeared across the whole screen by the bloom blur as a black flash
     this.composer.addPass(new EffectPass(this.camera, new SanitizeEffect()));
+    // Ultimate: shafts of sunlight through towers, trees and the press of men
+    this.godRays = null;
+    if (q >= ULTIMATE) {
+      const rays = new GodRaysEffect(this.camera, this.sunDisc, {
+        blendFunction: BlendFunction.SCREEN, samples: 60, density: 0.94, decay: 0.92, weight: 0.32, exposure: 0.42, clampMax: 0.85, blur: true, kernelSize: 2, resolutionScale: 0.5,
+      });
+      this.godRays = rays;
+      this.composer.addPass(new EffectPass(this.camera, rays));
+    }
     this.composer.addPass(new EffectPass(this.camera, this.bloom, this.grade));
-    this.composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: q >= 2 ? SMAAPreset.HIGH : SMAAPreset.MEDIUM })));
+    this.composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: q >= 4 ? SMAAPreset.ULTRA : q >= 2 ? SMAAPreset.HIGH : SMAAPreset.MEDIUM })));
   }
 
   setDof(on: boolean, focusDist = 6, aperture = 3) {
@@ -202,14 +216,14 @@ export class Renderer {
       this.csm = null;
     }
     const sq = this.settings.shadowQuality;
-    const cascades = [1, 2, 3, 4][sq];
+    const cascades = [1, 2, 3, 4, 4][sq];
     this.csm = new CSM({
       camera: this.camera,
       parent: this.scene,
       cascades,
-      maxFar: [120, 220, 320, 420][sq],
+      maxFar: [120, 220, 320, 420, 600][sq],
       mode: 'practical',
-      shadowMapSize: [1024, 2048, 2048, 4096][sq],
+      shadowMapSize: [1024, 2048, 2048, 4096, 4096][sq],
       lightDirection: this.sun.dir.clone().negate(),
       lightIntensity: this.sun.intensity,
       lightNear: 1,
@@ -221,11 +235,14 @@ export class Renderer {
     for (const l of this.csm.lights) {
       l.color.copy(this.sun.color);
       l.shadow.normalBias = 0.035;
-      l.shadow.radius = 2;
+      l.shadow.radius = sq >= 4 ? 3 : 2;
     }
-    // knights cast into the two nearest cascades only (beyond that their shadows are specks)
+    // soft-edged shadow penumbrae on Ultimate
+    this.renderer.shadowMap.type = sq >= 4 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    this.renderer.shadowMap.needsUpdate = true;
+    // knights cast into the nearest cascades only (beyond that their shadows are specks)
     PASS.knightShadowCams.clear();
-    this.csm.lights.slice(0, 2).forEach((l) => PASS.knightShadowCams.add(l.shadow.camera));
+    this.csm.lights.slice(0, sq >= 4 ? 3 : 2).forEach((l) => PASS.knightShadowCams.add(l.shadow.camera));
     setCsm(this.csm);
     this.csm.updateFrustums();
   }
@@ -250,7 +267,9 @@ export class Renderer {
 
   resize() {
     // a pixel ratio above 1 multiplies every full-screen effect; only Ultra goes beyond it
-    const dpr = Math.min(window.devicePixelRatio || 1, this.settings.quality >= 3 ? 1.5 : 1);
+    // Ultimate supersamples: at least 1.5 pixels rendered per screen pixel, up to 2 on dense screens
+    const q = this.settings.quality;
+    const dpr = q >= 4 ? Math.min(2, Math.max(1.5, window.devicePixelRatio || 1)) : Math.min(window.devicePixelRatio || 1, q >= 3 ? 1.5 : 1);
     const scale = this.settings.renderScale * this.dyn;
     this.w = Math.max(1, Math.floor(window.innerWidth));
     this.h = Math.max(1, Math.floor(window.innerHeight));
@@ -286,6 +305,13 @@ export class Renderer {
     this.camera.updateMatrixWorld();
     this.csm?.update();
     for (const f of this.preRender) f();
+    if (this.godRays) {
+      // the disc rides with the camera at a fixed distance toward the sun; below the horizon it fades out
+      const d = this.sun.dir;
+      this.sunDisc.position.copy(this.camera.position).addScaledVector(d, 3000);
+      this.sunDisc.updateMatrixWorld();
+      this.godRays.godRaysMaterial.uniforms.weight.value = 0.32 * Math.min(1, Math.max(0, d.y * 6));
+    }
     this.composer.render(dt);
   }
 

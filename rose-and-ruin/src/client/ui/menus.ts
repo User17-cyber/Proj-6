@@ -277,7 +277,7 @@ export class Menus {
       <div class="sheet-body">
         <div class="opts">
           <div class="opt"><label>Your name</label><input class="textin" data-k="name" maxlength="24" placeholder="Sir…" value="${esc(p.name)}"></div>
-          <div class="opt"><label>Graphics quality</label><div class="seg" data-k="quality">${QUALITY_NAMES.map((n, i) => `<button data-v="${i}" class="${i === p.gfx.quality ? 'on' : ''}">${n}</button>`).join('')}</div><div class="hint">Shadows, textures, grass density and effects.</div></div>
+          <div class="opt"><label>Graphics quality</label><div class="seg" data-k="quality">${QUALITY_NAMES.map((n, i) => `<button data-v="${i}" class="${i === p.gfx.quality ? 'on' : ''}">${n}</button>`).join('')}</div><div class="hint">${p.gfx.quality >= 4 ? 'Ultimate: supersampled, with soft far-reaching shadows, shafts of sunlight, the finest textures and every knight in full detail. Asks a great deal of even a powerful graphics card.' : 'Shadows, textures, grass density and effects.'}</div></div>
           <div class="opt"><label>Render resolution</label>${range('renderScale', 0.5, 1, 0.05, p.gfx.renderScale, pct)}</div>
           <div class="opt"><label>Field of view</label>${range('fov', 55, 100, 1, p.gfx.fov, fmts.fov)}</div>
           <div class="opt"><label>Ambient occlusion</label>${tog('ao', p.gfx.ao)}</div>

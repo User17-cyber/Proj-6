@@ -229,7 +229,7 @@ export function buildTerrain(map: BuiltMap, baker: TextureBaker, quality: number
     update(cam) {
       for (const c of chunks) {
         const d = Math.hypot(c.cx - cam.position.x, c.cz - cam.position.z);
-        const lod = d < 110 ? 0 : d < 230 ? 1 : 2;
+        const lod = d < (quality >= 4 ? 220 : 110) ? 0 : d < (quality >= 4 ? 400 : 230) ? 1 : 2;
         if (lod !== c.cur) { c.cur = lod; c.mesh.geometry = c.lods[lod]; }
       }
     },

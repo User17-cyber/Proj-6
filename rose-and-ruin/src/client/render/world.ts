@@ -33,7 +33,7 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
   const worldId = ++worldCounter;
   beginWorld(worldId);
   const step = async (p: number, label: string) => { onProgress?.(p, label); await new Promise((res) => setTimeout(res, 0)); };
-  const baker = new TextureBaker(r.renderer, q >= 3 ? 1024 : q <= 0 ? 512 : 1024);
+  const baker = new TextureBaker(r.renderer, q >= 3 ? 1024 : q <= 0 ? 512 : 1024, q >= 4 ? 16 : 8);
   await step(0.05, 'Raising the sky');
   const atm = map.def.atmosphere;
   const sky = await buildSky(r.renderer, atm);
@@ -62,7 +62,7 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
   await step(0.88, 'Filling the moat');
   root.add(buildWater(map, baker, terrain.heightTex));
   // the castle and the knights mirrored in the moat (Medium and up)
-  const reflection = q >= 1 && map.world.water.length ? new PlanarReflection(q >= 3 ? 0.5 : q === 2 ? 0.4 : 0.3, q >= 3 ? 1 : q === 2 ? 2 : 3) : null;
+  const reflection = q >= 1 && map.world.water.length ? new PlanarReflection(q >= 4 ? 0.8 : q >= 3 ? 0.5 : q === 2 ? 0.4 : 0.3, q >= 3 ? 1 : q === 2 ? 2 : 3) : null;
   const reflect = reflection ? () => reflection.render(r.renderer, r.scene, r.camera, map.world.water, root) : null;
   if (reflect) r.preRender.push(reflect);
 

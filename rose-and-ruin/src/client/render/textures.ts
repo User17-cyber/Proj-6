@@ -516,12 +516,12 @@ export class TextureBaker {
   private cache = new Map<string, PbrSet>();
   private anisotropy: number;
 
-  constructor(private renderer: THREE.WebGLRenderer, public baseSize = 1024) {
+  constructor(private renderer: THREE.WebGLRenderer, public baseSize = 1024, maxAniso = 8) {
     const geo = new THREE.PlaneGeometry(2, 2);
     this.quad = new THREE.Mesh(geo);
     this.quad.frustumCulled = false;
     this.scene.add(this.quad);
-    this.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    this.anisotropy = Math.min(maxAniso, renderer.capabilities.getMaxAnisotropy());
   }
 
   private draw(mat: THREE.ShaderMaterial, target: THREE.WebGLRenderTarget, layer = 0) {

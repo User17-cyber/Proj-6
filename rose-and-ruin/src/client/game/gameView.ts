@@ -44,6 +44,8 @@ export class GameView {
   private corpses: Corpse[] = [];
   private time = 0;
   private frame = 0;
+  /** Ultimate graphics: knights at full detail and casting shadows much further out */
+  private ultimate = false;
   showBlood = true;
   firstPerson = false;
   combatNear = 0;
@@ -55,10 +57,11 @@ export class GameView {
     // room for the largest battle (64 a side) plus the fallen
     const cap = Math.max(240, s.knights.length + 100);
     // the fallen stay for the whole battle: settled corpses are posed once and kept
-    this.kr = new KnightRenderer(world.baker, cap, MAX_CORPSES);
-    this.particles = new Particles(r.settings.quality >= 2 ? 5000 : 2500);
+    this.ultimate = r.settings.quality >= 4;
+    this.kr = new KnightRenderer(world.baker, cap, MAX_CORPSES, this.ultimate);
+    this.particles = new Particles(r.settings.quality >= 4 ? 8000 : r.settings.quality >= 2 ? 5000 : 2500);
     this.particles.quality = r.settings.quality;
-    this.decals = new Decals(r.settings.quality >= 2 ? 1400 : 800);
+    this.decals = new Decals(r.settings.quality >= 4 ? 2400 : r.settings.quality >= 2 ? 1400 : 800);
     this.arrows = new Arrows(world.baker);
     this.particles.group.userData.noReflect = true;
     this.decals.mesh.userData.noReflect = true;
@@ -358,8 +361,10 @@ export class GameView {
       // far knights animate at a lower rate
       const skip = d > 160 ? 3 : d > 80 ? 2 : 1;
       if (skip === 1 || (this.frame + k.id) % skip === 0 || !v.anim.hasFirstFrame) v.anim.update(k as unknown as Parameters<KnightAnimator['update']>[0], dt * skip, this.ground, this.time);
-      const lod = d < 12 ? 0 : d < 40 ? 1 : 2;
-      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId, k.id * 7 + k.team, d < 70);
+      // Ultimate keeps every knight at full detail far further out
+      const U = this.ultimate;
+      const lod = d < (U ? 30 : 12) ? 0 : d < (U ? 90 : 40) ? 1 : 2;
+      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId, k.id * 7 + k.team, d < (U ? 140 : 70));
       for (const a of v.arrows) this.arrows.body(v.anim.bones[a.bone], a);
       if (d < 12 && (k.act === Act.Release || k.act === Act.Block)) near++;
       // footsteps
@@ -385,12 +390,13 @@ export class GameView {
         this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 1.6 + Math.random() * 1.1, true);
       }
       const d = Math.hypot(c.rag.joints.chest.x - camPos.x, c.rag.joints.chest.z - camPos.z);
-      const lod = d < 10 ? 0 : d < 30 ? 1 : 2;
+      const lod = d < (this.ultimate ? 22 : 10) ? 0 : d < (this.ultimate ? 70 : 30) ? 1 : 2;
       const pose = { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 };
       // once a body has settled it is posed into the static pool and costs almost nothing
       if (c.stat < 0 && c.rag.frozen) c.stat = this.kr.addStatic(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, c.id * 7 + c.team);
-      if (c.stat >= 0) this.kr.drawStatic(c.stat, lod, d < 45);
-      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, false, c.id * 7 + c.team, d < 45);
+      const shadow = d < (this.ultimate ? 90 : 45);
+      if (c.stat >= 0) this.kr.drawStatic(c.stat, lod, shadow);
+      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, false, c.id * 7 + c.team, shadow);
       for (const a of c.arrows) this.arrows.body(c.rag.bones[a.bone], a);
     }
     this.kr.end();

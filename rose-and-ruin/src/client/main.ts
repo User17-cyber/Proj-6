@@ -16,7 +16,7 @@ async function viewer() {
   const params = new URLSearchParams(location.search);
   const mapId = params.get('view') ?? 'bodiam';
   const camIdx = Number(params.get('cam') ?? 0);
-  const quality = Number(params.get('q') ?? 2) as 0 | 1 | 2 | 3;
+  const quality = Number(params.get('q') ?? 2) as 0 | 1 | 2 | 3 | 4;
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const r = new Renderer(canvas, { quality, renderScale: 1, ao: quality >= 1 && !params.has('noao'), bloom: !params.has('nobloom'), fov: 62, shadowQuality: quality });
   const map = buildMap(mapId);
