@@ -18,7 +18,8 @@ export function spend(k: Knight, amount: number) {
   k.staminaDelay = 0.9;
 }
 
-export const attackSpeed = (k: Knight) => k.def.attackSpeed * (k.stamina <= 0.5 ? 1.25 : 1);
+/** Multiplier on attack timings: the order's attack speed (faster = shorter), slowed further when exhausted. */
+export const attackSpeed = (k: Knight) => (1 / k.def.attackSpeed) * (k.stamina <= 0.5 ? 1.25 : 1);
 
 export function updateKnight(m: Match, k: Knight, dt: number) {
   timers(m, k, dt);

@@ -95,16 +95,18 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 
 Each order is built differently, and its hitboxes, reach and footprint in the crowd follow its build. The bigger a knight, the further his weapon reaches and the easier he is to hit:
 
-| Class | Height | Build |
-| --- | --- | --- |
-| Banneret | 1.94 m | very broad |
-| Vanguard | 1.91 m | broad |
-| Halberdier | 1.87 m | lean |
-| Knight Bachelor | 1.84 m | sturdy |
-| Man-at-Arms | 1.80 m | average |
-| Pavisier | 1.80 m | thickset |
-| Longbowman | 1.73 m | wiry |
-| Knight-Errant | 1.71 m | slight |
+| Class | Height | Build | Attack speed |
+| --- | --- | --- | --- |
+| Banneret | 1.94 m | very broad | 15% slower |
+| Vanguard | 1.91 m | broad | 10% slower |
+| Halberdier | 1.87 m | lean | 5% slower |
+| Knight Bachelor | 1.84 m | sturdy | 5% slower |
+| Man-at-Arms | 1.80 m | average | 5% faster |
+| Pavisier | 1.80 m | thickset | ordinary |
+| Longbowman | 1.73 m | wiry | 5% faster (dagger) |
+| Knight-Errant | 1.71 m | slight | 15% faster |
+
+Attack speed scales the windup, release and recovery of every blow, so a quick order lands first and recovers sooner; exhaustion slows anyone down by a further quarter.
 
 Any class can be chosen at the start and again every time you fall (keys 1 to 8 in the armoury).
 

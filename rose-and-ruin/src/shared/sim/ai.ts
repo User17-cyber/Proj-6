@@ -433,7 +433,7 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
     const r = b.rng.next();
     const polearm = k.weapon.visual === 'halberd' || k.weapon.visual === 'poleaxe' || k.weapon.visual === 'spear';
     if (r < (polearm ? 0.3 : 0.22)) b.pressThrust = true;
-    else if (r < (polearm ? 0.5 : 0.44) && k.stamina > 30) b.holdAttack = k.weapon.attacks[2].windup + b.rng.range(0.05, 0.45);
+    else if (r < (polearm ? 0.5 : 0.44) && k.stamina > 30) b.holdAttack = k.weapon.attacks[2].windup / k.def.attackSpeed + b.rng.range(0.05, 0.45);
     else { buttons |= Btn.Attack; b.holdAttack = 0; }
   } else if (dist < reach * 0.55 && b.rng.chance(0.25)) {
     b.pressKick = true; // too close: shove them off

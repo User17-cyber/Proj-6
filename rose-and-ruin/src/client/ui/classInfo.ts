@@ -22,6 +22,10 @@ export function keyLabel(code: string): string {
   return code;
 }
 
+/** Attack speed as pips: ×0.85 (slowest) is one, ×1.15 (quickest) is five. */
+const attackWord = (v: number) => v === 1 ? 'swings at ordinary speed' : `swings ${Math.round(Math.abs(v - 1) * 100)}% ${v > 1 ? 'faster' : 'slower'}`;
+const attackPips = (v: number) => Math.max(1, Math.min(5, Math.round((v - 0.85) / 0.075) + 1));
+
 export function classDetailHtml(cls: ClassId, keys: [string, string] = ['Q', 'E']): string {
   const c = CLASSES[cls];
   const w = WEAPONS[c.weapon];
@@ -37,12 +41,13 @@ export function classDetailHtml(cls: ClassId, keys: [string, string] = ['Q', 'E'
     <div class="stats">
       <span>Attack</span>${pips(r.attack)}
       <span>Defence</span>${pips(r.defence)}
-      <span>Speed</span>${pips(r.speed)}
+      <span>Attack speed</span>${pips(attackPips(c.attackSpeed))}
+      <span>Footspeed</span>${pips(r.speed)}
       <span>Reach</span>${pips(r.reach)}
       <span>Mastery</span>${pips(r.difficulty)}
     </div>
     ${abil}
-    <div class="armour-line">${esc(c.armourDesc)} · ${c.hp} vigour · ${esc(w.name)}${c.shield ? ` &amp; ${SHIELDS[c.shield].name} (${SHIELDS[c.shield].hp} durability)` : ''}</div>`;
+    <div class="armour-line">${esc(c.armourDesc)} · ${c.hp} vigour · ${attackWord(c.attackSpeed)} · ${esc(w.name)}${c.shield ? ` &amp; ${SHIELDS[c.shield].name} (${SHIELDS[c.shield].hp} durability)` : ''}</div>`;
 }
 
 /** Compact selectable class list. Returns a setter for the selection. */

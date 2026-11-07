@@ -184,7 +184,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
 
   falchion: {
     id: 'falchion',
-    name: 'Falchion & Buckler',
+    name: 'Falchion',
     blurb: 'A broad single-edged chopping blade and a fist buckler. Fast, vicious, hard to pin down.',
     twoHanded: false,
     hitStart: 0.12,
