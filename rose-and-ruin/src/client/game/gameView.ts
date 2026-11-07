@@ -364,7 +364,7 @@ export class GameView {
       // Ultimate keeps every knight at full detail far further out
       const U = this.ultimate;
       const lod = d < (U ? 30 : 12) ? 0 : d < (U ? 90 : 40) ? 1 : 2;
-      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId, k.id * 7 + k.team, d < (U ? 140 : 70));
+      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId ? 2 : false, k.id * 7 + k.team, d < (U ? 140 : 70));
       for (const a of v.arrows) this.arrows.body(v.anim.bones[a.bone], a);
       if (d < 12 && (k.act === Act.Release || k.act === Act.Block)) near++;
       // footsteps

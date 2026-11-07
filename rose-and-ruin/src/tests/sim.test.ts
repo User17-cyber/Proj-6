@@ -2,7 +2,7 @@
 // sanity (no NaNs, knights fight and die, matches end, nobody escapes the world).
 import { buildMap, MAPS } from '../shared/world/maps/index';
 import { Match } from '../shared/sim/match';
-import { DEFAULT_SETTINGS, type GameMode } from '../shared/types';
+import { Act, Btn, DEFAULT_SETTINGS, type GameMode } from '../shared/types';
 import { WEAPONS } from '../shared/data/weapons';
 import { CLASS_IDS, SHIELDS } from '../shared/data/classes';
 import { wearShield } from '../shared/sim/combat';
@@ -147,6 +147,36 @@ if (!only) {
   for (let i = 0; i < 60 * 8 && !me.alive; i++) m.step();
   if (!me.alive || me.shieldHp !== SHIELDS.heater.hp) fail(`a fresh shield on respawn (alive ${me.alive}, hp ${me.shieldHp})`);
   console.log(`shields: pavise ${full} splintered after ${Math.ceil(full / 60)} blows; fresh heater on respawn`);
+}
+// attack input: spam-clicking completes each blow (no heavy conversion, no restart); a steady hold makes it heavy
+{
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'duel', rounds: 99, seed: 21 }, buildMap('bodiam'));
+  const me = m.addPlayer('Tester', 1, 0, 'manatarms');
+  while (m.phase !== 'live') m.step();
+  const foe = m.knights.find((k) => k !== me)!;
+  m.brains.delete(foe.id); foe.input.buttons = 0; foe.x = me.x + 30; foe.z = me.z;
+  const run = (pattern: (i: number) => boolean, ticks: number) => {
+    let swings = 0, heavy = 0, restarts = 0, prevAct = me.act, prevT = me.actT;
+    for (let i = 0; i < ticks; i++) {
+      me.input = { ...me.input, buttons: pattern(i) ? Btn.Attack : 0 };
+      me.stamina = me.def.stamina; me.spawnProt = 0;
+      m.step();
+      if (me.act === Act.Windup && prevAct === Act.Windup && me.actT < prevT - 1e-6) restarts++;
+      prevAct = me.act; prevT = me.actT;
+      for (const e of m.events) if (e.t === 'swing' && e.k === me.id) { swings++; if (e.heavy) heavy++; }
+      m.events.length = 0;
+    }
+    return { swings, heavy, restarts };
+  };
+  // click: 3 ticks down, 4 up, for 6 seconds
+  const spam = run((i) => i % 7 < 3, 360);
+  if (spam.heavy > 0) fail(`spam-clicking turned ${spam.heavy} blows heavy`);
+  if (spam.restarts > 0) fail(`spam-clicking restarted the windup ${spam.restarts} times`);
+  if (spam.swings < 4) fail(`spam-clicking produced only ${spam.swings} completed swings in 6 s`);
+  for (let i = 0; i < 120; i++) { me.input = { ...me.input, buttons: 0 }; m.step(); m.events.length = 0; }
+  const hold = run(() => true, 120);
+  if (hold.heavy < 1) fail('holding the attack button no longer makes a heavy blow');
+  console.log(`attack input: spam-click ${spam.swings} swings (${spam.heavy} heavy, ${spam.restarts} restarts); hold ${hold.swings} swings (${hold.heavy} heavy)`);
 }
 // single combat: one knight a side on the duelling ground, first to three rounds
 for (const def of MAPS) {

@@ -105,6 +105,15 @@ mat4 rrSkinM() {
 vec3 rrPlace(vec3 p, mat4 m) {
   // the head and helmet collapse away in first person
   if (aFlags > 1.5 && aI0.z > 0.5) return vec3(0.0, -1e4, 0.0);
+#ifndef RR_DEPTH
+  // first person: the rest of the body and harness go too (they would bob across the view);
+  // only the forearms, hands and what they hold remain. The shadow keeps the whole man.
+  if (aI0.z > 1.5) {
+    float b = aW > 0.5 ? aBones.y : aBones.x;
+    bool keep = b > 16.5 || (b > 5.5 && b < 7.5) || (b > 8.5 && b < 10.5);
+    if (!keep) return vec3(0.0, -1e4, 0.0);
+  }
+#endif
   return (m * vec4(p, 1.0)).xyz;
 }`;
 
@@ -118,7 +127,7 @@ const skinPatch: Patch = (s) => {
 /** Skinning for the shadow depth material (no normals there). */
 const depthSkinPatch: Patch = (s) => {
   s.vertexShader = s.vertexShader
-    .replace('#include <common>', '#include <common>\n' + SKIN_VERT_PARS)
+    .replace('#include <common>', '#include <common>\n#define RR_DEPTH\n' + SKIN_VERT_PARS)
     .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = rrPlace(transformed, rrSkinM());');
 };
 
@@ -567,7 +576,8 @@ export class KnightRenderer {
    * Queue one knight. lod: 0 near, 1 mid, 2 far; `shadow` adds him to the shadow and
    * reflection set. `seed` picks his face, skin and hair.
    */
-  draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean, seed = 0, shadow = true) {
+  /** hideHead: true hides the head (first-person helm), 2 hides all but forearms, hands and held arms */
+  draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean | 2, seed = 0, shadow = true) {
     if (this.rows >= this.capacity) return;
     const row = this.rows++;
     writePose(this.boneData, row * SLOTS * 12, d);
@@ -575,13 +585,13 @@ export class KnightRenderer {
     if (cls === 'longbowman') this.bowString(d);
   }
 
-  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean, seed: number, shadow: boolean) {
+  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean | 2, seed: number, shadow: boolean) {
     const h = hash(seed);
     const beard = (h & 255) / 255, skin = ((h >>> 8) & 255) / 255, hair = ((h >>> 16) & 255) / 255;
     const bks = this.buckets.get(cls)!;
     const put = (b: Bucket) => {
       const k = b.count++;
-      b.i0.setXYZW(k, row, team, hideHead ? 1 : 0, beard < 0.25 ? 0 : beard);
+      b.i0.setXYZW(k, row, team, hideHead === 2 ? 2 : hideHead ? 1 : 0, beard < 0.25 ? 0 : beard);
       b.i1.setXYZW(k, blood, mud, skin, hair);
     };
     put(bks[Math.max(0, Math.min(2, lod))]);

@@ -75,6 +75,8 @@ export class Knight {
   hotT = 0;
   hotRate = 0;
   bodkin = false;
+  /** the attack button has been held without a break since this attack began (a heavy blow) */
+  attackHeld = false;
   /** shield durability left (0 when the class has none or it has splintered) */
   shieldHp = 0;
   chargeHit = false;

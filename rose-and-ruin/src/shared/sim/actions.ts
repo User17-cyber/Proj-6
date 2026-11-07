@@ -82,6 +82,8 @@ function startAttack(m: Match, k: Knight, slot: number, chained: boolean) {
   k.charge = 0;
   k.hitList.length = 0;
   k.bufferedAttack = 0;
+  // a heavy blow needs the button held from here on, unbroken
+  k.attackHeld = (k.input.buttons & Btn.Attack) !== 0;
   if (slot < 2) k.lastSlash = slot;
   spend(k, a.stamina);
 }
@@ -164,7 +166,11 @@ function actions(m: Match, k: Knight, dt: number, btn: number, pressed: number) 
     }
     case Act.Windup: {
       const a = w.attacks[k.atk];
-      if ((k.atk === 0 || k.atk === 1) && !k.heavy && (btn & Btn.Attack) && k.actT >= 0.17 && w.heavyChargeMax > 0) {
+      // only a continuous hold turns a blow heavy: further clicks while it winds up are ignored
+      // (the swing completes) and simply queue the next blow
+      if (!(btn & Btn.Attack)) k.attackHeld = false;
+      if ((pressed & Btn.Attack) && !k.attackHeld) { k.bufferedAttack = 1; k.bufferT = 0.6; }
+      if ((k.atk === 0 || k.atk === 1) && !k.heavy && k.attackHeld && (btn & Btn.Attack) && k.actT >= 0.17 && w.heavyChargeMax > 0) {
         const h = w.attacks[2];
         k.atk = 2;
         k.heavy = true;
