@@ -79,6 +79,17 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 - **Feint**: press guard during your own windup to cancel the blow.
 - **Breaking a guard**: kicks, shield bashes and heavy blows against an exhausted guard break it.
 - **Wounds**: blows land on the head (extra damage), torso or legs. Armour resists cuts best, blunt weapons less so, and points find the gaps in mail.
+- **Deaths**: a dying knight does not simply go limp. How he falls follows from the killing blow:
+  - a body wound staggers him back, hunched and clutching it, to his knees and over
+  - legs cut from under him drop him to his knees at once, arms thrown out
+  - an arrow makes him reel and slump
+  - bleeding out, he sways and sinks
+  - a heavy blow or a charge hurls him off his feet with a spin
+  - a blow to the head drops him where he stands
+  
+  Then the ragdoll takes over and the body comes to rest where it falls.
+- **Gore** (Settings: Off, Standard or Brutal; Brutal by default): on Brutal a heavy cut that kills through the head takes it off, and the head tumbles and rolls away. Killing wounds pump blood in pulses for a few heartbeats, pools spread beneath the fallen, and harness is soon caked.
+- **Slow-motion kills** (Settings, on by default): your heaviest killing blows play out for a moment in slow motion, in single player.
 
 ### The eight orders
 
