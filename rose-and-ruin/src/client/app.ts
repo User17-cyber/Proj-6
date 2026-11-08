@@ -15,7 +15,7 @@ import { CameraRig, type FocusKnight } from './camera';
 import { Hud, type HudHost, type HudFrame } from './ui/hud';
 import { Menus, type MenuHost, type MpState } from './ui/menus';
 import { ClassPreview } from './ui/preview';
-import { loadPrefs, savePrefs, type Prefs } from './prefs';
+import { loadPrefs, syncGore, savePrefs, type Prefs } from './prefs';
 import { Act, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
 import { CLASSES, type ClassId } from '../shared/data/classes';
 import { knightName } from '../shared/data/names';
@@ -28,6 +28,9 @@ type SpecCam = 'director' | 'follow' | 'free';
 
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** seconds of a slow-motion killing blow */
+const SLOWMO_TIME = 1.1;
 
 export class App implements HudHost, MenuHost {
   private r!: Renderer;
@@ -54,6 +57,8 @@ export class App implements HudHost, MenuHost {
   private killerId = -1;
   private deathAt = -1;
   private hitStop = 0;
+  /** slow-motion killing blow: time left, when the last one played, and whether the blow was heavy */
+  private slowT = 0; private lastSlow = -99; private killBlowHeavy = false;
   private baseScale = 1;
   private hurtPulse = 0;
   private flash = 0;
@@ -77,6 +82,7 @@ export class App implements HudHost, MenuHost {
 
   constructor() {
     this.prefs = loadPrefs();
+    syncGore(this.prefs);
     if (!this.prefs.name) {
       this.prefs.name = knightName(new Rng((Math.random() * 1e9) | 0), 0, 'manatarms', new Set());
       savePrefs(this.prefs);
@@ -199,7 +205,8 @@ export class App implements HudHost, MenuHost {
     if (s instanceof LocalSession) s.maxSteps = 8 * this.turbo;
     if (!this.view) this.view = new GameView(this.r, this.world!, s, this.audio, withHud ? this.hud : null);
     else this.view.reset(s, withHud ? this.hud : null);
-    this.view.showBlood = this.prefs.blood;
+    this.view.showBlood = this.prefs.gore > 0;
+    this.view.gore = this.prefs.gore;
     this.view.firstPerson = false;
     this.endHandled = false;
     this.usedCls.clear();
@@ -208,6 +215,7 @@ export class App implements HudHost, MenuHost {
     this.deathAt = -1;
     this.watchId = -1;
     this.hitStop = 0;
+    this.slowT = 0;
     this.baseScale = 1;
   }
 
@@ -352,7 +360,7 @@ export class App implements HudHost, MenuHost {
     this.input.bindings = { ...p.bindings };
     this.input.custom = p.customBinds.map((c) => ({ ...c }));
     this.audio.setVolumes(p.volumes);
-    if (this.view) this.view.showBlood = p.blood;
+    if (this.view) { this.view.showBlood = p.gore > 0; this.view.gore = p.gore; }
     this.firstPerson = p.firstPerson;
     if (this.mode === 'battle' && !this.spectating) this.rig.mode = this.firstPerson ? 'first' : 'third';
   }
@@ -591,7 +599,12 @@ export class App implements HudHost, MenuHost {
     const P = this.perf;
     this.r.renderer.info.reset();
     if (!s.online) {
-      if (this.hitStop > 0) { this.hitStop -= dt; s.timeScale = 0.2; } else s.timeScale = this.baseScale;
+      if (this.slowT > 0) {
+        // slow motion: drops to a quarter speed at once, then eases back over a second
+        this.slowT = Math.max(0, this.slowT - dt);
+        const u = 1 - this.slowT / SLOWMO_TIME;
+        s.timeScale = this.baseScale * (0.22 + 0.78 * u * u * (3 - 2 * u));
+      } else if (this.hitStop > 0) { this.hitStop -= dt; s.timeScale = 0.2; } else s.timeScale = this.baseScale;
     }
     if (this.mode === 'battle') {
       this.input.enabled = !this.hud.paused && !this.hud.chatting && !this.hud.deathOpen && !this.hud.endOpen;
@@ -681,12 +694,17 @@ export class App implements HudHost, MenuHost {
             if (k) this.rig.startDeath(k as FocusKnight);
             this.rig.addShake(0.5);
           } else if (e.killer === me) {
-            if (!s.online) this.hitStop = 0.07;
+            if (!s.online) {
+              // the heaviest killing blows (heavy, through the head, or a beheading) play out in slow motion
+              if (this.prefs.slowmo && this.killBlowHeavy && this.time - this.lastSlow > 4) { this.slowT = SLOWMO_TIME; this.lastSlow = this.time; }
+              else this.hitStop = 0.07;
+            }
             this.rig.addShake(0.3);
             this.flash = 0.12;
           }
           break;
         case 'hit':
+          if (e.a === me && e.killed) this.killBlowHeavy = e.heavy || e.zone === 0 || e.kind === 2;
           if (e.a === me && !e.killed) { this.rig.addShake(e.heavy ? 0.16 : 0.08); this.flash = Math.max(this.flash, 0.03); }
           if (e.v === me) { this.rig.addShake(Math.min(0.7, e.dmg / 55)); this.hurtPulse = Math.min(1, this.hurtPulse + e.dmg / 45); }
           break;

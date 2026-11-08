@@ -287,7 +287,8 @@ export class Menus {
           <div class="opt"><label>Mouse sensitivity</label>${range('sensitivity', 0.2, 3, 0.05, p.sensitivity, fmts.sensitivity)}</div>
           <div class="opt"><label>Invert mouse</label>${tog('invertY', p.invertY)}</div>
           <div class="opt"><label>View</label><div class="seg" data-k="firstPerson"><button data-v="0" class="${!p.firstPerson ? 'on' : ''}">Over the shoulder</button><button data-v="1" class="${p.firstPerson ? 'on' : ''}">Through the visor</button></div></div>
-          <div class="opt"><label>Blood</label>${tog('blood', p.blood)}</div>
+          <div class="opt"><label>Gore</label><div class="seg" data-k="gore">${['Off', 'Standard', 'Brutal'].map((n, i) => `<button data-v="${i}" class="${i === p.gore ? 'on' : ''}">${n}</button>`).join('')}</div><div class="hint">${p.gore >= 2 ? 'Brutal: heavy cuts to the head take it off, killing wounds pump blood, pools spread beneath the fallen, and harness is soon caked.' : p.gore === 1 ? 'Blood from wounds and pools beneath the settled dead.' : 'No blood at all.'}</div></div>
+          <div class="opt"><label>Slow-motion kills</label>${tog('slowmo', p.slowmo)}<div class="hint">A moment of slow motion on your heaviest killing blows (single player).</div></div>
           <div class="opt"><label>Damage numbers</label>${tog('damageNumbers', p.damageNumbers)}</div>
           <div class="opt"><label>Nameplates</label>${tog('nameplates', p.nameplates)}</div>
           <div class="opt"><label>Master volume</label>${range('master', 0, 1, 0.05, p.volumes.master, pct)}</div>
@@ -362,7 +363,8 @@ export class Menus {
         if (k === 'quality') { p.gfx.quality = Number(v) as Quality; p.gfx.shadowQuality = p.gfx.quality; p.gfx.ao = p.gfx.quality >= 1; }
         else if (k === 'ao' || k === 'bloom' || k === 'adaptive') p.gfx[k] = v === '1';
         else if (k === 'colour') p.gfx.colour = Number(v);
-        else if (k === 'invertY' || k === 'blood' || k === 'damageNumbers' || k === 'nameplates' || k === 'firstPerson') (p as unknown as Record<string, boolean>)[k] = v === '1';
+        else if (k === 'invertY' || k === 'slowmo' || k === 'damageNumbers' || k === 'nameplates' || k === 'firstPerson') (p as unknown as Record<string, boolean>)[k] = v === '1';
+        else if (k === 'gore') { p.gore = Number(v) as 0 | 1 | 2; p.blood = p.gore > 0; }
         this.host.ui('tick');
         changed();
         render();

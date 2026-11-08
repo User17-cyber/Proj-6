@@ -5,7 +5,7 @@ import { CLASS_IDS, type ClassId } from '../shared/data/classes';
 import { Act, type Team } from '../shared/types';
 import { KnightAnimator } from './knights/animator';
 import { KnightRenderer } from './knights/knightRenderer';
-import { Ragdoll } from './knights/ragdoll';
+import { Ragdoll, type DeathKind } from './knights/ragdoll';
 import type { WorldView } from './render/world';
 import type { Renderer } from './render/renderer';
 
@@ -56,7 +56,9 @@ export function setupParade(r: Renderer, world: WorldView, params: URLSearchPara
     kr.begin();
     for (const e of ks) {
       if (dieAt >= 0 && time > dieAt && !e.rag) {
-        e.rag = new Ragdoll(e.anim.joints, e.anim.prevJoints, dt, e.k.def.ranged ? null : e.anim.weapon, { dx: Math.sin(e.k.yaw), dy: 0.1, dz: Math.cos(e.k.yaw), force: 2.5, zone: 1 });
+        const kinds = (params.get('death') ?? 'limp').split(',') as DeathKind[];
+        const kind = kinds[ks.indexOf(e) % kinds.length];
+        e.rag = new Ragdoll(e.anim.joints, e.anim.prevJoints, dt, e.k.def.ranged ? null : e.anim.weapon, { dx: Math.sin(e.k.yaw), dy: 0.1, dz: Math.cos(e.k.yaw), force: 2.5, zone: kind === 'buckle' ? 2 : kind === 'limp' ? 0 : 1 }, kind);
         e.rag.height = e.k.def.size.height; e.rag.girth = e.k.def.size.girth;
       }
       if (e.rag) {

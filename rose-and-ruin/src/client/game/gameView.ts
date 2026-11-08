@@ -7,7 +7,7 @@ import type { WorldView } from '../render/world';
 import type { Renderer } from '../render/renderer';
 import { KnightAnimator } from '../knights/animator';
 import { KnightRenderer, type KnightDrawable } from '../knights/knightRenderer';
-import { Ragdoll } from '../knights/ragdoll';
+import { Ragdoll, type DeathKind } from '../knights/ragdoll';
 import { B } from '../knights/skeleton';
 import { Particles } from '../fx/particles';
 import { Decals } from '../fx/decals';
@@ -29,8 +29,16 @@ export interface HudSink {
   ended(winner: number): void;
 }
 
-interface KView { anim: KnightAnimator; blood: number; mud: number; arrows: BodyArrow[]; wasAlive: boolean; stepPhase: number; lastStepX: number; lastStepZ: number }
-interface Corpse { stat: number; rag: Ragdoll; cls: ClassId; team: number; blood: number; mud: number; arrows: BodyArrow[]; age: number; pooled: boolean; id: number }
+/** the blow that killed a knight, remembered until his corpse is made */
+interface DeathHit { heavy: boolean; kind: number; zone: number; dtype: number; dmg: number; dx: number; dz: number }
+interface KView { anim: KnightAnimator; blood: number; mud: number; arrows: BodyArrow[]; wasAlive: boolean; stepPhase: number; lastStepX: number; lastStepZ: number; deathHit?: DeathHit }
+/** a severed head tumbling and rolling to rest */
+interface Head { cls: ClassId; team: number; blood: number; mud: number; seed: number; bones0: THREE.Matrix4[]; inv0: THREE.Matrix4; out: THREE.Matrix4[]; pos: THREE.Vector3; vel: THREE.Vector3; rot: THREE.Quaternion; spin: THREE.Vector3; still: number; settled: boolean }
+/** a wound pumping blood from a fresh corpse */
+interface Spray { c: Corpse; neck: boolean; dx: number; dz: number; t: number; dur: number; decalT: number }
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+const MAX_HEADS = 60;
+interface Corpse { stat: number; rag: Ragdoll; cls: ClassId; team: number; blood: number; mud: number; arrows: BodyArrow[]; age: number; pooled: boolean; id: number; decap: boolean }
 
 const MAX_CORPSES = 450;
 const HEAVY = new Set<ClassId>(['manatarms', 'vanguard', 'banneret']);
@@ -47,6 +55,10 @@ export class GameView {
   /** Ultimate graphics: knights at full detail and casting shadows much further out */
   private ultimate = false;
   showBlood = true;
+  /** 0 off, 1 standard, 2 brutal (decapitation, arterial spray, spreading pools) */
+  gore = 2;
+  private heads: Head[] = [];
+  private sprays: Spray[] = [];
   firstPerson = false;
   combatNear = 0;
   private ground: (x: number, z: number, y: number) => number;
@@ -118,6 +130,7 @@ export class GameView {
           if (!v) break;
           const vv = this.view(e.v);
           vv.anim.flinch(e.dx, e.dz, e.dmg / 40);
+          if (e.killed) vv.deathHit = { heavy: e.heavy, kind: e.kind, zone: e.zone, dtype: e.dtype, dmg: e.dmg, dx: e.dx, dz: e.dz };
           const amount = Math.min(1, e.dmg / 45);
           if (e.kind !== 4 && this.showBlood) {
             this.particles.blood(e.x, e.y, e.z, e.dx, e.dy, e.dz, Math.min(1.6, amount * (e.killed ? 2 : 1.4)));
@@ -127,7 +140,7 @@ export class GameView {
               if (Math.abs(gy - v.y) < 1.5) this.decals.add(gx, gy, gz, this.world.map.world.terrain.normal(gx, gz, _n), 0.45 + amount * 0.9);
             }
           }
-          vv.blood = Math.min(1, vv.blood + e.dmg / 75);
+          vv.blood = Math.min(1, vv.blood + e.dmg / (this.gore >= 2 ? 45 : 75));
           // the striker is splashed too
           if (e.a >= 0) this.view(e.a).blood = Math.min(1, this.view(e.a).blood + 0.05);
           const plate = CLASSES[v.cls].armor[0] >= 0.3;
@@ -329,15 +342,118 @@ export class GameView {
     // one corpse per death (the kill event and the state change can both report it)
     if (!v.wasAlive) return;
     const ranged = CLASSES[k.cls].ranged;
-    const rag = new Ragdoll(v.anim.joints, v.anim.prevJoints, 1 / 60, ranged ? null : v.anim.weapon, { dx, dy: Math.max(dy, 0.05), dz, force, zone });
+    const h = v.deathHit;
+    v.deathHit = undefined;
+    if (h) zone = h.zone;
+    // how he dies follows from how he was struck
+    let kind: DeathKind;
+    if (!h) kind = Math.random() < 0.5 ? 'clutch' : 'limp';
+    else if (h.kind === 4) kind = 'bleed';
+    else if (h.zone === 0) kind = 'limp';
+    else if (h.kind === 2 || (h.heavy && (h.dtype === 1 || force > 3.5))) kind = 'hurled';
+    else if (h.kind === 1 || h.kind === 5) kind = 'arrow';
+    else if (h.zone === 2) kind = 'buckle';
+    else kind = h.heavy && Math.random() < 0.4 ? 'hurled' : 'clutch';
+    // Brutal: a heavy cut that kills through the head takes it off
+    const decap = this.gore >= 2 && !!h && h.zone === 0 && h.dtype === 0 && h.kind === 0 && (h.heavy || h.dmg > 60 || Math.random() < 0.35);
+    const rag = new Ragdoll(v.anim.joints, v.anim.prevJoints, 1 / 60, ranged ? null : v.anim.weapon, { dx, dy: Math.max(dy, 0.05), dz, force, zone }, decap ? 'limp' : kind);
     rag.noOffhand = k.shieldBroken;
     rag.height = CLASSES[k.cls].size.height; rag.girth = CLASSES[k.cls].size.girth;
     // arrows ride along on the ragdoll's bones
-    this.corpses.push({ stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + 0.35), mud: v.mud, arrows: v.arrows.slice(), age: 0, pooled: false, id });
+    const corpse: Corpse = { stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + (this.gore >= 2 ? 0.6 : 0.35)), mud: v.mud, arrows: decap ? v.arrows.filter((a) => a.bone !== B.head && a.bone !== B.neck) : v.arrows.slice(), age: 0, pooled: false, id, decap };
+    this.corpses.push(corpse);
+    if (decap) this.severHead(k, v, dx, dz, force);
+    if (this.gore >= 2 && h && h.kind !== 4) {
+      // the killing wound pumps for a few heartbeats; a severed neck for longer
+      this.sprays.push({ c: corpse, neck: decap, dx: -h.dx, dz: -h.dz, t: 0, dur: decap ? 3.4 : 1.6 + Math.random() * 1.2, decalT: 0 });
+      if (this.sprays.length > 24) this.sprays.shift();
+    }
     v.arrows.length = 0;
     v.wasAlive = false;
     // only beyond the static pool's size (more deaths than any normal battle) do the oldest go
     if (this.corpses.length > MAX_CORPSES + 40) this.corpses.shift();
+  }
+
+  /** Take the head off a knight at the moment of death and send it tumbling. */
+  private severHead(k: KnightState, v: KView, dx: number, dz: number, force: number) {
+    const bones0 = v.anim.bones.map((m) => m.clone());
+    const hb = bones0[B.head];
+    const pos = new THREE.Vector3(), rot = new THREE.Quaternion(), sc = new THREE.Vector3();
+    hb.decompose(pos, rot, sc);
+    const inv0 = new THREE.Matrix4().compose(pos, rot, _one).invert();
+    const l = Math.hypot(dx, dz) || 1;
+    const sp = 2.2 + Math.min(4, force * 0.5) + Math.random() * 1.5;
+    this.heads.push({
+      cls: k.cls, team: k.team, blood: 1, mud: v.mud, seed: k.id * 7 + k.team, bones0, inv0, out: bones0.map(() => new THREE.Matrix4()),
+      pos, vel: new THREE.Vector3((dx / l) * sp + (Math.random() - 0.5), 2.2 + Math.random() * 1.8, (dz / l) * sp + (Math.random() - 0.5)), rot,
+      spin: new THREE.Vector3((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 16), still: 0, settled: false,
+    });
+    if (this.heads.length > MAX_HEADS) this.heads.shift();
+    this.particles.blood(pos.x, pos.y - 0.1, pos.z, dx / l, 0.6, dz / l, 1.6);
+  }
+
+  private stepHeads(dt: number, cam: THREE.Camera) {
+    const camPos = cam.position;
+    for (const hd of this.heads) {
+      if (!hd.settled) {
+        hd.vel.y -= 9.81 * dt;
+        hd.pos.addScaledVector(hd.vel, dt);
+        const gy = this.ground2(hd.pos.x, hd.pos.z) + 0.11;
+        if (hd.pos.y < gy) {
+          hd.pos.y = gy;
+          if (hd.vel.y < -1.5 && this.showBlood) this.particles.blood(hd.pos.x, gy, hd.pos.z, 0, 0.3, 0, 0.4);
+          hd.vel.y = -hd.vel.y * 0.28;
+          hd.vel.x *= 0.72; hd.vel.z *= 0.72;
+          // rolls along the ground rather than spinning freely
+          hd.spin.multiplyScalar(0.7);
+          hd.spin.x = hd.vel.z * 9; hd.spin.z = -hd.vel.x * 9;
+        }
+        const w = hd.spin.length();
+        if (w > 1e-4) hd.rot.premultiply(_hq.setFromAxisAngle(_hv.copy(hd.spin).divideScalar(w), w * dt));
+        if (hd.vel.lengthSq() < 0.02 && hd.pos.y <= gy + 0.02) hd.still += dt; else hd.still = 0;
+        if (hd.still > 0.6) {
+          hd.settled = true;
+          if (this.showBlood) this.decals.add(hd.pos.x, gy - 0.11, hd.pos.z, this.world.map.world.terrain.normal(hd.pos.x, hd.pos.z, _n), 0.7 + Math.random() * 0.4, true);
+        }
+      }
+      // every bone follows the head's rigid motion; only the head and neck are drawn
+      _hm.compose(hd.pos, hd.rot, _one).multiply(hd.inv0);
+      for (let i = 0; i < hd.bones0.length; i++) hd.out[i].multiplyMatrices(_hm, hd.bones0[i]);
+      const d = hd.pos.distanceTo(camPos);
+      if (d > 120) continue;
+      this.kr.draw(hd.cls, hd.team, { bones: hd.out, weapon: null, offhand: ZERO, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 }, this.showBlood ? hd.blood : 0, hd.mud, d < 20 ? 0 : 1, 3, hd.seed, d < 40);
+    }
+  }
+
+  /** Arterial spray from fresh killing wounds, pulsing with the last heartbeats. */
+  private stepSprays(dt: number) {
+    for (let i = this.sprays.length - 1; i >= 0; i--) {
+      const s = this.sprays[i];
+      s.t += dt;
+      if (s.t > s.dur) { this.sprays.splice(i, 1); continue; }
+      const J = s.c.rag.joints;
+      const fade = 1 - s.t / s.dur;
+      const pulse = 0.25 + 0.75 * Math.pow(Math.max(0, Math.sin(s.t * 7.5)), 3);
+      let ox: number, oy: number, oz: number, dx: number, dy: number, dz: number;
+      if (s.neck) {
+        // out of the severed neck, along the spine
+        ox = J.neck.x; oy = J.neck.y; oz = J.neck.z;
+        dx = J.neck.x - J.chest.x; dy = J.neck.y - J.chest.y; dz = J.neck.z - J.chest.z;
+      } else {
+        ox = J.chest.x; oy = J.chest.y; oz = J.chest.z;
+        dx = s.dx; dy = 0.35; dz = s.dz;
+      }
+      const l = Math.hypot(dx, dy, dz) || 1;
+      if (Math.random() < 0.7) this.particles.blood(ox, oy, oz, dx / l * (0.6 + pulse), dy / l * (0.6 + pulse) + 0.2, dz / l * (0.6 + pulse), 0.18 + 0.5 * pulse * fade);
+      s.decalT -= dt;
+      if (s.decalT <= 0 && this.showBlood) {
+        s.decalT = 0.35;
+        const reach = 0.5 + pulse * 1.1;
+        const gx = ox + (dx / l) * reach + (Math.random() - 0.5) * 0.4, gz = oz + (dz / l) * reach + (Math.random() - 0.5) * 0.4;
+        const gy = this.ground2(gx, gz);
+        if (Math.abs(gy - oy) < 2.5) this.decals.add(gx, gy, gz, this.world.map.world.terrain.normal(gx, gz, _n), 0.3 + pulse * 0.5);
+      }
+    }
   }
 
   update(dt: number, localId: number, cam: THREE.Camera) {
@@ -383,6 +499,13 @@ export class GameView {
       const c = this.corpses[i];
       c.age += dt;
       c.rag.step(Math.min(dt, 1 / 30), this.ground, this.world.map.world);
+      // Brutal: the pool starts spreading as soon as he falls, and grows larger
+      if (!c.pooled && this.showBlood && this.gore >= 2 && c.age > 0.9) {
+        c.pooled = true;
+        const j = c.decap ? c.rag.joints.neck : c.rag.joints.chest;
+        const gy = this.ground2(j.x, j.z);
+        if (Math.abs(gy - j.y) < 1.5) this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 2.4 + Math.random() * 1.2, true);
+      }
       if (!c.pooled && c.rag.frozen && this.showBlood) {
         c.pooled = true;
         const j = c.rag.joints.chest;
@@ -393,12 +516,14 @@ export class GameView {
       const lod = d < (this.ultimate ? 22 : 10) ? 0 : d < (this.ultimate ? 70 : 30) ? 1 : 2;
       const pose = { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 };
       // once a body has settled it is posed into the static pool and costs almost nothing
-      if (c.stat < 0 && c.rag.frozen) c.stat = this.kr.addStatic(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, c.id * 7 + c.team);
+      if (c.stat < 0 && c.rag.frozen) c.stat = this.kr.addStatic(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, c.id * 7 + c.team, c.decap);
       const shadow = d < (this.ultimate ? 90 : 45);
       if (c.stat >= 0) this.kr.drawStatic(c.stat, lod, shadow);
-      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, false, c.id * 7 + c.team, shadow);
+      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, c.decap, c.id * 7 + c.team, shadow);
       for (const a of c.arrows) this.arrows.body(c.rag.bones[a.bone], a);
     }
+    this.stepHeads(dt, cam);
+    if (this.showBlood) this.stepSprays(dt); else this.sprays.length = 0;
     this.kr.end();
     this.arrows.end();
     // fires near the camera
@@ -416,4 +541,5 @@ export class GameView {
 }
 
 const _n = { x: 0, y: 1, z: 0 };
+const _one = new THREE.Vector3(1, 1, 1), _hm = new THREE.Matrix4(), _hq = new THREE.Quaternion(), _hv = new THREE.Vector3();
 const _p = new THREE.Vector3(), _q = new THREE.Vector3(), _d = new THREE.Vector3(), _tmp = new THREE.Vector3();

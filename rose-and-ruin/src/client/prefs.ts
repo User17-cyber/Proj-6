@@ -13,6 +13,10 @@ export interface Prefs {
   invertY: boolean;
   volumes: { master: number; sfx: number; music: number; ambience: number };
   blood: boolean;
+  /** 0 off, 1 standard, 2 brutal: decapitation, arterial spray, spreading pools, heavier gore */
+  gore: 0 | 1 | 2;
+  /** a moment of slow motion on your heaviest killing blows (single player) */
+  slowmo: boolean;
   damageNumbers: boolean;
   nameplates: boolean;
   firstPerson: boolean;
@@ -62,6 +66,8 @@ export function defaultPrefs(): Prefs {
     invertY: false,
     volumes: { master: 0.8, sfx: 1, music: 0.5, ambience: 0.7 },
     blood: true,
+    gore: 2,
+    slowmo: true,
     damageNumbers: true,
     nameplates: true,
     firstPerson: false,
@@ -86,12 +92,16 @@ export function loadPrefs(): Prefs {
       volumes: { ...d.volumes, ...(p.volumes ?? {}) },
       match: { ...d.match, ...(p.match ?? {}) },
       bindings: { ...d.bindings, ...(p.bindings ?? {}) },
+      gore: p.gore === 0 || p.gore === 1 || p.gore === 2 ? p.gore : p.blood === false ? 0 : 2,
       customBinds: Array.isArray(p.customBinds) ? p.customBinds.filter((c) => c && typeof c.code === 'string' && c.code !== '' && BIND_ACTIONS.some(([a]) => a === c.action)) : [],
     };
   } catch {
     return d;
   }
 }
+
+/** Blood follows the gore level. */
+export function syncGore(p: Prefs) { p.blood = p.gore > 0; }
 
 export function savePrefs(p: Prefs) {
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* storage unavailable */ }

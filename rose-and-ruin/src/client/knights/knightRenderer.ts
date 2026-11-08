@@ -103,8 +103,10 @@ mat4 rrSkinM() {
   return m;
 }
 vec3 rrPlace(vec3 p, mat4 m) {
-  // the head and helmet collapse away in first person
-  if (aFlags > 1.5 && aI0.z > 0.5) return vec3(0.0, -1e4, 0.0);
+  // the head and helmet collapse away in first person (and from a beheaded corpse)
+  if (aFlags > 1.5 && aI0.z > 0.5 && aI0.z < 2.5) return vec3(0.0, -1e4, 0.0);
+  // a severed head: only the head, its helm and the neck are drawn
+  if (aI0.z > 2.5 && aFlags < 1.5) return vec3(0.0, -1e4, 0.0);
 #ifndef RR_DEPTH
   // first person: the rest of the body and harness go too (they would bob across the view);
   // only the forearms, hands and what they hold remain. The shadow keeps the whole man.
@@ -449,7 +451,7 @@ export class KnightRenderer {
 
   private staticData: Float32Array;
   private staticTex: THREE.DataTexture;
-  private statics: { cls: ClassId; team: number; blood: number; mud: number; seed: number }[] = [];
+  private statics: { cls: ClassId; team: number; blood: number; mud: number; seed: number; headless: boolean }[] = [];
 
   /** detail: Ultimate's doubled armour, mail and cloth texture resolution */
   constructor(private baker: TextureBaker, readonly capacity: number, readonly staticCap = 0, detail = false) {
@@ -551,18 +553,18 @@ export class KnightRenderer {
   }
 
   /** A corpse that has come to rest: pose it once; it is then drawn with drawStatic(). Returns -1 when full. */
-  addStatic(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, seed = 0): number {
+  addStatic(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, seed = 0, headless = false): number {
     const i = this.statics.length;
     if (i >= this.staticCap) return -1;
     writePose(this.staticData, i * SLOTS * 12, d);
-    this.statics.push({ cls, team, blood, mud, seed });
+    this.statics.push({ cls, team, blood, mud, seed, headless });
     this.staticTex.needsUpdate = true;
     return i;
   }
   drawStatic(i: number, lod: number, shadow: boolean) {
     const st = this.statics[i];
     if (!st) return;
-    this.enqueue(st.cls, st.team, this.capacity + i, st.blood, st.mud, lod, false, st.seed, shadow);
+    this.enqueue(st.cls, st.team, this.capacity + i, st.blood, st.mud, lod, st.headless, st.seed, shadow);
   }
   clearStatic() { this.statics.length = 0; }
 
@@ -577,7 +579,7 @@ export class KnightRenderer {
    * reflection set. `seed` picks his face, skin and hair.
    */
   /** hideHead: true hides the head (first-person helm), 2 hides all but forearms, hands and held arms */
-  draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean | 2, seed = 0, shadow = true) {
+  draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean | 2 | 3, seed = 0, shadow = true) {
     if (this.rows >= this.capacity) return;
     const row = this.rows++;
     writePose(this.boneData, row * SLOTS * 12, d);
@@ -585,13 +587,13 @@ export class KnightRenderer {
     if (cls === 'longbowman') this.bowString(d);
   }
 
-  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean | 2, seed: number, shadow: boolean) {
+  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean | 2 | 3, seed: number, shadow: boolean) {
     const h = hash(seed);
     const beard = (h & 255) / 255, skin = ((h >>> 8) & 255) / 255, hair = ((h >>> 16) & 255) / 255;
     const bks = this.buckets.get(cls)!;
     const put = (b: Bucket) => {
       const k = b.count++;
-      b.i0.setXYZW(k, row, team, hideHead === 2 ? 2 : hideHead ? 1 : 0, beard < 0.25 ? 0 : beard);
+      b.i0.setXYZW(k, row, team, hideHead === 3 ? 3 : hideHead === 2 ? 2 : hideHead ? 1 : 0, beard < 0.25 ? 0 : beard);
       b.i1.setXYZW(k, blood, mud, skin, hair);
     };
     put(bks[Math.max(0, Math.min(2, lod))]);
