@@ -140,7 +140,7 @@ export class GameView {
               if (Math.abs(gy - v.y) < 1.5) this.decals.add(gx, gy, gz, this.world.map.world.terrain.normal(gx, gz, _n), 0.45 + amount * 0.9);
             }
           }
-          vv.blood = Math.min(1, vv.blood + e.dmg / (this.gore >= 2 ? 45 : 75));
+          vv.blood = Math.min(this.gore >= 2 ? 0.8 : 1, vv.blood + e.dmg / (this.gore >= 2 ? 55 : 75));
           // the striker is splashed too
           if (e.a >= 0) this.view(e.a).blood = Math.min(1, this.view(e.a).blood + 0.05);
           const plate = CLASSES[v.cls].armor[0] >= 0.3;
@@ -360,7 +360,7 @@ export class GameView {
     rag.noOffhand = k.shieldBroken;
     rag.height = CLASSES[k.cls].size.height; rag.girth = CLASSES[k.cls].size.girth;
     // arrows ride along on the ragdoll's bones
-    const corpse: Corpse = { stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(1, v.blood + (this.gore >= 2 ? 0.6 : 0.35)), mud: v.mud, arrows: decap ? v.arrows.filter((a) => a.bone !== B.head && a.bone !== B.neck) : v.arrows.slice(), age: 0, pooled: false, id, decap };
+    const corpse: Corpse = { stat: -1, rag, cls: k.cls, team: k.team, blood: Math.min(this.gore >= 2 ? 0.78 : 1, v.blood + 0.35), mud: v.mud, arrows: decap ? v.arrows.filter((a) => a.bone !== B.head && a.bone !== B.neck) : v.arrows.slice(), age: 0, pooled: false, id, decap };
     this.corpses.push(corpse);
     if (decap) this.severHead(k, v, dx, dz, force);
     if (this.gore >= 2 && h && h.kind !== 4) {
@@ -384,7 +384,7 @@ export class GameView {
     const l = Math.hypot(dx, dz) || 1;
     const sp = 2.2 + Math.min(4, force * 0.5) + Math.random() * 1.5;
     this.heads.push({
-      cls: k.cls, team: k.team, blood: 1, mud: v.mud, seed: k.id * 7 + k.team, bones0, inv0, out: bones0.map(() => new THREE.Matrix4()),
+      cls: k.cls, team: k.team, blood: 0.7, mud: v.mud, seed: k.id * 7 + k.team, bones0, inv0, out: bones0.map(() => new THREE.Matrix4()),
       pos, vel: new THREE.Vector3((dx / l) * sp + (Math.random() - 0.5), 2.2 + Math.random() * 1.8, (dz / l) * sp + (Math.random() - 0.5)), rot,
       spin: new THREE.Vector3((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 16), still: 0, settled: false,
     });
