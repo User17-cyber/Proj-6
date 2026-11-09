@@ -1,6 +1,6 @@
 # Rose & Ruin
 
-A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 80 knights each at five real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
+A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 80 knights each at seven real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
 
 ## Run it
 
@@ -91,7 +91,7 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 - **Gore** (Settings: Off, Standard or Brutal; Brutal by default): on Brutal a heavy cut that kills through the head takes it off, and the head tumbles and rolls away. Killing wounds pump blood in pulses for a few heartbeats, pools spread beneath the fallen, and harness is soon caked.
 - **Slow-motion kills** (Settings, on by default): your heaviest killing blows play out for a moment in slow motion, in single player.
 
-### The eight orders
+### The orders
 
 | Class | Arms | Abilities |
 | --- | --- | --- |
@@ -103,6 +103,18 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 | Knight-Errant | Falchion and buckler | Sidestep, Bloodletting |
 | Pavisier | War spear and hand pavise | Shield Bash, Iron Bulwark |
 | Knight Bachelor | Flanged mace and heater shield | Shield Bash, Battle Charge |
+
+**Renowned orders.** Three more orders are won with renown, one after another:
+
+| Class | Arms | Abilities | Renown |
+| --- | --- | --- | --- |
+| Yeoman of the Guard | English bill | Bill Hook (drag a foe in and stun him), Hold the Line (30% less damage for the line) | 1,500 |
+| Knight Marshal | Hand-and-a-half sword | Half-Sword (thrusts pierce plate, harder and faster), War Cry (foes reel, allies hasten) | 4,000 |
+| Champion | Great axe and gilded plate | Executioner (a blow that leaves a foe below a third slays him), Juggernaut (unstoppable, bowls men over) | 8,000 |
+
+In bot duels at equal skill they win about 68%, 78% and 77% of rounds against the base orders, which win about 60% at best. A good archer in open ground is still the Champion's bane.
+
+**Renown** is earned in battle: every point of your score (slaying, helping slay, taking banners), plus 150 for seeing a battle through and 500 more for winning it. It is kept in your browser. The armoury shows how far you are from the next order, and a herald announces each one you win, which you may take to the field at once.
 
 Each order is built differently, and its hitboxes, reach and footprint in the crowd follow its build. The bigger a knight, the further his weapon reaches and the easier he is to hit:
 
@@ -119,7 +131,7 @@ Each order is built differently, and its hitboxes, reach and footprint in the cr
 
 Attack speed scales the windup, release and recovery of every blow, so a quick order lands first and recovers sooner; exhaustion slows anyone down by a further quarter.
 
-Any class can be chosen at the start and again every time you fall (keys 1 to 8 in the armoury).
+Any order you have won can be chosen at the start and again every time you fall (keys 1 to 9, 0 and minus). When you fall you may also choose where to return: any of your house's mustering places at that castle (its camps and outposts at the fighting grounds), or nearest the fighting.
 
 ### Manners of battle
 
@@ -140,6 +152,8 @@ Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with o
 - **Bamburgh Castle**, Northumberland, 1464: on a basalt crag over the sea, its wall broken by cannon.
 - **The Tower of London**, 1471: the wards beneath the White Tower beside the Thames.
 - **Warwick Castle**, Warwickshire, 1469: Caesar's and Guy's towers, the barbican and Ethelfleda's Mound.
+- **Conwy Castle**, North Wales, 1461: eight drum towers on a rock above the estuary, two wards and a cross wall, the walled town to the west.
+- **Kenilworth Castle**, Warwickshire, 1459: the red keep and John of Gaunt's hall on the Great Mere, reached over the tiltyard causeway.
 
 ## How it works
 
