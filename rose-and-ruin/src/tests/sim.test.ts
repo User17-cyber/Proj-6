@@ -178,6 +178,39 @@ if (!only) {
   if (hold.heavy < 1) fail('holding the attack button no longer makes a heavy blow');
   console.log(`attack input: spam-click ${spam.swings} swings (${spam.heavy} heavy, ${spam.restarts} restarts); hold ${hold.swings} swings (${hold.heavy} heavy)`);
 }
+// melee aim: a blow aimed at a foe in reach lands; one aimed well away does not
+{
+  const trial = (aimOff: number, pitch: number, cls: 'manatarms' | 'halberdier' | 'errant') => {
+    const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'duel', rounds: 99, seed: 31 }, buildMap('bodiam'));
+    const me = m.addPlayer('Tester', 1, 0, cls);
+    while (m.phase !== 'live') m.step();
+    const foe = m.knights.find((k) => k !== me)!;
+    m.brains.delete(foe.id); foe.input.buttons = 0;
+    let hits = 0, swings = 0;
+    for (let n = 0; n < 6; n++) {
+      // the foe stands just inside reach, a little off the straight line of the blade
+      const yaw = me.yaw, d = (WEAPONS[me.def.weapon].hitEnd + 0.35) * me.def.size.height;
+      foe.x = me.x - Math.sin(yaw) * d + Math.cos(yaw) * 0.25; foe.z = me.z - Math.cos(yaw) * d - Math.sin(yaw) * 0.25; foe.y = me.y;
+      foe.hp = foe.def.hp; foe.act = Act.Idle; foe.vx = foe.vz = 0;
+      const aimYaw = Math.atan2(-(foe.x - me.x), -(foe.z - me.z)) + aimOff;
+      me.yaw = aimYaw;
+      me.stamina = me.def.stamina;
+      for (let i = 0; i < 70; i++) {
+        me.input = { ...me.input, yaw: aimYaw, pitch, buttons: i < 3 ? Btn.Attack : 0 };
+        foe.x = me.x - Math.sin(yaw) * d + Math.cos(yaw) * 0.25; foe.z = me.z - Math.cos(yaw) * d - Math.sin(yaw) * 0.25;
+        m.step();
+        for (const e of m.events) { if (e.t === 'swing' && e.k === me.id) swings++; if (e.t === 'hit' && e.a === me.id && e.v === foe.id) hits++; }
+        m.events.length = 0;
+      }
+    }
+    return { hits, swings };
+  };
+  for (const cls of ['manatarms', 'halberdier', 'errant'] as const) {
+    const on = trial(0, 0.05, cls), off = trial(1.2, 0.05, cls);
+    if (on.hits < on.swings) fail(`${cls}: only ${on.hits} of ${on.swings} blows aimed at a foe in reach landed`);
+    console.log(`melee aim ${cls}: aimed ${on.hits}/${on.swings} land (aimed 70 degrees away: ${off.hits}/${off.swings}, the slash's own arc)`);
+  }
+}
 // single combat: one knight a side on the duelling ground, first to three rounds
 for (const def of MAPS) {
   const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', teamSize: 24, rounds: 3, difficulty: 2, seed: 11 }, buildMap(def.id));

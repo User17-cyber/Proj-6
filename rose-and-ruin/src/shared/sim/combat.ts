@@ -75,7 +75,43 @@ function sweep(m: Match, k: Knight) {
     pbase.x = base.x; pbase.y = base.y; pbase.z = base.z;
     ptip.x = tip.x; ptip.y = tip.y; ptip.z = tip.z;
   }
+  // aim assist for players: a blow that reaches the middle of its arc without touching anyone
+  // lands on the enemy under the crosshair, if he is within the weapon's reach
+  if (!k.bot && k.hitList.length === 0 && releaseEase(t0 / dur) < 0.55 && releaseEase(t1 / dur) >= 0.55) aimAssist(m, k, a, to);
   k.relPrevT = t1;
+}
+
+const _aimV: V3 = { x: 0, y: 0, z: 0 }, _aimC: V3 = { x: 0, y: 0, z: 0 };
+function aimAssist(m: Match, k: Knight, a: AttackDef, hitEnd: number) {
+  const s = k.def.size.height;
+  const reach = (hitEnd + 0.75) * s;
+  const cp = Math.cos(k.pitch);
+  const dx = -Math.sin(k.yaw) * cp, dy = Math.sin(k.pitch), dz = -Math.cos(k.yaw) * cp;
+  const ex = k.x, ey = k.y + 1.55 * s, ez = k.z;
+  let best: Knight | null = null, bestAlong = Infinity, bestZone = 1 as HitZone;
+  m.hash.query(k.x, k.z, reach + 1, (v) => {
+    if (v === k || !v.alive || v.invulnT > 0) return;
+    if (v.team === k.team && !m.settings.friendlyFire) return;
+    const hd = Math.hypot(v.x - k.x, v.z - k.z);
+    if (hd > reach + v.radius) return;
+    hitVolumes(v, vol);
+    // closest approach of the aim ray to each body part
+    const test = (A: V3, B: V3, r: number, zone: HitZone) => {
+      const res = segSegDist2(_aimV, _aimC, A, B);
+      const along = res.s * 6;
+      if (res.dist2 < (r + 0.3) ** 2 && along > 0 && along < bestAlong) { bestAlong = along; best = v; bestZone = zone; }
+    };
+    _aimV.x = ex; _aimV.y = ey; _aimV.z = ez;
+    _aimC.x = ex + dx * 6; _aimC.y = ey + dy * 6; _aimC.z = ez + dz * 6;
+    test(vol.head, vol.head, vol.headR, 0);
+    test(vol.torsoA, vol.torsoB, vol.torsoR, 1);
+    test(vol.legsA, vol.legsB, vol.legsR, 2);
+  });
+  const v = best as Knight | null;
+  if (!v) return;
+  hitVolumes(v, vol);
+  const c = bestZone === 0 ? vol.head : bestZone === 1 ? vol.torsoB : vol.legsB;
+  contact(m, k, v, a, bestZone, c.x, c.y, c.z, dx, dy, dz);
 }
 
 const _hit = v3();
