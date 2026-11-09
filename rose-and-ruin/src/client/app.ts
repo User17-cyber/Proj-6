@@ -489,6 +489,8 @@ export class App implements HudHost, MenuHost {
     if (e.code === 'F3') { e.preventDefault(); this.perf.toggle(); return; }
     if (this.mode !== 'battle') return;
     if (e.code === 'Escape' && this.hud.paused) { this.resume(); return; }
+    // P pauses (and resumes) too; while watching a battle it keeps freezing the action instead
+    if (e.code === 'KeyP' && !this.spectating && !this.hud.chatting) { if (this.hud.paused) this.resume(); else this.openPause(); return; }
     // Esc opens the menu at any moment: mustering, fighting, fallen or watching
     if (e.code === 'Escape' && !this.hud.chatting) { this.openPause(); return; }
     if (e.code === 'Tab') e.preventDefault();

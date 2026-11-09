@@ -62,7 +62,7 @@ From the great hall:
 | Over the shoulder / through the visor | V |
 | Scoreboard | Tab |
 | Chat (multiplayer) | Enter |
-| Menu, pause and leave the battle (any time) | Esc |
+| Menu, pause and leave the battle (any time) | Esc or P |
 | Spectator: director / follow / free camera | 1 / 2 / 3 |
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
