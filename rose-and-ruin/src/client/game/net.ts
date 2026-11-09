@@ -89,7 +89,7 @@ export class NetClient {
   sendBinary(b: ArrayBuffer) { if (this.ws && this.ws.readyState === WebSocket.OPEN && this.ws.bufferedAmount < 64 * 1024) this.ws.send(b); }
 
   create(settings: MatchSettings) { this.send({ t: 'create', settings }); }
-  join(room: string, name: string, team: Team | -1, cls: ClassId) { this.send({ t: 'join', room, team, cls, name }); }
+  join(room: string, name: string, team: Team | -1, cls: ClassId, locked: ClassId[] = []) { this.send({ t: 'join', room, team, cls, name, locked }); }
   leave() { this.send({ t: 'leave' }); this.session = null; }
 
   tickPing(dt: number) {
@@ -336,6 +336,7 @@ export class NetSession implements SessionView {
       me.respawnT = y.respawnT >= NEVER ? 9999 : Math.max(0, y.respawnT - this.snapAge);
       me.nextCls = CLASS_IDS[y.nextCls] ?? me.nextCls;
       if (me.alive) me.shield = y.shield;
+      me.buffs = y.buffs;
     }
   }
 
@@ -349,7 +350,7 @@ export class NetSession implements SessionView {
 
   drainEvents(): SimEvent[] { const e = this.ready; this.ready = []; return e; }
   setInput(f: InputFrame) { this.input = f as LiveInput; }
-  requestSpawn(cls: ClassId) { this.client.send({ t: 'spawn', cls }); }
+  requestSpawn(cls: ClassId, zone?: number) { this.client.send({ t: 'spawn', cls, zone }); }
   chat(text: string) { this.client.send({ t: 'chat', text }); }
   dispose() { this.client.leave(); }
   disposeQuiet() { /* replaced by a new session */ }

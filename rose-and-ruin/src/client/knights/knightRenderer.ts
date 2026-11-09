@@ -75,6 +75,9 @@ const BODY_SURF: Record<ClassId, [string, string, string, string, string]> = {
   errant: ['mail', 'mail', 'hoseLivery', 'skin', 'skin'],
   pavisier: ['mail', 'mail', 'hoseLivery', 'skin', 'skin'],
   bachelor: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
+  yeoman: ['mail', 'mail', 'hoseLivery', 'skin', 'skin'],
+  marshal: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
+  champion: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
 };
 
 const SKIN_TONES = [0xe3b49b, 0xd9a080, 0xc98e6c, 0xb57b5a].map((c) => new THREE.Color(c));
@@ -309,7 +312,7 @@ function prepPiece(p: PieceDef, matId: number): THREE.BufferGeometry {
 }
 
 /** Classes whose helm hides the whole head. */
-const CLOSED_HELM = new Set<ClassId>(['vanguard', 'banneret', 'bachelor']);
+const CLOSED_HELM = new Set<ClassId>(['vanguard', 'banneret', 'bachelor', 'marshal', 'champion']);
 
 function prepBody(cls: ClassId): THREE.BufferGeometry {
   const src = bodyGeometry(!CLOSED_HELM.has(cls));

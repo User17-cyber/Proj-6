@@ -37,7 +37,8 @@ export type PropType =
 
 export interface PropDef { type: PropType; x: number; y: number; z: number; rot: number; s: number; team?: number; v?: number }
 export interface TreeDef { x: number; y: number; z: number; s: number; kind: number }
-export interface SpawnZone { x: number; z: number; yaw: number; w: number; d: number }
+/** where a house's knights take the field; players may choose among them by name */
+export interface SpawnZone { x: number; z: number; yaw: number; w: number; d: number; name: string; /** an outpost: players may choose it, and bots return there, but the hosts do not muster there */ minor?: boolean }
 export interface ObjectiveDef { name: string; short: string; x: number; z: number; r: number; owner: number }
 export interface LightDef { x: number; y: number; z: number; color: number; intensity: number; fire: boolean }
 export interface HedgeDef { pts: [number, number][]; h: number }
@@ -535,8 +536,8 @@ export class MapBuilder {
     }
   }
 
-  spawn(team: 0 | 1, x: number, z: number, yaw: number, w = 24, d = 10) {
-    this.spawns[team].push({ x, z, yaw, w, d });
+  spawn(team: 0 | 1, x: number, z: number, yaw: number, w = 24, d = 10, name = '', minor = false) {
+    this.spawns[team].push({ x, z, yaw, w, d, minor, name: name || (this.spawns[team].length ? `Muster ${this.spawns[team].length + 1}` : 'The camp') });
     this.avoid({ kind: 'rect', x, z, hx: w / 2 + 2, hz: d / 2 + 2, rot: yaw });
   }
   objective(name: string, short: string, x: number, z: number, r = 9, owner = -1) {

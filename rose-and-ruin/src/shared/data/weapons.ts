@@ -15,7 +15,8 @@ export type DmgType = 0 | 1 | 2; // cut, blunt, pierce
 export const DMG_CUT = 0, DMG_BLUNT = 1, DMG_PIERCE = 2;
 export const DMG_NAMES = ['cut', 'blunt', 'pierce'] as const;
 
-export type WeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
+type BaseWeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
+export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe';
 
 export interface AttackDef {
   name: string;
@@ -59,7 +60,7 @@ export interface WeaponDef {
   blockStamina: number; // multiplier on stamina lost when blocking
   parryWindow: number; // seconds after raising the guard that count as a parry
   /** visual weapon kind for the renderer */
-  visual: 'sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'bow' | 'falchion' | 'spear' | 'mace';
+  visual: 'sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'bow' | 'falchion' | 'spear' | 'mace' | 'bill' | 'bastard' | 'greataxe';
 }
 
 const A = (o: Omit<AttackDef, 'maxTargets' | 'moveMult' | 'lunge'> & Partial<AttackDef>): AttackDef => ({
@@ -69,7 +70,7 @@ const A = (o: Omit<AttackDef, 'maxTargets' | 'moveMult' | 'lunge'> & Partial<Att
   ...o,
 });
 
-export const WEAPONS: Record<WeaponId, WeaponDef> = {
+const BASE: Record<BaseWeaponId, WeaponDef> = {
   arming_sword: {
     id: 'arming_sword',
     name: 'Arming Sword',
@@ -291,6 +292,38 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     parryWindow: 0,
     visual: 'bow',
   },
+};
+
+/** A weapon built on the moves of another, retimed and rebalanced. */
+function derive(base: WeaponDef, o: Partial<WeaponDef> & { id: WeaponId; time: number; dmg: number; dtype?: DmgType }): WeaponDef {
+  const { time, dmg, dtype, ...rest } = o;
+  return {
+    ...base,
+    attacks: base.attacks.map((a) => ({ ...a, windup: a.windup * time, release: a.release * time, recover: a.recover * time, damage: Math.round(a.damage * dmg), dtype: a.kind === 'thrust' ? a.dtype : (dtype ?? a.dtype) })) as unknown as WeaponDef['attacks'],
+    ...rest,
+  };
+}
+
+export const WEAPONS: Record<WeaponId, WeaponDef> = {
+  ...BASE,
+  // the English bill: a hooked chopping blade and spike, quicker in the hand than the halberd
+  bill: derive(BASE.halberd, {
+    id: 'bill', name: 'English Bill', visual: 'bill', time: 0.9, dmg: 1.08,
+    blurb: 'The yeoman\'s bill: a hooked chopping blade with a spike and a back-hook, on a haft of ash. Quick, long, and made for pulling men down.',
+    hitEnd: 1.92, parryWindow: 0.22, blockStamina: 0.85,
+  }),
+  // a hand-and-a-half sword: the greatsword's moves, shorter, faster, and a sharper point
+  bastard: derive(BASE.greatsword, {
+    id: 'bastard', name: 'Hand-and-a-Half Sword', visual: 'bastard', time: 0.86, dmg: 0.98,
+    blurb: 'A long sword for one hand or two. Fast as an arming sword, long as a greatsword\'s reach, and deadly at the half-sword against plate.',
+    hitStart: 0.14, hitEnd: 1.2, blockArc: 150, blockStamina: 0.75, parryWindow: 0.24,
+  }),
+  // a great axe: the poleaxe's moves with a broad bearded blade that cleaves
+  greataxe: derive(BASE.poleaxe, {
+    id: 'greataxe', name: 'Great Axe', visual: 'greataxe', time: 1.0, dmg: 1.18, dtype: 0,
+    blurb: 'A broad bearded axe on a long haft, gilded for a champion. Each blow can end a man.',
+    hitStart: 1.0, hitEnd: 1.52,
+  }),
 };
 
 export const ARROW = {

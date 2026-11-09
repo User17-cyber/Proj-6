@@ -70,9 +70,9 @@ export const warwick: MapDef = {
     for (const [x, z] of [[46, -2], [46, -14], [-30, 20], [20, -40], [0, 20]] as const) b.prop('brazier', x, z, 0, 1);
     b.prop('barrel', 40, 18, 0, 1); b.prop('barrel', 40.8, 19, 0, 1); b.prop('crate', 39.4, 20, 0.2, 1);
 
-    b.spawn(0, -28, -14, -Math.PI / 2, 22, 10);
-    b.spawn(1, 142, -8, Math.PI / 2, 30, 12);
-    b.spawn(1, 30, -128, Math.PI, 30, 10);
+    b.spawn(0, -28, -14, -Math.PI / 2, 22, 10, 'The great lawn');
+    b.spawn(1, 142, -8, Math.PI / 2, 30, 12, 'The barbican camp');
+    b.spawn(1, 30, -128, Math.PI, 30, 10, 'The town');
 
     b.objective('The Barbican', 'A', 74, -7.5, 8);
     b.objective('The Great Lawn', 'B', 5, -6, 11);
@@ -99,6 +99,11 @@ export const warwick: MapDef = {
     woodlandRing(b, { kind: 'rect', x: 10, z: -80, hx: 215, hz: 140 }, 255, 20);
 
 
+    // further mustering places a player may choose to return at
+    b.spawn(0, -152, -60, -1.947, 12, 8, 'The mound meadow', true);
+    b.spawn(0, -130, -176, -2.505, 12, 8, 'The hill fort', true);
+    b.spawn(1, 180, -60, 1.893, 12, 8, 'The ruined chapel', true);
+    b.spawn(1, 190, -170, 2.301, 12, 8, 'The east meadow', true);
     b.bounds(-204, 216, -218, 54);
     b.cinematic(130, 30, 30, 40, 28, -10);
     b.cinematic(-20, 30, -110, 20, 24, -20);

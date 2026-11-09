@@ -43,6 +43,8 @@ function timers(m: Match, k: Knight, dt: number) {
   k.bulwarkT = Math.max(0, k.bulwarkT - dt);
   k.rallyT = Math.max(0, k.rallyT - dt);
   k.bloodletT = Math.max(0, k.bloodletT - dt);
+  k.holdT = Math.max(0, k.holdT - dt); k.halfT = Math.max(0, k.halfT - dt); k.hasteT = Math.max(0, k.hasteT - dt);
+  k.execT = Math.max(0, k.execT - dt); k.juggerT = Math.max(0, k.juggerT - dt);
   k.bufferT = Math.max(0, k.bufferT - dt);
   if (k.bufferT <= 0) k.bufferedAttack = 0;
   if (k.act === Act.Idle) {
@@ -77,7 +79,7 @@ function startAttack(m: Match, k: Knight, slot: number, chained: boolean) {
   k.atk = slot;
   k.heavy = slot === 2;
   k.actT = 0;
-  k.actDur = a.windup * attackSpeed(k) * (chained ? 0.85 : 1) * (k.riposteT > 0 ? 0.7 : 1);
+  k.actDur = a.windup * attackSpeed(k) * (chained ? 0.85 : 1) * (k.riposteT > 0 ? 0.7 : 1) * (k.halfT > 0 && a.kind === 'thrust' ? 0.75 : 1);
   k.riposteT = 0;
   k.charge = 0;
   k.hitList.length = 0;
@@ -310,6 +312,8 @@ export function movement(world: StaticWorld, k: Knight, dt: number, live: boolea
   const depth = world.waterDepth(k.x, k.z, k.y);
   if (depth > 0.35) speed *= 0.55;
   if (k.bulwarkT > 0) speed *= 0.85;
+  if (k.hasteT > 0) speed *= 1.2;
+  if (k.juggerT > 0) speed *= 1.25;
   const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
   const rx = Math.cos(k.yaw), rz = -Math.sin(k.yaw);
   let dvx = (rx * mx + fx * mz) * speed;

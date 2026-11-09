@@ -11,7 +11,7 @@ import { CLASSES, ABILITIES, CLASS_IDS, type ClassId } from '../../shared/data/c
 import { icon, crestSvg, objectiveSvg } from './icons';
 import { TEAM_CSS, TEAM_CSS_LIGHT, roseDataUrl } from '../render/heraldry';
 import { Minimap } from './minimap';
-import { classDetailHtml, classList, esc, keyLabel } from './classInfo';
+import { classDetailHtml, classList, esc, keyLabel, classForKey, classLocked } from './classInfo';
 import type { Prefs } from '../prefs';
 
 export interface HudHost {
@@ -23,6 +23,9 @@ export interface HudHost {
   openCodex(): void;
   sendChat(text: string): void;
   selectClass(cls: ClassId): void;
+  /** the player's chosen mustering place for this castle and house (-1 nearest the fighting) */
+  spawnPref(team: number): number;
+  setSpawnPref(team: number, zone: number): void;
 }
 
 export interface HudFrame {
@@ -86,6 +89,8 @@ export class Hud implements HudSink {
   private board!: HTMLElement; boardOpen = false; private boardT = 0;
   private death!: HTMLElement; private deathShownAt = -1; private deathCls: ClassId = 'manatarms'; private deathKiller = '';
   private setDeathSel: ((c: ClassId) => void) | null = null; private respawnBtn!: HTMLButtonElement; private respawnTimer!: HTMLElement; private deathDetail!: HTMLElement;
+  /** set by the app when a battle ends: the renown it earned */
+  renownSummary = '';
   private end!: HTMLElement; private endShown = false; private endAt = -1;
   private pause!: HTMLElement; paused = false;
   private lastHp = -1;
@@ -190,7 +195,7 @@ export class Hud implements HudSink {
     this.feed.innerHTML = '';
     this.chatLog.innerHTML = '';
     this.chatLines = [];
-    this.endShown = false; this.endAt = -1;
+    this.endShown = false; this.endAt = -1; this.renownSummary = '';
     this.end.classList.add('hidden');
     this.death.classList.add('hidden');
     this.deathShownAt = -1; this.deadSince = -1;
@@ -216,7 +221,7 @@ export class Hud implements HudSink {
     const btns = this.death.querySelectorAll<HTMLButtonElement>('.class-list .classbtn');
     CLASS_IDS.forEach((c, i) => { const b = btns[i]; if (!b) return; b.disabled = this.spent.has(c); b.classList.toggle('spent', this.spent.has(c)); });
     const note = this.death.querySelector('.spentnote') as HTMLElement | null;
-    if (note) note.textContent = pitched ? (this.spent.size ? `Each order may take the field once. ${CLASS_IDS.length - this.spent.size} of ${CLASS_IDS.length} remain to you.` : 'In a pitched battle each order may take the field only once.') : '';
+    if (note) note.textContent = pitched ? (this.spent.size ? `Each order may take the field once. ${CLASS_IDS.filter((c) => !classLocked(c)).length - this.spent.size} of ${CLASS_IDS.filter((c) => !classLocked(c)).length} remain to you.` : 'In a pitched battle each order may take the field only once.') : '';
     if (this.spent.has(this.deathCls)) { const free = CLASS_IDS.find((c) => !this.spent.has(c)); if (free) { this.setLoadout(free); this.host.selectClass(free); } }
   }
 
@@ -329,10 +334,10 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>8</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
+      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>9</kbd> <kbd>0</kbd> <kbd>-</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
-    this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c)) return; this.setLoadout(c); this.host.selectClass(c); });
+    this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c) || classLocked(c)) return; this.setLoadout(c); this.host.selectClass(c); });
     this.respawnBtn = this.death.querySelector('[data-a="rejoin"]') as HTMLButtonElement;
     (this.death.querySelector('[data-a="leave"]') as HTMLButtonElement).addEventListener('click', () => this.host.leave());
     this.respawnTimer = this.death.querySelector('.timer') as HTMLElement;
@@ -340,11 +345,27 @@ export class Hud implements HudSink {
     this.setLoadout(this.deathCls);
   }
 
+  /** The mustering places this house may return at, as a row of choices on the death screen. */
+  private renderSpawnPick(team: number) {
+    const box = this.death.querySelector('.spawn-pick') as HTMLElement;
+    const zones = this.s ? this.s.map.spawns[team] : [];
+    if (!this.s || zones.length < 2 || this.s.settings.mode === 'duel') { box.innerHTML = ''; return; }
+    const sel = this.host.spawnPref(team);
+    box.innerHTML = `<span class="lbl">Return at</span>` + [{ name: 'Nearest the fighting', i: -1 }, ...zones.map((z, i) => ({ name: z.name, i }))]
+      .map((z) => `<button data-zone="${z.i}" class="${z.i === sel ? 'on' : ''}">${esc(z.name)}</button>`).join('');
+    box.onclick = (e) => {
+      const b = (e.target as HTMLElement).closest('[data-zone]') as HTMLElement | null;
+      if (!b) return;
+      this.host.setSpawnPref(team, Number(b.dataset.zone));
+      box.querySelectorAll('[data-zone]').forEach((x) => x.classList.toggle('on', x === b));
+    };
+  }
+
   /** Keyboard shortcuts on the death screen; returns true if consumed. */
   deathKey(code: string): boolean {
     if (this.death.classList.contains('hidden')) return false;
-    const m = /^Digit([1-8])$/.exec(code);
-    if (m) { const c = CLASS_IDS[Number(m[1]) - 1]; if (!this.spent.has(c)) { this.setLoadout(c); this.host.selectClass(c); } return true; }
+    const c = classForKey(code);
+    if (c) { if (!this.spent.has(c) && !classLocked(c)) { this.setLoadout(c); this.host.selectClass(c); } return true; }
     if (code === 'Space' || code === 'Enter') { if (!this.respawnBtn.disabled) this.host.respawn(this.deathCls); return true; }
     return false;
   }
@@ -393,6 +414,7 @@ export class Hud implements HudSink {
         <div class="stat"><b style="color:${TEAM_CSS_LIGHT[0]}">${t0.kills}</b><span>Lancaster kills</span></div>
         <div class="stat"><b style="color:${TEAM_CSS_LIGHT[1]}">${t1.kills}</b><span>York kills</span></div></div>`}
       ${mvp && !duel ? `<div class="mvp parchment">${icon('crown', '')} <b class="title-caps">Champion of the Field</b><br><span style="font-size:20px">${esc(mvp.name)}</span> — ${esc(CLASSES[mvp.cls].name)} of ${TEAM_NAMES[mvp.team]} · ${mvp.kills} slain · ${mvp.score} renown</div>` : ''}
+      ${this.renownSummary ? `<div class="renown-gain">${esc(this.renownSummary)}</div>` : ''}
       <div class="btns">${s.online ? '' : '<button class="btn" data-a="again">Fight Again</button>'}<button class="btn iron" data-a="board">Roll of the Fallen</button><button class="btn iron" data-a="leave">Return to the Hall</button></div></div>`;
     const svg = this.end.querySelector('.mvp svg') as SVGElement | null;
     if (svg) { svg.setAttribute('width', '22'); svg.setAttribute('height', '22'); svg.style.fill = 'var(--gold-lo)'; svg.style.verticalAlign = '-4px'; }
@@ -477,6 +499,7 @@ export class Hud implements HudSink {
       const canRespawn = me.respawnT < 900;
       if (this.time - this.deadSince > 1.6 && canRespawn && this.death.classList.contains('hidden')) {
         (this.death.querySelector('.by') as HTMLElement).innerHTML = this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
+        this.renderSpawnPick(me.team);
         this.death.classList.remove('hidden');
         this.deathShownAt = this.time;
       }
@@ -549,6 +572,11 @@ export class Hud implements HudSink {
     if (me.bulwarkT > 0) b.push('<span class="buff">Bulwark</span>');
     if (me.bloodletT > 0) b.push('<span class="buff">Bloodletting</span>');
     if (me.bodkin) b.push('<span class="buff">Bodkin nocked</span>');
+    if (me.buffs & 1) b.push('<span class="buff">Holding the line</span>');
+    if (me.buffs & 2) b.push('<span class="buff">Half-sword</span>');
+    if (me.buffs & 4) b.push('<span class="buff">War cry</span>');
+    if (me.buffs & 8) b.push('<span class="buff">Executioner</span>');
+    if (me.buffs & 16) b.push('<span class="buff">Juggernaut</span>');
     if (me.shieldBroken && hasShield) b.push('<span class="buff bad">Shield broken</span>');
     if (me.bleedStacks > 0) b.push(`<span class="buff bad">Bleeding${me.bleedStacks > 1 ? ' ×' + me.bleedStacks : ''}</span>`);
     const bh = b.join('');

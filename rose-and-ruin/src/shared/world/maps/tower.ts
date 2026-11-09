@@ -97,16 +97,19 @@ export const tower: MapDef = {
     ground(b, 'meadow', -212, 72, 22);
     ground(b, 'crossroads', 30, -190, 18);
 
-    b.spawn(0, -140, 60, -Math.PI / 2, 24, 14);
-    b.spawn(0, -140, 20, -Math.PI / 2, 24, 14);
-    b.spawn(1, -26, -28, Math.PI, 22, 10);
-    b.spawn(1, 34, -42, Math.PI, 18, 8);
+    b.spawn(0, -140, 60, -Math.PI / 2, 24, 14, 'The Byward approach');
+    b.spawn(0, -140, 20, -Math.PI / 2, 24, 14, 'Tower Hill');
+    b.spawn(1, -26, -28, Math.PI, 22, 10, 'Tower Green');
+    b.spawn(1, 34, -42, Math.PI, 18, 8, 'The Inmost Ward');
 
     b.objective('The Byward Gate', 'A', -68, 62, 8);
     b.objective('The Bloody Tower', 'B', 14, 42, 8);
     b.objective('Tower Green', 'C', -30, -22, 10, 1);
     b.front([-68, 62], [14, 62], [14, 42], [-48, 22], [-30, -22], [-100, 60]);
 
+    // further mustering places a player may choose to return at
+    b.spawn(0, -205, -150, -2.202, 12, 8, 'The hill fort', true);
+    b.spawn(0, -212, 72, -1.243, 12, 8, 'The riverside meadow', true);
     b.bounds(-236, 86, -214, 78);
     b.cinematic(-130, 22, 90, -40, 14, 30);
     b.cinematic(70, 30, 66, 0, 18, 0);

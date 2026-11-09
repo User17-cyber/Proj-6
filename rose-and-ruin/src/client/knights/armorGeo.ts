@@ -728,6 +728,68 @@ export function poleaxe(): WeaponGeo {
   };
 }
 
+/** English bill: a hooked, curving chopping blade with a top spike and a back spur. */
+export function bill(): WeaponGeo {
+  const blade = new THREE.Shape();
+  // the cutting edge curves forward into a hook at the top
+  blade.moveTo(0, 0); blade.lineTo(0.13, 0.02); blade.quadraticCurveTo(0.2, 0.18, 0.15, 0.36); blade.quadraticCurveTo(0.1, 0.44, 0.02, 0.42);
+  blade.quadraticCurveTo(0.08, 0.36, 0.06, 0.3); blade.lineTo(0, 0.26); blade.lineTo(0, 0);
+  const bg = new THREE.ExtrudeGeometry(blade, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 1, curveSegments: 6 });
+  bg.translate(0, 0, -0.004);
+  const spur = new THREE.Shape();
+  spur.moveTo(0, 0.12); spur.lineTo(-0.12, 0.2); spur.lineTo(-0.09, 0.23); spur.lineTo(0, 0.2);
+  const sg = new THREE.ExtrudeGeometry(spur, { depth: 0.008, bevelEnabled: false });
+  sg.translate(0, 0, -0.004);
+  const head = merge([bg, sg]);
+  head.rotateY(-Math.PI / 2);
+  head.translate(0, 1.4, 0);
+  return {
+    wood: xf(new THREE.CylinderGeometry(0.018, 0.021, 2.34, 10), 0, 0.68, 0),
+    steel: merge([
+      head,
+      xf(new THREE.ConeGeometry(0.018, 0.3, 4), 0, 1.95, 0),
+      xf(new THREE.CylinderGeometry(0.024, 0.021, 0.18, 8), 0, 1.36, 0),
+      xf(new THREE.CylinderGeometry(0.022, 0.02, 0.05, 8), 0, -0.48, 0),
+    ]),
+  };
+}
+/** Hand-and-a-half sword: a long, tapering blade, a long grip and a pear pommel. */
+export function bastardSword(): WeaponGeo {
+  return {
+    steel: merge([
+      bladeGeo(1.02, 0.05, 0.012, 0.01, 0.004, 0.14),
+      xf(new THREE.BoxGeometry(0.02, 0.02, 0.28), 0, 0.12, 0),
+      xf(new THREE.CylinderGeometry(0.012, 0.012, 0.03, 8), 0, 0.12, 0.15, Math.PI / 2, 0, 0),
+      xf(new THREE.CylinderGeometry(0.012, 0.012, 0.03, 8), 0, 0.12, -0.15, Math.PI / 2, 0, 0),
+      xf(new THREE.SphereGeometry(0.03, 12, 8), 0, -0.19, 0, 0, 0, 0, 1, 1.35, 1),
+    ]),
+    grip: xf(new THREE.CylinderGeometry(0.016, 0.019, 0.26, 10), 0, -0.03, 0),
+  };
+}
+/** Great axe: a broad bearded blade with a back spike on a long haft. */
+export function greatAxe(): { steel: THREE.BufferGeometry; wood: THREE.BufferGeometry; brass: THREE.BufferGeometry } {
+  const blade = new THREE.Shape();
+  blade.moveTo(0, -0.06); blade.lineTo(0.08, -0.08); blade.quadraticCurveTo(0.2, -0.2, 0.27, -0.18);
+  blade.quadraticCurveTo(0.33, 0.04, 0.26, 0.24); blade.quadraticCurveTo(0.17, 0.14, 0.08, 0.13); blade.lineTo(0, 0.12); blade.lineTo(0, -0.06);
+  const bg = new THREE.ExtrudeGeometry(blade, { depth: 0.01, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1, curveSegments: 8 });
+  bg.translate(0, 0, -0.005);
+  bg.rotateY(-Math.PI / 2);
+  bg.translate(0, 1.3, 0);
+  return {
+    wood: xf(new THREE.CylinderGeometry(0.019, 0.022, 1.95, 10), 0, 0.56, 0),
+    steel: merge([
+      bg,
+      xf(new THREE.ConeGeometry(0.02, 0.16, 4), 0, 1.31, -0.1, -Math.PI / 2, 0, 0),
+      xf(new THREE.ConeGeometry(0.02, 0.2, 4), 0, 1.52, 0),
+    ]),
+    brass: merge([
+      xf(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 10), 0, 1.3, 0),
+      xf(new THREE.CylinderGeometry(0.026, 0.026, 0.05, 10), 0, 0.9, 0),
+      xf(new THREE.CylinderGeometry(0.024, 0.02, 0.06, 8), 0, -0.4, 0),
+    ]),
+  };
+}
+
 /** Longbow in its frame: +Y along the stave, +Z toward the archer. Built for a given bend. */
 export function longbow(): WeaponGeo {
   const pts: THREE.Vector3[] = [];

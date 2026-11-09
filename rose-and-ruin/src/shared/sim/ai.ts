@@ -483,6 +483,12 @@ function tryBotAbility(m: Match, k: Knight, b: BotBrain, t: Knight, dist: number
       case 'bulwark': use = k.hp < k.def.hp * 0.6 && countEnemies(m, k, 5) >= 2; break;
       case 'dash': use = dist > 3 && dist < 5.5 && b.rng.chance(0.15); break;
       case 'bloodletting': use = dist < 4; break;
+      case 'billhook': use = dist > 2.2 && dist < 4.0 && Math.abs(angleDiff(k.yaw, yawTo(k.x, k.z, t.x, t.z))) < 0.35 && b.rng.chance(0.4); break;
+      case 'holdline': use = countEnemies(m, k, 6) >= 2 || k.hp < k.def.hp * 0.55; break;
+      case 'halfsword': use = dist < 4 && t.def.armor[0] >= 0.3; break;
+      case 'warcry': use = countEnemies(m, k, 6.5) >= 2 || (dist < 3 && t.act === Act.Windup && b.rng.chance(0.4)); break;
+      case 'execute': use = dist < 4 && t.hp < t.def.hp * 0.75; break;
+      case 'juggernaut': use = countEnemies(m, k, 8) >= 3 || (t.def.ranged && dist > 3 && dist < 22) || (dist > 3 && dist < 9 && b.rng.chance(0.15)); break;
       default: break;
     }
     if (use && b.rng.chance(clamp(p, 0, 1))) { b.pressAbility = slot; return true; }

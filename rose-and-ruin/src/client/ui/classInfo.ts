@@ -3,6 +3,7 @@
 import { CLASSES, CLASS_IDS, ABILITIES, SHIELDS, type ClassId } from '../../shared/data/classes';
 import { WEAPONS } from '../../shared/data/weapons';
 import { icon } from './icons';
+import { isUnlocked } from '../progress';
 
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -34,8 +35,11 @@ export function classDetailHtml(cls: ClassId, keys: [string, string] = ['Q', 'E'
     const a = ABILITIES[id];
     return `<div class="abil"><div class="ic">${icon(a.icon)}<kbd>${keys[i]}</kbd></div><div><b>${esc(a.name)}</b> <span class="cd">· ${a.cooldown}s</span><div>${esc(a.description)}</div></div></div>`;
   }).join('');
+  const lock = classLocked(cls)
+    ? `<div class="lockline">Locked: this order is won with ${(c.unlock ?? 0).toLocaleString()} renown (you have ${Math.min(renownNow, 1e9).toLocaleString()}). Earn renown by slaying, helping slay and taking banners, and by seeing battles through.</div>`
+    : c.unlock ? '<div class="lockline won">A renowned order, won in battle.</div>' : '';
   return `
-    <h3>${esc(c.name)}</h3>
+    <h3>${esc(c.name)}</h3>${lock}
     <div class="ttl">${esc(c.title)}</div>
     <p>${esc(c.description)}</p>
     <div class="stats">
@@ -51,14 +55,27 @@ export function classDetailHtml(cls: ClassId, keys: [string, string] = ['Q', 'E'
 }
 
 /** Compact selectable class list. Returns a setter for the selection. */
+/** Renown the player has, for showing which orders are still locked. */
+let renownNow = Infinity;
+export function setRenown(n: number) { renownNow = n; }
+export const classLocked = (c: ClassId) => !isUnlocked(c, renownNow);
+
+/** Keys that pick an order: 1-9, then 0 and minus. */
+const CLASS_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus'];
+export const classKeyLabel = (i: number) => (i < 9 ? String(i + 1) : i === 9 ? '0' : '-');
+export const classForKey = (code: string): ClassId | null => { const i = CLASS_KEYS.indexOf(code); return i >= 0 && CLASS_IDS[i] ? CLASS_IDS[i] : null; };
+export const CLASS_KEY_CODES = CLASS_KEYS;
+
 export function classList(container: HTMLElement, selected: ClassId, onSelect: (c: ClassId) => void, withKeys = true): (c: ClassId) => void {
   container.innerHTML = '';
   const btns = new Map<ClassId, HTMLButtonElement>();
   CLASS_IDS.forEach((id, i) => {
     const c = CLASSES[id];
     const b = document.createElement('button');
-    b.className = 'classbtn' + (id === selected ? ' sel' : '');
-    b.innerHTML = `${icon(id)}<div><div class="cn">${esc(c.name)}</div><div class="ct">${esc(c.title)}</div></div>${withKeys ? `<kbd>${i + 1}</kbd>` : '<span></span>'}`;
+    const locked = classLocked(id);
+    b.className = 'classbtn' + (id === selected ? ' sel' : '') + (locked ? ' locked' : '') + (c.unlock ? ' renowned' : '');
+    const sub = locked ? `Locked · ${(c.unlock ?? 0).toLocaleString()} renown` : c.title;
+    b.innerHTML = `${icon(id)}<div><div class="cn">${esc(c.name)}</div><div class="ct">${esc(sub)}</div></div>${withKeys ? `<kbd>${classKeyLabel(i)}</kbd>` : '<span></span>'}`;
     b.addEventListener('click', () => onSelect(id));
     container.appendChild(b);
     btns.set(id, b);

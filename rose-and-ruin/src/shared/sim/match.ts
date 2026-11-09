@@ -3,10 +3,11 @@
 
 import { Act, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone } from '../types';
 import { Knight, KNIGHT_RADIUS } from './knight';
+import { knockdown } from './combat';
 import { CLASSES, CLASS_IDS, SHIELDS, type ClassId } from '../data/classes';
 import { knightName } from '../data/names';
 import { Rng } from '../rng';
-import type { BuiltMap, ObjectiveDef } from '../world/mapgen';
+import type { BuiltMap, ObjectiveDef, SpawnZone } from '../world/mapgen';
 import type { StaticWorld } from '../world/world';
 import { NavGrid } from '../world/nav';
 import { updateKnight } from './actions';
@@ -118,7 +119,7 @@ export class Match {
   }
 
   /** A human takes over a bot slot on the given team. Returns the knight. */
-  addPlayer(name: string, playerId: number, team: Team | -1, cls: ClassId): Knight {
+  addPlayer(name: string, playerId: number, team: Team | -1, cls: ClassId, locked: readonly ClassId[] = []): Knight {
     if (team === -1) {
       const humans = [0, 1].map((t) => this.knights.filter((k) => k.team === t && !k.bot).length);
       team = (humans[0] <= humans[1] ? 0 : 1) as Team;
@@ -134,6 +135,9 @@ export class Match {
     slot.nextCls = cls;
     slot.kills = slot.deaths = slot.assists = slot.score = slot.damage = slot.caps = 0;
     slot.usedCls.clear();
+    slot.lockedCls = new Set(locked.filter((c) => CLASS_IDS.includes(c)));
+    slot.spawnPref = -1;
+    if (slot.lockedCls.has(cls)) { cls = this.freeClass(slot) ?? 'manatarms'; slot.setClass(cls); slot.nextCls = cls; }
     this.brains.delete(slot.id);
     if (slot.alive) {
       if (this.phase === 'warmup') {
@@ -162,9 +166,10 @@ export class Match {
   }
 
   /** A human on the death screen asks to rejoin the fight with a class. */
-  requestSpawn(knightId: number, cls: ClassId) {
+  requestSpawn(knightId: number, cls: ClassId, zone?: number) {
     const k = this.knights[knightId];
     if (!k || k.bot) return;
+    if (zone !== undefined) k.spawnPref = Number.isInteger(zone) && zone >= 0 && zone < this.map.spawns[k.team].length ? zone : -1;
     if (!this.classAllowed(k, cls)) return;
     k.nextCls = cls;
     if (!k.alive) k.wantSpawn = true;
@@ -179,6 +184,23 @@ export class Match {
   emit(e: SimEvent) { this.events.push(e); }
 
   // ------------------------------------------------------------------- spawning
+  /** The mustering place closest to the enemy that has no enemy within 25 metres of it. */
+  private nearestFight(k: Knight, zones: SpawnZone[]): SpawnZone {
+    let best = zones[0], bs = Infinity;
+    for (const z of zones) {
+      let near = Infinity, threat = false;
+      for (const e of this.knights) {
+        if (!e.alive || e.team === k.team) continue;
+        const d = Math.hypot(e.x - z.x, e.z - z.z);
+        if (d < 25) threat = true;
+        if (d < near) near = d;
+      }
+      const sc = threat ? near + 1000 : near;
+      if (sc < bs) { bs = sc; best = z; }
+    }
+    return best;
+  }
+
   spawnZoneFor(k: Knight) {
     if (this.settings.mode === 'duel') {
       // face each other twelve paces apart on the duelling ground
@@ -186,6 +208,14 @@ export class Match {
       return { x: d.x, z: d.z + (k.team === 0 ? 6 : -6), yaw: k.team === 0 ? 0 : Math.PI, w: 1, d: 1 };
     }
     const zones = this.map.spawns[k.team];
+    if (!k.bot && this.phase !== 'warmup') {
+      // a player musters where he chose, or else at the place nearest the fighting that is not overrun
+      if (k.spawnPref >= 0 && zones[k.spawnPref]) return zones[k.spawnPref];
+      if (zones.length > 1) return this.nearestFight(k, zones);
+    }
+    // the hosts muster at their main camps; bots coming back may return at any of the house's places
+    const main = zones.filter((z) => !z.minor);
+    if (this.phase === 'warmup' || k.bot && this.rng.chance(0.55)) return main[k.id % main.length] ?? zones[0];
     if (zones.length === 1 || this.objectives.length === 0) return zones[k.id % zones.length];
     // conquest: spawn at the zone closest to a contested or enemy objective
     let best = zones[0], bd = Infinity;
@@ -200,7 +230,7 @@ export class Match {
   }
 
   /** Pitched battle: a player may fight as each order once. */
-  classAllowed(k: Knight, cls: ClassId) { return k.bot || this.settings.mode !== 'battle' || !k.usedCls.has(cls); }
+  classAllowed(k: Knight, cls: ClassId) { return k.bot || (!k.lockedCls.has(cls) && (this.settings.mode !== 'battle' || !k.usedCls.has(cls))); }
   freeClass(k: Knight): ClassId | null { return CLASS_IDS.find((c) => this.classAllowed(k, c)) ?? null; }
 
   spawn(k: Knight, formation = false) {
@@ -238,6 +268,7 @@ export class Match {
     k.act = Act.Idle; k.actT = 0; k.actDur = 0;
     k.stunT = k.knockT = k.invulnT = 0;
     k.bulwarkT = k.rallyT = k.bloodletT = k.bleedT = k.hotT = 0;
+    k.holdT = k.halfT = k.hasteT = k.execT = k.juggerT = 0;
     k.bleedStacks = 0; k.bodkin = false; k.draw = 0;
     k.shieldHp = k.def.shield ? SHIELDS[k.def.shield].hp : 0;
     k.cds[0] = 0; k.cds[1] = 0;
@@ -259,8 +290,11 @@ export class Match {
   damage(victim: Knight, attacker: Knight | null, amount: number, opts: { zone: HitZone; dtype: number; kind: number; heavy?: boolean; x: number; y: number; z: number; dx: number; dy: number; dz: number; noStagger?: boolean; silent?: boolean }): boolean {
     if (!victim.alive || victim.spawnProt > 0) return false;
     if (victim.bulwarkT > 0) amount *= 0.5;
+    if (victim.holdT > 0) amount *= 0.7;
     if (attacker && attacker.rallyT > 0) amount *= 1.15;
     amount = Math.max(1, Math.round(amount));
+    // Executioner: a blow that leaves the foe below a third of his vigour finishes him
+    if (attacker && attacker.execT > 0 && attacker !== victim && victim.hp - amount > 0 && victim.hp - amount < victim.def.hp / 3) amount = victim.hp;
     victim.hp -= amount;
     victim.lastHurt = this.time;
     if (attacker && attacker !== victim) {
@@ -274,11 +308,12 @@ export class Match {
       this.emit({ t: 'hit', a: attacker ? attacker.id : -1, v: victim.id, dmg: amount, zone: opts.zone, x: opts.x, y: opts.y, z: opts.z, dx: opts.dx, dy: opts.dy, dz: opts.dz, kind: opts.kind, heavy: !!opts.heavy, killed, dtype: opts.dtype });
     }
     if (killed) {
+      if (attacker && attacker.execT > 0 && attacker.alive) this.heal(attacker, 25);
       this.kill(victim, attacker, opts);
       return true;
     }
     // flinch: interrupt wind-ups unless armoured against it
-    if (!opts.noStagger && amount >= 14 && victim.bulwarkT <= 0) {
+    if (!opts.noStagger && amount >= 14 && victim.bulwarkT <= 0 && victim.juggerT <= 0) {
       const a = victim.act;
       const interruptible = a === Act.Windup || a === Act.Charge || a === Act.Draw || a === Act.Idle || a === Act.Recover || a === Act.Loose;
       const hyper = victim.def.hyperArmor && victim.heavy && (a === Act.Windup || a === Act.Charge);
@@ -394,6 +429,11 @@ export class Match {
         const rr = ra + b.radius;
         const dx = b.x - a.x, dz = b.z - a.z;
         const d2 = dx * dx + dz * dz;
+        // Juggernaut: a foe in the champion's path is bowled off his feet
+        if (d2 < rr * rr && a.team !== b.team) {
+          if (a.juggerT > 0 && b.knockT <= 0 && Math.hypot(a.vx, a.vz) > 1.5) bowl(this, a, b);
+          else if (b.juggerT > 0 && a.knockT <= 0 && Math.hypot(b.vx, b.vz) > 1.5) bowl(this, b, a);
+        }
         if (d2 >= rr * rr || Math.abs(a.y - b.y) > 1.4) return;
         const d = Math.sqrt(d2) || 0.01;
         const push = (rr - d) * 0.5;
@@ -549,4 +589,13 @@ export class KnightHash {
       for (let i = this.head[cz * this.w + cx]; i >= 0; i = this.next[i]) fn(this.list[i]);
     }
   }
+}
+
+/** A juggernaut walks into a foe: the foe is knocked flat and shoved aside. */
+function bowl(m: Match, by: Knight, v: Knight) {
+  if (!v.alive || v.bulwarkT > 0 || v.juggerT > 0 || v.holdT > 0) return;
+  const dx = v.x - by.x, dz = v.z - by.z, l = Math.hypot(dx, dz) || 1;
+  v.pushX += (dx / l) * 4; v.pushZ += (dz / l) * 4;
+  m.damage(v, by, 12 * (1 - v.def.armor[1]), { zone: 1, dtype: 1, kind: 2, x: v.x, y: v.y + 1.1, z: v.z, dx: dx / l, dy: 0.2, dz: dz / l, noStagger: true });
+  if (v.alive) knockdown(m, v, by, 1.4);
 }

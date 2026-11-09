@@ -446,3 +446,19 @@ select.textin option { background: #1c1a18; color: var(--parch); }
 .cb-row .cb-note { grid-column: 1 / -1; margin-top: -2px; }
 
 .loading .loadcancel { margin-top: 18px; }
+
+/* renown and the locked orders */
+.classbtn.locked { opacity: 0.55; }
+.classbtn.locked svg { filter: grayscale(1) brightness(0.7); }
+.classbtn.renowned .cn { color: var(--gold-hi); }
+.lockline { margin: 4px 0 8px; padding: 6px 10px; font-size: 13px; font-style: italic; background: rgba(120, 20, 15, 0.12); border-left: 3px solid #8e1b1b; color: var(--ink-soft, #4a3a2a); }
+.lockline.won { background: rgba(201, 162, 79, 0.15); border-left-color: var(--gold); }
+.renown-bar { position: relative; margin-top: 10px; padding: 6px 10px 12px; font-size: 13px; display: flex; justify-content: space-between; gap: 12px; color: var(--parch); background: rgba(0, 0, 0, 0.35); box-shadow: inset 0 0 0 1px rgba(201, 162, 79, 0.3); }
+.renown-bar b { font-family: var(--caps); letter-spacing: 0.08em; color: var(--gold-hi); font-weight: normal; }
+.renown-bar span { font-style: italic; opacity: 0.8; }
+.renown-bar i { position: absolute; left: 0; bottom: 0; height: 4px; width: var(--p); background: linear-gradient(90deg, #8a6a24, #e8c36a); }
+.renown-gain { margin: 10px auto 0; font-family: var(--caps); letter-spacing: 0.08em; color: var(--gold-hi); text-align: center; font-size: 15px; }
+.death .spawn-pick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; margin-top: clamp(6px, 1.4vh, 12px); }
+.death .spawn-pick .lbl { font-family: var(--caps); font-size: 12px; letter-spacing: 0.16em; color: var(--parch-dark); margin-right: 6px; }
+.death .spawn-pick button { font-family: var(--caps); font-size: 12px; letter-spacing: 0.06em; padding: 5px 10px; color: var(--parch); background: rgba(0, 0, 0, 0.45); border: 0; box-shadow: inset 0 0 0 1px rgba(201, 162, 79, 0.3); cursor: pointer; }
+.death .spawn-pick button.on { background: rgba(142, 27, 27, 0.65); box-shadow: inset 0 0 0 1px var(--gold-hi); }

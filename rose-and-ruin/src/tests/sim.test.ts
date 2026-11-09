@@ -211,6 +211,25 @@ if (!only) {
     console.log(`melee aim ${cls}: aimed ${on.hits}/${on.swings} land (aimed 70 degrees away: ${off.hits}/${off.swings}, the slash's own arc)`);
   }
 }
+// renowned orders stay closed to a player who has not won them; a chosen mustering place is honoured
+{
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'conquest', teamSize: 20, seed: 41 }, buildMap('bodiam'));
+  const me = m.addPlayer('Tester', 1, 0, 'champion', ['yeoman', 'marshal', 'champion']);
+  if (me.cls === 'champion') fail('a locked order was granted on joining');
+  while (m.phase !== 'live') m.step();
+  me.spawnProt = 0; me.invulnT = 0;
+  m.damage(me, null, 9999, { zone: 1, dtype: 0, kind: 0, x: me.x, y: me.y + 1, z: me.z, dx: 0, dy: 0, dz: 1 });
+  m.requestSpawn(me.id, 'marshal');
+  if (me.nextCls === 'marshal') fail('a locked order was accepted on respawn');
+  const zones = m.map.spawns[me.team];
+  const pick = zones.findIndex((z) => z.minor);
+  m.requestSpawn(me.id, 'manatarms', pick);
+  for (let i = 0; i < 60 * 10 && !me.alive; i++) m.step();
+  const z = zones[pick];
+  const d = Math.hypot(me.x - z.x, me.z - z.z);
+  if (!me.alive || d > 12) fail(`chosen mustering place ignored: ${z.name} is ${d.toFixed(1)} m away`);
+  console.log(`locks and mustering: locked order refused; returned at ${z.name} (${d.toFixed(1)} m from its centre); ${zones.length} places for the house`);
+}
 // single combat: one knight a side on the duelling ground, first to three rounds
 for (const def of MAPS) {
   const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', teamSize: 24, rounds: 3, difficulty: 2, seed: 11 }, buildMap(def.id));

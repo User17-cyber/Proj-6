@@ -95,8 +95,8 @@ export const bodiam: MapDef = {
     b.prop('stakes', -16, 84, 0, 1); b.prop('stakes', 16, 84, 0, 1); b.prop('stakes', 30, 86, 0.2, 1);
     b.prop('mantlet', -28, 82, 0, 1); b.prop('mantlet', 28, 80, 0, 1);
 
-    b.spawn(1, 0, -120, Math.PI, 36, 10);
-    b.spawn(0, 0, 120, 0, 36, 10);
+    b.spawn(1, 0, -120, Math.PI, 36, 10, 'The siege lines');
+    b.spawn(0, 0, 120, 0, 36, 10, 'The relief camp');
 
     b.objective('The North Barbican', 'A', 0, -52, 8);
     b.objective('Inner Court', 'B', 0, -3, 10);
@@ -124,6 +124,12 @@ export const bodiam: MapDef = {
     woodlandRing(b, { kind: 'rect', x: 0, z: 0, hx: 202, hz: 202 }, 255, 40);
     for (const [x, z] of [[-70, -95], [64, -104], [-90, 95], [86, 88], [-100, -40], [104, 40], [-58, 100], [70, -120]] as const) b.tree(x, z, b.rng.range(1.1, 1.5), 0);
 
+    // further mustering places a player may choose to return at
+    b.spawn(1, -150, -120, -2.246, 12, 8, 'The hill fort', true);
+    b.spawn(1, 134, -140, 2.378, 12, 8, 'The ruined chapel', true);
+    b.spawn(0, -126, 146, -0.712, 12, 8, 'The crossroads', true);
+    b.spawn(0, 10, 168, 0.059, 12, 8, 'The south meadow', true);
+    b.spawn(0, -150, 10, -1.504, 12, 8, 'The village', true);
     b.bounds(-200, 200, -198, 198);
     b.cinematic(-70, 26, -90, 0, 10, -5);
     b.cinematic(85, 14, 40, 0, 8, 0);

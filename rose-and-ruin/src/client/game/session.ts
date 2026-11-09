@@ -9,6 +9,7 @@ import { buildMap } from '../../shared/world/maps/index';
 import type { BuiltMap, ObjectiveDef } from '../../shared/world/mapgen';
 import { DT, Act, type InputFrame, type MatchSettings, type SimEvent, type Team } from '../../shared/types';
 import { SHIELDS, type ClassId } from '../../shared/data/classes';
+import { buffBits } from '../../shared/net/protocol';
 import { wrapAngle } from '../../shared/math';
 
 export interface KnightState {
@@ -23,6 +24,8 @@ export interface KnightState {
   lastHurt: number;
   /** shield durability left (0..1) and whether it has splintered */
   shield: number; shieldBroken: boolean;
+  /** buffs of the renowned orders (see buffBits) */
+  buffs: number;
 }
 
 /** Input frame as the app maintains it: held buttons plus one-step presses. */
@@ -50,7 +53,7 @@ export interface SessionView {
   update(dt: number): void;
   drainEvents(): SimEvent[];
   setInput(f: InputFrame): void;
-  requestSpawn(cls: ClassId): void;
+  requestSpawn(cls: ClassId, zone?: number): void;
   dispose(): void;
 }
 
@@ -60,7 +63,7 @@ export function emptyState(): KnightState {
     act: 0, actT: 0, actDur: 0, atk: 0, heavy: false, charge: 0, draw: 0, abilitySlot: 0, knockT: 0, stunT: 0, bulwarkT: 0, sprinting: false,
     hp: 0, maxHp: 1, stamina: 0, maxStamina: 1, cd0: 0, cd1: 0, bodkin: false, rallyT: 0, bloodletT: 0, bleedStacks: 0, spawnProt: 0,
     kills: 0, deaths: 0, assists: 0, score: 0, respawnT: 0, nextCls: 'manatarms', lastHurt: -99,
-    shield: 0, shieldBroken: false,
+    shield: 0, shieldBroken: false, buffs: 0,
   };
 }
 
@@ -72,6 +75,7 @@ export function copyKnight(s: KnightState, k: Knight) {
   s.hp = k.hp; s.maxHp = k.def.hp; s.stamina = k.stamina; s.maxStamina = k.def.stamina;
   s.cd0 = k.cds[0]; s.cd1 = k.cds[1]; s.bodkin = k.bodkin; s.rallyT = k.rallyT; s.bloodletT = k.bloodletT; s.bleedStacks = k.bleedStacks; s.spawnProt = k.spawnProt;
   s.kills = k.kills; s.deaths = k.deaths; s.assists = k.assists; s.score = k.score; s.respawnT = k.respawnT; s.nextCls = k.nextCls; s.lastHurt = k.lastHurt;
+  s.buffs = buffBits(k);
   s.shield = k.def.shield ? k.shieldHp / SHIELDS[k.def.shield].hp : 0; s.shieldBroken = k.shieldBroken;
 }
 
@@ -91,12 +95,12 @@ export class LocalSession implements SessionView {
   /** most simulation steps per frame before the clock is allowed to slip */
   maxSteps = 8;
 
-  constructor(settings: MatchSettings, player: { name: string; team: Team | -1; cls: ClassId } | null) {
+  constructor(settings: MatchSettings, player: { name: string; team: Team | -1; cls: ClassId; locked?: ClassId[] } | null) {
     this.settings = settings;
     this.map = buildMap(settings.mapId);
     this.match = new Match(settings, this.map);
     if (player) {
-      const k = this.match.addPlayer(player.name, 1, player.team, player.cls);
+      const k = this.match.addPlayer(player.name, 1, player.team, player.cls, player.locked ?? []);
       this.localId = k.id;
     }
     this.prev = new Float32Array(this.match.knights.length * 4 + 64);
@@ -171,7 +175,7 @@ export class LocalSession implements SessionView {
 
   setInput(f: InputFrame) { this.input = f; }
 
-  requestSpawn(cls: ClassId) { if (this.localId >= 0) this.match.requestSpawn(this.localId, cls); }
+  requestSpawn(cls: ClassId, zone?: number) { if (this.localId >= 0) this.match.requestSpawn(this.localId, cls, zone); }
 
   dispose() { /* nothing to free */ }
 }

@@ -23,6 +23,12 @@ export function abilityMoveMult(k: Knight): number {
     case 'rally': return 0.5;
     case 'bulwark': return 0.6;
     case 'bloodletting': return 0.8;
+    case 'billhook': return 0.3;
+    case 'holdline': return 0.4;
+    case 'halfsword': return 0.7;
+    case 'warcry': return 0.45;
+    case 'execute': return 0.8;
+    case 'juggernaut': return 0.8;
     case 'volley': return 0.3;
     case 'sweep': return 0.25;
     case 'earthshaker': return 0.2;
@@ -209,6 +215,57 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
       break;
     case 'bloodletting':
       if (crossed(t0, t1, 0.25)) { k.bloodletT = 8; emitAb(m, k, id); }
+      break;
+    case 'billhook':
+      if (crossed(t0, t1, 0.32)) {
+        // hook the nearest foe ahead and haul him in onto the bill
+        let target: Knight | null = null, best = 99;
+        frontal(m, k, 4.2, 26, (v, d) => { if (d > 1.0 && d < best) { best = d; target = v; } });
+        const v = target as Knight | null;
+        if (v) {
+          if (isBlocking(v, k.x, k.z) && v.shield) {
+            spend(v, 20); wearShield(m, v, k.id, 35, v.x, v.y + 1.1, v.z);
+            m.emit({ t: 'block', a: k.id, v: v.id, x: v.x, y: v.y + 1.1, z: v.z, parry: false, shield: true, broke: false });
+          } else {
+            const pull = Math.max(0, best - 1.2);
+            v.pushX -= fx * pull * 3.2; v.pushZ -= fz * pull * 3.2;
+            m.damage(v, k, 14 * (1 - v.def.armor[0]), { zone: 2, dtype: 0, kind: 2, x: v.x, y: v.y + 0.6, z: v.z, dx: -fx, dy: 0, dz: -fz, noStagger: true });
+            if (v.alive) stun(m, v, 1.0);
+          }
+        }
+      }
+      break;
+    case 'holdline':
+      if (crossed(t0, t1, 0.3)) {
+        for (const a of m.knights) {
+          if (!a.alive || a.team !== k.team || (a.x - k.x) ** 2 + (a.z - k.z) ** 2 > 81) continue;
+          a.holdT = 8;
+        }
+        emitAb(m, k, id);
+      }
+      break;
+    case 'halfsword':
+      if (crossed(t0, t1, 0.15)) { k.halfT = 8; emitAb(m, k, id); }
+      break;
+    case 'warcry':
+      if (crossed(t0, t1, 0.35)) {
+        for (const a of m.knights) {
+          if (!a.alive) continue;
+          const d2 = (a.x - k.x) ** 2 + (a.z - k.z) ** 2;
+          if (a.team === k.team) { if (d2 <= 100) a.hasteT = 6; continue; }
+          if (d2 > 49 || a.bulwarkT > 0 || a.juggerT > 0 || a.knockT > 0) continue;
+          // the foe reels: his guard and his blow are both broken off
+          a.act = Act.Stagger; a.actT = 0; a.actDur = 0.7; a.heavy = false; a.charge = 0; a.draw = 0;
+          spend(a, 15);
+        }
+        emitAb(m, k, id);
+      }
+      break;
+    case 'execute':
+      if (crossed(t0, t1, 0.2)) { k.execT = 10; emitAb(m, k, id); }
+      break;
+    case 'juggernaut':
+      if (crossed(t0, t1, 0.25)) { k.juggerT = 8; k.stunT = 0; emitAb(m, k, id); }
       break;
     default:
       break;

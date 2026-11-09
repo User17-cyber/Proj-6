@@ -17,6 +17,10 @@ export interface Prefs {
   gore: 0 | 1 | 2;
   /** a moment of slow motion on your heaviest killing blows (single player) */
   slowmo: boolean;
+  /** renown earned in battle; unlocks the renowned orders */
+  renown: number;
+  /** preferred mustering place per castle and house: index into its spawn zones (-1 nearest the fighting) */
+  spawnPref: Record<string, number>;
   damageNumbers: boolean;
   nameplates: boolean;
   firstPerson: boolean;
@@ -68,6 +72,8 @@ export function defaultPrefs(): Prefs {
     blood: true,
     gore: 2,
     slowmo: true,
+    renown: 0,
+    spawnPref: {},
     damageNumbers: true,
     nameplates: true,
     firstPerson: false,
@@ -92,6 +98,8 @@ export function loadPrefs(): Prefs {
       volumes: { ...d.volumes, ...(p.volumes ?? {}) },
       match: { ...d.match, ...(p.match ?? {}) },
       bindings: { ...d.bindings, ...(p.bindings ?? {}) },
+      renown: Math.max(0, Math.floor(Number(p.renown) || 0)),
+      spawnPref: typeof p.spawnPref === 'object' && p.spawnPref ? p.spawnPref : {},
       gore: p.gore === 0 || p.gore === 1 || p.gore === 2 ? p.gore : p.blood === false ? 0 : 2,
       customBinds: Array.isArray(p.customBinds) ? p.customBinds.filter((c) => c && typeof c.code === 'string' && c.code !== '' && BIND_ACTIONS.some(([a]) => a === c.action)) : [],
     };

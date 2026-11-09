@@ -229,6 +229,16 @@ export class GameView {
             A.play('whoosh', { pos: k, vol: 0.5, rate: 1.6 });
           } else if (id === 'lunge' || id === 'sweep') {
             A.play('grunt', { pos: k, bus: 'voice', vol: 0.6 });
+          } else if (id === 'warcry' || id === 'holdline') {
+            A.play('shout', { pos: k, bus: 'voice', vol: 0.95 });
+            if (id === 'holdline') A.play('hornShort', { pos: k, vol: 0.5, rateVar: 0.02, rate: 0.85 });
+          } else if (id === 'juggernaut' || id === 'execute') {
+            A.play('shout', { pos: k, bus: 'voice', vol: 0.8, rate: 0.85 });
+            A.play('plate', { pos: k, vol: 0.6, rate: 0.7 });
+          } else if (id === 'billhook') {
+            A.play('whooshHeavy', { pos: k, vol: 0.6 });
+          } else if (id === 'halfsword') {
+            A.play('clang', { pos: k, vol: 0.35, rate: 1.3 });
           } else if (id === 'bodkin' && e.k === localId) {
             this.hud?.combatText('Bodkin nocked', 'block');
           }

@@ -71,9 +71,9 @@ export const harlech: MapDef = {
     b.prop('ladder', 33, 36, 0.4, 1); b.prop('ladder', 18, 37, -0.3, 1);
     b.prop('stakes', 24, 60, 0.1, 1); b.prop('stakes', -6, 62, -0.2, 1);
 
-    b.spawn(0, -3, 0, -Math.PI / 2, 16, 10);
-    b.spawn(1, 138, 0, Math.PI / 2, 28, 12);
-    b.spawn(1, 18, 108, 0, 30, 10);
+    b.spawn(0, -3, 0, -Math.PI / 2, 16, 10, 'The inner ward');
+    b.spawn(1, 138, 0, Math.PI / 2, 28, 12, 'The town road');
+    b.spawn(1, 18, 108, 0, 30, 10, 'The south camp');
 
     b.objective('The Outer Gate', 'A', 47, 0, 9);
     b.objective('South Breach', 'B', 7, 28, 8);
@@ -99,6 +99,11 @@ export const harlech: MapDef = {
     b.forest({ kind: 'rect', x: 60, z: 226, hx: 180, hz: 24 }, 90, { minSpacing: 6, kinds: [0, 2] });
     woodlandRing(b, { kind: 'rect', x: 55, z: 25, hx: 180, hz: 180 }, 255, 30);
 
+    // further mustering places a player may choose to return at
+    b.spawn(0, -84, -104, -2.462, 12, 8, 'The marsh meadow', true);
+    b.spawn(0, -76, 100, -0.65, 12, 8, 'The ruined chapel', true);
+    b.spawn(1, 196, 92, 1.132, 12, 8, 'The hill fort', true);
+    b.spawn(1, 140, -112, 2.246, 12, 8, 'The north meadow', true);
     b.bounds(-118, 232, -152, 200);
     b.cinematic(120, 30, -50, 20, 32, 0);
     b.cinematic(60, 22, 80, 10, 32, 10);

@@ -78,6 +78,8 @@ class Client {
   room: Room | null = null;
   knightId = -1;
   cls: ClassId = 'manatarms';
+  /** orders this player has not unlocked yet (sent by his client) */
+  locked: ClassId[] = [];
   team: Team | -1 = -1;
   queue: WireInput[] = [];
   last: WireInput | null = null;
@@ -133,7 +135,7 @@ class Room {
   }
 
   private place(c: Client) {
-    const k = this.match.addPlayer(c.name, c.id, c.team, c.cls);
+    const k = this.match.addPlayer(c.name, c.id, c.team, c.cls, c.locked ?? []);
     c.knightId = k.id;
     c.queue = []; c.last = null; c.ack = 0;
     c.send({ t: 'joined', room: this.id, name: c.name, knight: k.id, settings: this.settings, tick: this.tick });
@@ -292,6 +294,7 @@ function onMessage(c: Client, data: RawData, isBinary: boolean) {
       if (!r) { c.send({ t: 'error', msg: 'That muster has disbanded.' }); break; }
       c.name = sanitizeName(m.name ?? c.name);
       const team = m.team === 0 || m.team === 1 ? m.team : -1;
+      c.locked = Array.isArray(m.locked) ? m.locked.filter(isClass).slice(0, 16) : [];
       r.join(c, team, isClass(m.cls) ? m.cls : 'manatarms');
       break;
     }
@@ -299,7 +302,7 @@ function onMessage(c: Client, data: RawData, isBinary: boolean) {
       c.room?.leave(c);
       break;
     case 'spawn':
-      if (c.room && c.knightId >= 0 && isClass(m.cls)) { c.cls = m.cls; c.room.match.requestSpawn(c.knightId, m.cls); }
+      if (c.room && c.knightId >= 0 && isClass(m.cls)) { c.cls = m.cls; c.room.match.requestSpawn(c.knightId, m.cls, typeof m.zone === 'number' ? m.zone : undefined); }
       break;
     case 'chat': {
       if (!c.room || now - c.chatAt < 600) break;

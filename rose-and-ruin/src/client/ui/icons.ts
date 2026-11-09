@@ -28,6 +28,9 @@ const bow = (tr: string) => `<g transform="${tr}"><path d="M20 3 Q52.5 32 20 61 
 const spear = (tr: string) => `<g transform="${tr}"><rect x="30.6" y="12" width="2.8" height="52" rx="1.1"/><path d="M32 0 C35.5 5 36.2 9 35.2 12.5 L32 15 L28.8 12.5 C27.8 9 28.5 5 32 0 Z"/></g>`;
 const mace = (tr: string) => `<g transform="${tr}"><rect x="30.2" y="18" width="3.6" height="34" rx="1.2"/><path d="M32 2 L39 7 L41 14 L39 21 L32 24 L25 21 L23 14 L25 7 Z"/><path ${D} d="M31 4 h2 v18 h-2z M25.5 13 h13 v2 h-13z"/><rect x="29.2" y="52" width="5.6" height="2.6" rx="1"/><rect x="30.3" y="54.6" width="3.4" height="6" rx="1"/><circle cx="32" cy="61.5" r="2.4"/></g>`;
 const pavise = (tr: string) => `<g transform="${tr}"><path ${O} d="M13 9 Q13 6 16 6 H38 Q41 6 41 9 L39.5 58 H14.5 Z"/><path ${D} d="M25 8 h4 v49 h-4z"/></g>`;
+const billIcon = (tr: string) => `<g transform="${tr}"><rect x="30.4" y="10" width="3.2" height="53" rx="1.2"/><path d="M32 0 L34.6 9 H29.4 Z"/><path d="M33.6 9 C42 10 47 16 46 25 C42 22 38 23 33.6 26 Z"/><path d="M30.4 13 L20 16 L30.4 20 Z"/></g>`;
+const longSword = (tr: string) => `<g transform="${tr}"><path d="M32 0 L35 7 V38 H29 V7 Z"/><path d="M18 38 H46 Q48 40.5 46 43 H18 Q16 40.5 18 43 Z"/><rect x="30" y="43" width="4" height="15" rx="1"/><ellipse cx="32" cy="61" rx="3.2" ry="3.6"/></g>`;
+const greatAxeIcon = (tr: string) => `<g transform="${tr}"><rect x="30.4" y="12" width="3.2" height="51" rx="1.2"/><path d="M33.6 10 C40 8 47 4 52 6 C55 15 54 26 50 34 C46 29 40 26 33.6 25 Z"/><path d="M30.4 15 L21 19 L30.4 22 Z"/><path d="M32 2 L34.2 11 H29.8 Z"/></g>`;
 const shieldPath = 'M12 10 H52 V28 C52 43 43 52 32 59 C21 52 12 43 12 28 Z';
 const drop = (x: number, y: number, s: number) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -16 C6 -6 12 1 12 8 A12 12 0 0 1 -12 8 C-12 1 -6 -6 0 -16 Z"/>`;
 const arrowDown = (tr: string) => `<g transform="${tr}"><path d="M31 6 H33 V46 H31 Z"/><path d="M27.5 45 L32 56 L36.5 45 Z"/><path d="M28 2 L31 8 H33 L36 2 L32 5 Z"/></g>`;
@@ -41,6 +44,9 @@ export const ICONS: Record<string, string> = {
   longbowman: bow('rotate(-30 32 32)'),
   pavisier: spear('rotate(24 32 32) translate(9 0)') + pavise('translate(-4 1)'),
   bachelor: mace('rotate(36 32 32) translate(6 -2)') + heater('translate(-1 4)'),
+  yeoman: billIcon('rotate(26 32 32)'),
+  marshal: longSword('rotate(38 32 32)'),
+  champion: greatAxeIcon('rotate(28 32 32)') + `<path ${D} d="M8 54 l4 -8 l4 6 l4 -9 l4 9 l4 -6 l4 8 z"/>`,
   errant: falchion('rotate(34 32 32) translate(5 -3)') + `<g ${O}><circle cx="20" cy="44" r="13"/></g><circle ${D} cx="20" cy="44" r="4.6"/><circle fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1.6" cx="20" cy="44" r="10"/>`,
 
   // ---- abilities ----
@@ -55,6 +61,12 @@ export const ICONS: Record<string, string> = {
   volley: arrowDown('rotate(-28 32 32) translate(-14 0)') + arrowDown('rotate(-28 32 32)') + arrowDown('rotate(-28 32 32) translate(14 0)'),
   bodkin: `<path d="M2 30.6 H34 V33.4 H2 Z"/><path d="M34 28.5 L62 32 L34 35.5 Z"/><path d="M0 26 L8 30.6 V33.4 L0 38 L3 32 Z"/><path fill-rule="evenodd" ${O} d="M40 10 C47 18 49 25 49 32 C49 39 47 46 40 54 L44 54 C51 46 53 39 53 32 C53 25 51 18 44 10 Z"/>`,
   dash: `<path d="M30 10 L52 32 L30 54 L23 47 L38 32 L23 17 Z"/><path d="M16 14 h4 v36 h-4z" opacity=".65"/><path d="M8 18 h3 v28 h-3z" opacity=".4"/><path d="M1 22 h2 v20 h-2z" opacity=".22"/>`,
+  hook: billIcon('translate(10 -2) scale(.7) rotate(-20 32 32)') + `<path d="M6 46 C14 40 22 40 30 44" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M4 40 L10 52 L1 51 Z"/>`,
+  line: `<path ${O} d="M4 18 h14 v40 h-14z M25 14 h14 v44 h-14z M46 18 h14 v40 h-14z"/><path ${D} d="M4 30 h56 v3 h-56z"/>`,
+  halfsword: longSword('rotate(90 32 32)') + `<path d="M40 22 C44 22 46 26 46 30 C46 34 44 38 40 38 Z"/><path d="M18 24 C14 24 12 28 12 32 C12 36 14 40 18 40 Z"/>`,
+  cry: `<path d="M8 24 h10 l14 -12 v40 l-14 -12 h-10 z"/><path d="M40 18 C48 24 48 40 40 46" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M47 10 C60 20 60 44 47 54" fill="none" stroke="currentColor" stroke-width="3.5"/>`,
+  axe: greatAxeIcon('translate(4 0) scale(.9)') + `<path d="M6 8 L22 24 M22 8 L6 24" stroke="currentColor" stroke-width="3.5"/>`,
+  jugger: `<path d="M8 50 C8 30 20 18 32 18 C44 18 56 30 56 50 Z"/><path ${D} d="M20 34 h8 v6 h-8z M36 34 h8 v6 h-8z"/><path d="M14 22 L6 8 L20 16 Z M50 22 L58 8 L44 16 Z"/>`,
   bleed: drop(30, 30, 1.45) + drop(50, 46, 0.62) + drop(12, 50, 0.5),
 
   // ---- menu ----

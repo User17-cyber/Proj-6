@@ -15,6 +15,9 @@ import { CameraRig, type FocusKnight } from './camera';
 import { Hud, type HudHost, type HudFrame } from './ui/hud';
 import { Menus, type MenuHost, type MpState } from './ui/menus';
 import { ClassPreview } from './ui/preview';
+import { CLASS_KEY_CODES, classLocked, setRenown } from './ui/classInfo';
+import { UNLOCK_ORDER } from '../shared/data/classes';
+import { lockedClasses, nextUnlock, FINISH_BOUNTY, VICTORY_BOUNTY } from './progress';
 import { loadPrefs, syncGore, savePrefs, type Prefs } from './prefs';
 import { Act, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
 import { CLASSES, type ClassId } from '../shared/data/classes';
@@ -57,6 +60,9 @@ export class App implements HudHost, MenuHost {
   private killerId = -1;
   private deathAt = -1;
   private hitStop = 0;
+  /** renown earned in the current battle: the score already counted, the total, and whether the end bounty is paid */
+  private renownTrack = { seen: 0, gained: 0, ended: false };
+  private renownSavedAt = 0;
   /** slow-motion killing blow: time left, when the last one played, and whether the blow was heavy */
   private slowT = 0; private lastSlow = -99; private killBlowHeavy = false;
   private baseScale = 1;
@@ -83,6 +89,7 @@ export class App implements HudHost, MenuHost {
   constructor() {
     this.prefs = loadPrefs();
     syncGore(this.prefs);
+    setRenown(this.prefs.renown);
     if (!this.prefs.name) {
       this.prefs.name = knightName(new Rng((Math.random() * 1e9) | 0), 0, 'manatarms', new Set());
       savePrefs(this.prefs);
@@ -243,7 +250,7 @@ export class App implements HudHost, MenuHost {
     this.loadout = { cls, team };
     this.prefs.lastClass = cls;
     savePrefs(this.prefs);
-    await this.enterLocal(m, { name: this.prefs.name || 'Sir Knight', team, cls }, 'Mustering the hosts');
+    await this.enterLocal(m, { name: this.prefs.name || 'Sir Knight', team, cls, locked: lockedClasses(this.prefs.renown) }, 'Mustering the hosts');
   }
 
   async startSpectate(m: MatchSettings) {
@@ -266,7 +273,7 @@ export class App implements HudHost, MenuHost {
     this.leave();
   }
 
-  private async enterLocal(m: MatchSettings, player: { name: string; team: Team | -1; cls: ClassId } | null, subtitle: string) {
+  private async enterLocal(m: MatchSettings, player: { name: string; team: Team | -1; cls: ClassId; locked?: ClassId[] } | null, subtitle: string) {
     const token = ++this.loadToken;
     const gone = () => token !== this.loadToken;
     this.loadingNet = false;
@@ -290,6 +297,7 @@ export class App implements HudHost, MenuHost {
     this.attract = false;
     this.spectating = !player;
     this.hud.attach(s);
+    this.renownTrack = { seen: 0, gained: 0, ended: false };
     if (player) this.hud.setLoadout(player.cls);
     this.specCam = 'director';
     this.rig.mode = player ? (this.firstPerson ? 'first' : 'third') : 'director';
@@ -394,7 +402,7 @@ export class App implements HudHost, MenuHost {
     this.loadingNet = true;
     this.netTurnedBack = false;
     this.loadToken++;
-    this.net?.join(room, this.prefs.name || 'Sir Knight', team, cls);
+    this.net?.join(room, this.prefs.name || 'Sir Knight', team, cls, lockedClasses(this.prefs.renown));
   }
 
   private async enterNet(s: NetSession) {
@@ -415,6 +423,7 @@ export class App implements HudHost, MenuHost {
     this.attract = false;
     this.spectating = false;
     this.hud.attach(s);
+    this.renownTrack = { seen: 0, gained: 0, ended: false };
     this.hud.setLoadout(this.loadout.cls);
     this.rig.mode = this.firstPerson ? 'first' : 'third';
     await this.warmShaders();
@@ -429,13 +438,27 @@ export class App implements HudHost, MenuHost {
 
   // ======================================================================= HudHost
   respawn(cls: ClassId) {
-    if (this.usedCls.has(cls)) return;
+    if (this.usedCls.has(cls) || classLocked(cls)) return;
     this.loadout.cls = cls;
     this.prefs.lastClass = cls;
     savePrefs(this.prefs);
-    this.session?.requestSpawn(cls);
+    const s = this.session, me = this.localKnight();
+    s?.requestSpawn(cls, s && me ? this.spawnPref(me.team) : -1);
     this.input.enabled = true;
     this.input.requestLock();
+  }
+  spawnPref(team: number): number {
+    const s = this.session;
+    if (!s) return -1;
+    const v = this.prefs.spawnPref[`${s.settings.mapId}:${team}`];
+    return typeof v === 'number' && v < s.map.spawns[team].length ? v : -1;
+  }
+  setSpawnPref(team: number, zone: number) {
+    const s = this.session;
+    if (!s) return;
+    this.prefs.spawnPref[`${s.settings.mapId}:${team}`] = zone;
+    savePrefs(this.prefs);
+    this.ui('tick');
   }
   selectClass(cls: ClassId) { this.loadout.cls = cls; }
   resume() {
@@ -496,6 +519,39 @@ export class App implements HudHost, MenuHost {
     if (e.code === 'Tab') e.preventDefault();
   }
 
+  /** Turn the local knight's renown score into lasting renown, and pay the bounty at the end of a battle. */
+  private trackRenown(s: SessionView) {
+    const me = this.localKnight();
+    if (!me) return;
+    const T = this.renownTrack;
+    if (me.score > T.seen) { this.awardRenown(me.score - T.seen); T.seen = me.score; }
+    if (s.phase === 'ended' && !T.ended) {
+      T.ended = true;
+      this.awardRenown(FINISH_BOUNTY + (s.winner === me.team ? VICTORY_BOUNTY : 0));
+      const n = nextUnlock(this.prefs.renown);
+      this.hud.renownSummary = `+${T.gained.toLocaleString()} renown this battle · ${this.prefs.renown.toLocaleString()} in all` + (n ? ` · ${(n.need - this.prefs.renown).toLocaleString()} more to win the ${CLASSES[n.cls].name}` : ' · every order is yours');
+      savePrefs(this.prefs);
+    }
+    if (this.time - this.renownSavedAt > 5) { this.renownSavedAt = this.time; savePrefs(this.prefs); }
+  }
+
+  private awardRenown(n: number) {
+    const before = this.prefs.renown;
+    this.prefs.renown = before + n;
+    this.renownTrack.gained += n;
+    for (const c of UNLOCK_ORDER) {
+      const need = CLASSES[c].unlock ?? 0;
+      if (before < need && this.prefs.renown >= need) {
+        this.hud.notify(`A new order is yours: ${CLASSES[c].name}`, -1, true);
+        this.audio.play('killSting', { bus: 'ui', vol: 0.7, rateVar: 0, rate: 0.8 });
+        // take it to the field at once
+        if (this.session instanceof LocalSession && this.session.localId >= 0) this.session.match.knights[this.session.localId].lockedCls.delete(c);
+        savePrefs(this.prefs);
+      }
+    }
+    setRenown(this.prefs.renown);
+  }
+
   private localKnight() { const s = this.session; return s && s.localId >= 0 ? s.knights[s.localId] ?? null : null; }
 
   private battleInput(s: SessionView) {
@@ -505,7 +561,7 @@ export class App implements HudHost, MenuHost {
     const tab = I.keys.has('Tab');
     if (tab !== this.boardHeld) { this.boardHeld = tab; this.hud.showBoard(tab); }
     // death screen choices
-    if (this.hud.deathOpen) for (const code of ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
+    if (this.hud.deathOpen) for (const code of [...CLASS_KEY_CODES, 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
     if (s.online && !this.hud.chatting && I.consumeKey(this.prefs.bindings.chat)) { this.hud.openChat(); this.input.enabled = false; }
     if (I.consumeAction('camera', this.prefs.bindings.camera) && me) {
       this.firstPerson = !this.firstPerson;
@@ -610,6 +666,7 @@ export class App implements HudHost, MenuHost {
     }
     if (this.mode === 'battle') {
       this.input.enabled = !this.hud.paused && !this.hud.chatting && !this.hud.deathOpen && !this.hud.endOpen;
+      if (!this.spectating) this.trackRenown(s);
       this.battleInput(s);
     }
     P.begin('sim');

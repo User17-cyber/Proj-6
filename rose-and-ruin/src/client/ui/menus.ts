@@ -7,7 +7,8 @@ import { CLASSES, CLASS_IDS, type ClassId } from '../../shared/data/classes';
 import { DIFFICULTY_NAMES, TEAM_HOUSE, TEAM_MOTTO, type GameMode, type MatchSettings, type Team } from '../../shared/types';
 import { icon } from './icons';
 import { mapArt } from './mapArt';
-import { classDetailHtml, classList, esc, keyLabel } from './classInfo';
+import { classDetailHtml, classList, classForKey, classLocked, esc, keyLabel } from './classInfo';
+import { nextUnlock } from '../progress';
 import { roseDataUrl } from '../render/heraldry';
 import { QUALITY_NAMES, type Quality } from '../render/renderer';
 import { BIND_ACTIONS, DEFAULT_BINDINGS, type BindAction, type Bindings } from '../input';
@@ -205,6 +206,7 @@ export class Menus {
         <div class="sheet-head" style="padding:0"><h2 class="gold-text">${mode === 'battle' ? 'Choose Your Knight' : 'The Armoury'}</h2><button class="close-x" data-a="back" aria-label="Close">×</button></div>
         <div class="grid"><div class="class-list"></div><div class="class-detail parchment"></div></div>
         <div class="hint">Every order may be chosen anew each time you fall.</div>
+        <div class="renown-bar" title="Renown is earned by slaying, helping slay and taking banners, and by seeing battles through">${renownBarHtml(this.prefs.renown)}</div>
       </div>
       <div class="right"><div class="actions">
         <div class="seg house" style="min-width:320px">${[[0, 'Lancaster'], [1, 'York'], [-1, 'Either house']].map(([v, l]) => `<button data-team="${v}" class="${v === this.loadoutTeam ? 'on' : ''}">${l}</button>`).join('')}</div>
@@ -214,11 +216,14 @@ export class Menus {
     const detail = s.querySelector('.class-detail') as HTMLElement;
     const keys: [string, string] = [keyLabel(this.prefs.bindings.ability1), keyLabel(this.prefs.bindings.ability2)];
     const team = () => (this.loadoutTeam === 1 ? 1 : 0) as Team;
+    const goBtn = s.querySelector('[data-a="go"]') as HTMLButtonElement | null;
     const select = (c: ClassId) => {
       this.loadoutCls = c;
       setSel(c);
       detail.innerHTML = classDetailHtml(c, keys);
       this.host.preview(c, team());
+      // a locked order can be looked over but not taken to the field
+      if (goBtn) { goBtn.disabled = classLocked(c); goBtn.textContent = classLocked(c) ? `Won at ${(CLASSES[c].unlock ?? 0).toLocaleString()} renown` : confirmLabel; }
     };
     const setSel = classList(s.querySelector('.class-list') as HTMLElement, this.loadoutCls, (c) => { this.host.ui('tick'); select(c); });
     s.addEventListener('click', (e) => {
@@ -233,7 +238,7 @@ export class Menus {
       }
       const a = (t.closest('[data-a]') as HTMLElement | null)?.dataset.a;
       if (a === 'back') { this.host.ui('tick'); if (onBack) onBack(); else this.showMain(); }
-      if (a === 'go' && onConfirm) {
+      if (a === 'go' && onConfirm && !classLocked(this.loadoutCls)) {
         this.prefs.lastClass = this.loadoutCls;
         this.prefs.lastTeam = this.loadoutTeam;
         savePrefs(this.prefs);
@@ -243,8 +248,8 @@ export class Menus {
     });
     const onKey = (e: KeyboardEvent) => {
       if (!s.isConnected) { window.removeEventListener('keydown', onKey); return; }
-      const m = /^Digit([1-8])$/.exec(e.code);
-      if (m && CLASS_IDS[Number(m[1]) - 1]) select(CLASS_IDS[Number(m[1]) - 1]);
+      const c = classForKey(e.code);
+      if (c) select(c);
     };
     window.addEventListener('keydown', onKey);
     this.mount(s);
@@ -568,4 +573,12 @@ export function defaultServer(): string {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = location.host || 'localhost:8787';
   return `${proto}//${host}/ws`;
+}
+
+/** Renown and the progress toward the next order to be won. */
+function renownBarHtml(renown: number): string {
+  const n = nextUnlock(renown);
+  if (!n) return `<b>${renown.toLocaleString()} renown</b><span>Every order is yours</span><i style="--p:100%"></i>`;
+  const p = Math.max(0, Math.min(1, (renown - n.prev) / (n.need - n.prev)));
+  return `<b>${renown.toLocaleString()} renown</b><span>Next: ${CLASSES[n.cls].name} at ${n.need.toLocaleString()}</span><i style="--p:${(p * 100).toFixed(1)}%"></i>`;
 }

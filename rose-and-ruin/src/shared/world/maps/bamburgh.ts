@@ -74,9 +74,9 @@ export const bamburgh: MapDef = {
     b.prop('banner', 0, -50, 0, 1.4, { team: 0 });
     b.prop('barrel', 12, -20, 0, 1); b.prop('barrel', 12.8, -19, 0, 1); b.prop('crate', 11.5, -18, 0.3, 1);
 
-    b.spawn(0, 0, -95, Math.PI, 20, 10);
-    b.spawn(1, -122, 16, -Math.PI / 2, 30, 12);
-    b.spawn(1, 48, 178, 0.42, 30, 10);
+    b.spawn(0, 0, -95, Math.PI, 20, 10, 'The great keep');
+    b.spawn(1, -122, 16, -Math.PI / 2, 30, 12, 'The siege lines');
+    b.spawn(1, 48, 178, 0.42, 30, 10, 'The beach');
 
     b.objective('The Cannon Breach', 'A', -21, 16, 9);
     b.objective('Constable\'s Gate', 'B', 6, 90, 9);
@@ -108,6 +108,11 @@ export const bamburgh: MapDef = {
     b.forest({ kind: 'rect', x: -80, z: 244, hx: 170, hz: 12 }, 60, { minSpacing: 6 });
     woodlandRing(b, { kind: 'rect', x: -70, z: 5, hx: 165, hz: 230 }, 255, 20);
 
+    // further mustering places a player may choose to return at
+    b.spawn(0, -150, -170, -2.419, 12, 8, 'The north meadow', true);
+    b.spawn(0, -52, -176, -2.854, 12, 8, 'The ruined chapel', true);
+    b.spawn(1, -190, 156, -0.883, 12, 8, 'The hill fort', true);
+    b.spawn(1, -196, -60, -1.868, 12, 8, 'The west meadow', true);
     b.bounds(-232, 80, -228, 234);
     b.cinematic(-110, 18, 30, 0, 30, 10);
     b.cinematic(70, 14, -40, 0, 34, -20);
