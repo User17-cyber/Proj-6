@@ -570,11 +570,10 @@ export class App implements HudHost, MenuHost {
     const tab = I.keys.has('Tab');
     if (tab !== this.boardHeld) { this.boardHeld = tab; this.hud.showBoard(tab); }
     // death screen choices
-    // single combat: choose the next round's knight with the number keys (those not bound to an
-    // action) or the mouse wheel
+    // single combat: between rounds the number keys always choose the next round's knight (there
+    // is no fighting to do then), and the mouse wheel cycles through them
     if (this.hud.roundPickOpen && me) {
-      const bound = new Set<string>([...Object.values(this.prefs.bindings), ...this.prefs.customBinds.map((c) => c.code)]);
-      for (const code of CLASS_KEY_CODES) if (!bound.has(code) && I.consumeKey(code)) { const c = classForKey(code); if (c) this.pickRoundClass(c); }
+      for (const code of CLASS_KEY_CODES) if (I.consumeKey(code)) { const c = classForKey(code); if (c) this.pickRoundClass(c); }
       if (I.wheel !== 0) {
         const open = CLASS_IDS.filter((c) => !classLocked(c));
         const i = open.indexOf(me.nextCls);

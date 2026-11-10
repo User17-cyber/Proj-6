@@ -7,8 +7,9 @@ import { CLASSES, CLASS_IDS, type ClassId } from '../../shared/data/classes';
 import { DIFFICULTY_NAMES, TEAM_HOUSE, TEAM_MOTTO, type GameMode, type MatchSettings, type Team } from '../../shared/types';
 import { icon } from './icons';
 import { mapArt } from './mapArt';
-import { classDetailHtml, classList, classForKey, classLocked, esc, keyLabel } from './classInfo';
-import { nextUnlock } from '../progress';
+import { classDetailHtml, classList, classForKey, classLocked, esc, keyLabel, setRenown } from './classInfo';
+import { nextUnlock, renownLine } from '../progress';
+import { exportCode, exportSave, importSave } from '../prefs';
 import { roseDataUrl } from '../render/heraldry';
 import { QUALITY_NAMES, type Quality } from '../render/renderer';
 import { BIND_ACTIONS, DEFAULT_BINDINGS, type BindAction, type Bindings } from '../input';
@@ -312,6 +313,16 @@ export class Menus {
           <button class="close-x cb-del" data-cbdel="${i}" aria-label="Remove keybind" title="Remove">×</button>
           ${clash(c.code, i)}</div>`).join('') : '<div class="hint">No keybinds of your own yet.</div>'}</div>
         <button class="btn iron small" data-a="addbind" style="margin-top:8px">+ Add a keybind</button>
+        <h3 class="title-caps" style="color:var(--gold);font-size:14px;margin:22px 0 4px">Your progress</h3>
+        <div class="hint" style="margin-bottom:8px">${esc(renownLine(p.renown))}. Progress is kept in this browser for this copy of the game; a new download, another folder or browser, or the online page each start afresh. Save it to a file (or copy the save code) and load it into the other copy to carry your renown, orders, keys and settings across. Loading never lowers your renown.</div>
+        <div class="save-row">
+          <button class="btn iron small" data-a="savefile">Save progress to a file</button>
+          <button class="btn iron small" data-a="loadfile">Load progress from a file</button>
+          <button class="btn iron small" data-a="copycode">Copy save code</button>
+          <button class="btn iron small" data-a="pastecode">Paste a save code</button>
+        </div>
+        <div class="save-code hidden"><textarea class="textin" rows="3" spellcheck="false" placeholder="Paste a save code (it begins RR1:)"></textarea><button class="btn small" data-a="applycode">Load this code</button></div>
+        <input type="file" accept=".json,.txt,application/json" class="save-file" hidden>
       </div>
       <div class="sheet-foot"><button class="btn iron" data-a="reset">Restore defaults</button><button class="btn" data-a="close">Done</button></div>`;
     };
@@ -347,7 +358,25 @@ export class Menus {
       changed(); render();
     };
     window.addEventListener('mousedown', onMouse, true);
+    // restore progress from a save: settings, keys and the greater renown
+    const loadSave = (text: string) => {
+      const np = importSave(text, p);
+      if (!np) { this.toast('That is not a Rose & Ruin save.'); return; }
+      Object.assign(p, np);
+      changed();
+      setRenown(p.renown);
+      this.host.ui('tick');
+      this.toast(`Progress loaded: ${p.renown.toLocaleString()} renown.`);
+      render();
+    };
     sheet.addEventListener('change', (e) => {
+      const fi = e.target as HTMLInputElement;
+      if (fi.classList?.contains('save-file')) {
+        const f = fi.files?.[0];
+        if (f) f.text().then(loadSave, () => this.toast('That file could not be read.'));
+        fi.value = '';
+        return;
+      }
       const t = e.target as HTMLSelectElement;
       if (t.dataset.cbact === undefined) return;
       const c = p.customBinds[Number(t.dataset.cbact)];
@@ -377,6 +406,26 @@ export class Menus {
       }
       const a = (t.closest('[data-a]') as HTMLElement | null)?.dataset.a;
       if (a === 'close') { this.host.ui('tick'); if (overlay) wrap.remove(); onClose(); }
+      if (a === 'savefile') {
+        const blob = new Blob([exportSave(p)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = `rose-and-ruin-save-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        this.host.ui('tick'); this.toast('Progress saved to a file. Load it into any other copy of the game.');
+        return;
+      }
+      if (a === 'loadfile') { (sheet.querySelector('.save-file') as HTMLInputElement).click(); return; }
+      if (a === 'copycode') {
+        const code = exportCode(p);
+        const box = sheet.querySelector('.save-code') as HTMLElement, ta = box.querySelector('textarea') as HTMLTextAreaElement;
+        box.classList.remove('hidden'); ta.value = code; ta.select();
+        navigator.clipboard?.writeText(code).then(() => this.toast('Save code copied.'), () => this.toast('Select the code and copy it.'));
+        return;
+      }
+      if (a === 'pastecode') { const box = sheet.querySelector('.save-code') as HTMLElement; box.classList.remove('hidden'); const ta = box.querySelector('textarea') as HTMLTextAreaElement; ta.value = ''; ta.focus(); return; }
+      if (a === 'applycode') { loadSave((sheet.querySelector('.save-code textarea') as HTMLTextAreaElement).value); return; }
       if (a === 'addbind') { p.customBinds.push({ code: '', action: 'guard' }); capturing = p.customBinds.length - 1; this.host.ui('tick'); render(); return; }
       if (a === 'reset') { p.bindings = { ...DEFAULT_BINDINGS }; p.sensitivity = 1; p.invertY = false; changed(); render(); }
     });

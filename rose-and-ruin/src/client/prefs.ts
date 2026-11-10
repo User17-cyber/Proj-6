@@ -87,11 +87,19 @@ export function defaultPrefs(): Prefs {
 }
 
 export function loadPrefs(): Prefs {
-  const d = defaultPrefs();
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return d;
-    const p = JSON.parse(raw) as Partial<Prefs>;
+    if (!raw) return defaultPrefs();
+    return normalizePrefs(JSON.parse(raw) as Partial<Prefs>);
+  } catch {
+    return defaultPrefs();
+  }
+}
+
+/** Fill in and sanitise stored settings (from this browser or from a save file). */
+export function normalizePrefs(p: Partial<Prefs>): Prefs {
+  const d = defaultPrefs();
+  try {
     return {
       ...d, ...p,
       gfx: { ...d.gfx, ...(p.gfx ?? {}) },
@@ -105,6 +113,41 @@ export function loadPrefs(): Prefs {
     };
   } catch {
     return d;
+  }
+}
+
+// ----------------------------------------------------------------------------- save files
+// Progress lives in this browser's storage, which is tied to where the game is opened from: a
+// fresh download, another folder or browser, or the online page each begin anew. A save file
+// (or the same thing as a code to paste) carries it from one to another.
+
+const SAVE_ID = 'rose-and-ruin-save';
+
+/** The save as text: everything kept in Settings, the armoury and the renown earned. */
+export function exportSave(p: Prefs): string {
+  return JSON.stringify({ game: SAVE_ID, version: 1, saved: new Date().toISOString(), prefs: p }, null, 1);
+}
+/** The same save as one line to copy and paste. */
+export function exportCode(p: Prefs): string {
+  return 'RR1:' + btoa(unescape(encodeURIComponent(exportSave(p))));
+}
+
+/**
+ * Read a save file's text or a save code. The renown kept is the greater of the save's and the
+ * current one, so loading an older save never loses progress. Returns null if it is not a save.
+ */
+export function importSave(text: string, current: Prefs): Prefs | null {
+  let raw = text.trim();
+  try {
+    if (raw.startsWith('RR1:')) raw = decodeURIComponent(escape(atob(raw.slice(4).replace(/\s+/g, ''))));
+    const o = JSON.parse(raw) as { game?: string; prefs?: Partial<Prefs> };
+    if (o.game !== SAVE_ID || !o.prefs || typeof o.prefs !== 'object') return null;
+    const p = normalizePrefs(o.prefs);
+    p.renown = Math.max(p.renown, current.renown);
+    syncGore(p);
+    return p;
+  } catch {
+    return null;
   }
 }
 

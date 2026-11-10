@@ -114,7 +114,7 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 
 In bot duels at equal skill they win about 68%, 78% and 77% of rounds against the base orders, which win about 60% at best. A good archer in open ground is still the Champion's bane.
 
-**Renown** is earned in battle: every point of your score (slaying, helping slay, taking banners), plus 150 for seeing a battle through and 500 more for winning it. It is kept in your browser. The armoury shows how far you are from the next order, and a herald announces each one you win, which you may take to the field at once.
+**Renown** is earned in battle: every point of your score (slaying, helping slay, taking banners), plus 150 for seeing a battle through and 500 more for winning it. It is kept in your browser, for that copy of the game: a new download, another folder or browser, or the online page each start afresh. To carry it across, use Settings › Your progress: save it to a file (or copy the save code) and load that into the other copy. Loading never lowers your renown; it brings your orders, keys and settings with it. The armoury shows how far you are from the next order, and a herald announces each one you win, which you may take to the field at once.
 
 Each order is built differently, and its hitboxes, reach and footprint in the crowd follow its build. The bigger a knight, the further his weapon reaches and the easier he is to hit:
 
@@ -138,7 +138,7 @@ Any order you have won can be chosen at the start and again every time you fall 
 - **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each of the eight orders once: when an order falls it is spent, and after all eight you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round and stand at their marks through a three-second countdown before the next. Between rounds, and during the countdown, you may change your order whether you won the round or lost it: the number keys (those not bound to an action) or the mouse wheel pick from the orders you have won. Online, two players can duel each other.
+- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round and stand at their marks through a three-second countdown before the next. Between rounds, and during the countdown, you may change your order whether you won the round or lost it: the number keys or the mouse wheel pick from the orders you have won. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 
