@@ -326,6 +326,13 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   }),
 };
 
+// the jab (every weapon's fourth attack) is the quick blow: shorter windup, snappier strike
+for (const w of Object.values(WEAPONS)) {
+  const t = w.attacks[3] as AttackDef;
+  if (t.kind !== 'thrust' || t.damage <= 0) continue;
+  t.windup *= 0.7; t.release *= 0.85; t.recover *= 0.8;
+}
+
 export const ARROW = {
   drawTime: 0.85,
   minSpeed: 28,

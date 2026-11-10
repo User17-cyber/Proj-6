@@ -178,6 +178,34 @@ if (!only) {
   if (hold.heavy < 1) fail('holding the attack button no longer makes a heavy blow');
   console.log(`attack input: spam-click ${spam.swings} swings (${spam.heavy} heavy, ${spam.restarts} restarts); hold ${hold.swings} swings (${hold.heavy} heavy)`);
 }
+// the jab: one press of the thrust key always produces a jab, whatever the knight is doing
+{
+  const states: [string, (k: import('../shared/sim/knight').Knight) => void][] = [
+    ['idle', () => {}],
+    ['recoiling', (k) => { k.act = Act.Deflect; k.actT = 0; k.actDur = 0.32; }],
+    ['staggered', (k) => { k.act = Act.Stagger; k.actT = 0; k.actDur = 0.36; }],
+    ['parried', (k) => { k.act = Act.Parried; k.actT = 0; k.actDur = 0.8; }],
+    ['winding up', (k) => { k.act = Act.Windup; k.atk = 0; k.actT = 0.1; k.actDur = 0.42; }],
+    ['recovering', (k) => { k.act = Act.Recover; k.atk = 0; k.actT = 0; k.actDur = 0.6; }],
+  ];
+  const out: string[] = [];
+  for (const [name, setup] of states) {
+    const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'duel', rounds: 99, seed: 5 }, buildMap('bodiam'));
+    const me = m.addPlayer('Tester', 1, 0, 'manatarms');
+    while (m.phase !== 'live') m.step();
+    const foe = m.knights.find((k) => k !== me)!; m.brains.delete(foe.id); foe.x = me.x + 40;
+    setup(me);
+    let at = -1;
+    for (let i = 0; i < 90 && at < 0; i++) {
+      me.input = { ...me.input, buttons: i < 2 ? Btn.Thrust : 0 };
+      m.step(); m.events.length = 0;
+      if (me.act === Act.Release && me.atk === 3) at = i;
+    }
+    if (at < 0) fail(`a jab pressed while ${name} never came`);
+    out.push(`${name} ${(at / 60).toFixed(2)}s`);
+  }
+  console.log(`jab: ${out.join(', ')}`);
+}
 // melee aim: a blow aimed at a foe in reach lands; one aimed well away does not
 {
   const trial = (aimOff: number, pitch: number, cls: 'manatarms' | 'halberdier' | 'errant') => {

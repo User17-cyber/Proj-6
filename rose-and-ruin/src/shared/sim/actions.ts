@@ -150,10 +150,22 @@ function actions(m: Match, k: Knight, dt: number, btn: number, pressed: number) 
   k.pitch = clamp(k.input.pitch, -1.35, 1.35);
   const prevT = k.actT;
   k.actT += dt;
+  // a jab pressed while the knight cannot act yet (recoiling, staggered, parried, kicking, winding
+  // up another blow) is remembered and thrown the moment he is free
+  if ((pressed & Btn.Thrust) && k.act !== Act.Idle && k.act !== Act.Block && k.act !== Act.Release && k.act !== Act.Recover && !(k.act === Act.Windup && k.atk === 3)) {
+    k.bufferedAttack = 2; k.bufferT = 1.0;
+  }
   switch (k.act) {
     case Act.Idle:
     case Act.Block: {
       if (k.act === Act.Block && !(btn & Btn.Block)) { k.act = Act.Idle; k.actT = 0; }
+      // throw a blow remembered from a moment ago
+      if (k.bufferedAttack && k.bufferT > 0 && !k.def.ranged) {
+        const slot = k.bufferedAttack === 2 ? 3 : (k.comboTimer > 0 ? 1 - k.lastSlash : 0);
+        startAttack(m, k, slot, false);
+        break;
+      }
+      if (k.bufferedAttack === 2 && k.bufferT > 0 && k.def.ranged) { startAttack(m, k, 3, false); break; }
       if (tryAbility(m, k, pressed)) break;
       if ((pressed & Btn.Kick) && k.stamina >= 4) { startKick(k); break; }
       if (k.def.ranged) {
@@ -194,7 +206,7 @@ function actions(m: Match, k: Knight, dt: number, btn: number, pressed: number) 
     }
     case Act.Release: {
       if (pressed & Btn.Attack) { k.bufferedAttack = 1; k.bufferT = 0.6; }
-      if (pressed & Btn.Thrust) { k.bufferedAttack = 2; k.bufferT = 0.6; }
+      if (pressed & Btn.Thrust) { k.bufferedAttack = 2; k.bufferT = 1.0; }
       // the transition waits until combat has swept the whole blade path
       if (k.relPrevT >= k.actDur - 1e-6) {
         const a = w.attacks[k.atk];
@@ -204,8 +216,8 @@ function actions(m: Match, k: Knight, dt: number, btn: number, pressed: number) 
     }
     case Act.Recover: {
       if (pressed & Btn.Attack) { k.bufferedAttack = 1; k.bufferT = 0.6; }
-      if (pressed & Btn.Thrust) { k.bufferedAttack = 2; k.bufferT = 0.6; }
-      const canChain = k.actT >= k.actDur * 0.42;
+      if (pressed & Btn.Thrust) { k.bufferedAttack = 2; k.bufferT = 1.0; }
+      const canChain = k.actT >= k.actDur * (k.bufferedAttack === 2 ? 0.25 : 0.42);
       if (canChain && k.bufferedAttack && !k.def.ranged) {
         const slot = k.bufferedAttack === 2 ? 3 : (k.atk === 0 ? 1 : 0);
         k.combo++;
