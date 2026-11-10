@@ -45,6 +45,8 @@ function timers(m: Match, k: Knight, dt: number) {
   k.bloodletT = Math.max(0, k.bloodletT - dt);
   k.holdT = Math.max(0, k.holdT - dt); k.halfT = Math.max(0, k.halfT - dt); k.hasteT = Math.max(0, k.hasteT - dt);
   k.execT = Math.max(0, k.execT - dt); k.juggerT = Math.max(0, k.juggerT - dt);
+  k.mordT = Math.max(0, k.mordT - dt); k.sbT = Math.max(0, k.sbT - dt); k.disarmT = Math.max(0, k.disarmT - dt);
+  k.slowT = Math.max(0, k.slowT - dt); k.steadyT = Math.max(0, k.steadyT - dt);
   k.bufferT = Math.max(0, k.bufferT - dt);
   if (k.bufferT <= 0) k.bufferedAttack = 0;
   if (k.act === Act.Idle) {
@@ -146,6 +148,12 @@ function tryAbility(m: Match, k: Knight, pressed: number): boolean {
 }
 
 function actions(m: Match, k: Knight, dt: number, btn: number, pressed: number) {
+  // disarmed: his weapon is wrenched aside; he can neither strike nor guard until he recovers it
+  if (k.disarmT > 0) {
+    const no = Btn.Attack | Btn.Thrust | Btn.Block | Btn.Kick | Btn.Ability1 | Btn.Ability2;
+    btn &= ~no; pressed &= ~no;
+    if (k.act === Act.Block) { k.act = Act.Idle; k.actT = 0; }
+  }
   const w = k.weapon;
   k.pitch = clamp(k.input.pitch, -1.35, 1.35);
   const prevT = k.actT;
@@ -326,6 +334,7 @@ export function movement(world: StaticWorld, k: Knight, dt: number, live: boolea
   if (k.bulwarkT > 0) speed *= 0.85;
   if (k.hasteT > 0) speed *= 1.2;
   if (k.juggerT > 0) speed *= 1.25;
+  if (k.slowT > 0) speed *= 0.6;
   const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
   const rx = Math.cos(k.yaw), rz = -Math.sin(k.yaw);
   let dvx = (rx * mx + fx * mz) * speed;

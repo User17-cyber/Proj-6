@@ -63,6 +63,7 @@ From the great hall:
 | Scoreboard | Tab |
 | Chat (multiplayer) | Enter |
 | Menu, pause and leave the battle (any time) | Esc or P |
+| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–6 |
 | Spectator: director / follow / free camera | 1 / 2 / 3 |
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
@@ -103,6 +104,13 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 | Knight-Errant | Falchion and buckler | Sidestep, Bloodletting |
 | Pavisier | War spear and hand pavise | Shield Bash, Iron Bulwark |
 | Knight Bachelor | Flanged mace and heater shield | Shield Bash, Battle Charge |
+| Master of Defence | Longsword, little armour | Murder Stroke (reverse the sword and strike with the cross: crushes through plate and stuns), Bind & Disarm (bind a foe's blade and wrench it from him; useless against a raised shield) |
+| Brigand | War axe and brigandine | Wrestling Throw (hip-throw a foe to the ground; much heavier men may resist), Misericorde (the mercy dagger: slays a downed or stunned foe, else a deep stab) |
+| Battle Chaplain | Flanged mace and mail | Bind Wounds (heal yourself and the most hurt ally close by), Benediction (allies near you regain wind and cannot be staggered for a while) |
+| Pikeman | Pike | Brace for the Charge (set the butt: anyone who rushes or charges onto the point is impaled), Push of Pike (a long shove that drives a foe back and staggers him) |
+| Gallowglass | Sparth axe and mail | Hamstring (a low cut that lames a foe and bleeds him), Shield-Breaker (blows smash shields and guards apart) |
+
+The last five are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders.
 
 **Renowned orders.** Three more orders are won with renown, one after another:
 
@@ -135,10 +143,10 @@ Any order you have won can be chosen at the start and again every time you fall 
 
 ### Manners of battle
 
-- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each of the eight orders once: when an order falls it is spent, and after all eight you watch the rest of the battle.
+- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (thirteen at first, sixteen with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round and stand at their marks through a three-second countdown before the next. Between rounds, and during the countdown, you may change your order whether you won the round or lost it: the number keys or the mouse wheel pick from the orders you have won. Online, two players can duel each other.
+- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–6). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 

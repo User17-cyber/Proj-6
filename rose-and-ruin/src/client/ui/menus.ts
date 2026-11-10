@@ -249,7 +249,7 @@ export class Menus {
     });
     const onKey = (e: KeyboardEvent) => {
       if (!s.isConnected) { window.removeEventListener('keydown', onKey); return; }
-      const c = classForKey(e.code);
+      const c = classForKey(e.code, e.shiftKey);
       if (c) select(c);
     };
     window.addEventListener('keydown', onKey);

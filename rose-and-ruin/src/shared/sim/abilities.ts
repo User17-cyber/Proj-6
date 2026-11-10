@@ -29,6 +29,14 @@ export function abilityMoveMult(k: Knight): number {
     case 'warcry': return 0.45;
     case 'execute': return 0.8;
     case 'juggernaut': return 0.8;
+    case 'brace': return 0.05;
+    case 'pushofpike': return 0.35;
+    case 'bindwounds': return 0.35;
+    case 'benediction': return 0.5;
+    case 'throw': return 0.3;
+    case 'misericorde': return 0.4;
+    case 'disarm': return 0.4;
+    case 'hamstring': return 0.5;
     case 'volley': return 0.3;
     case 'sweep': return 0.25;
     case 'earthshaker': return 0.2;
@@ -266,6 +274,128 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
       break;
     case 'juggernaut':
       if (crossed(t0, t1, 0.25)) { k.juggerT = 8; k.stunT = 0; emitAb(m, k, id); }
+      break;
+    case 'murderstroke':
+      if (crossed(t0, t1, 0.15)) { k.mordT = 6; emitAb(m, k, id); }
+      break;
+    case 'shieldbreaker':
+      if (crossed(t0, t1, 0.15)) { k.sbT = 6; emitAb(m, k, id); }
+      break;
+    case 'disarm':
+      if (crossed(t0, t1, 0.3)) {
+        let target: Knight | null = null, best = 9;
+        frontal(m, k, 2.5, 30, (v, d) => { if (d < best) { best = d; target = v; } });
+        const v = target as Knight | null;
+        if (v && v.juggerT <= 0 && v.bulwarkT <= 0) {
+          if (v.shield && isBlocking(v, k.x, k.z)) {
+            spend(v, 15);
+            m.emit({ t: 'block', a: k.id, v: v.id, x: v.x, y: v.y + 1.2, z: v.z, parry: false, shield: true, broke: false });
+          } else {
+            v.disarmT = 2.5;
+            if (v.act === Act.Windup || v.act === Act.Charge || v.act === Act.Release || v.act === Act.Block) { v.act = Act.Stagger; v.actT = 0; v.actDur = 0.45; v.heavy = false; v.charge = 0; }
+            m.emit({ t: 'disarm', k: v.id, by: k.id });
+          }
+        }
+      }
+      break;
+    case 'throw':
+      if (crossed(t0, t1, 0.35)) {
+        let target: Knight | null = null, best = 9;
+        frontal(m, k, 1.8, 40, (v, d) => { if (d < best) { best = d; target = v; } });
+        const v = target as Knight | null;
+        if (v) {
+          // the heavier the man, the harder he is to throw: a champion in full plate may stand his ground
+          if (v.def.mass > k.def.mass * 1.35 && m.rng.chance(0.5)) { spend(v, 20); stun(m, v, 0.5); }
+          else {
+            v.pushX += fx * 2.5; v.pushZ += fz * 2.5;
+            m.damage(v, k, 10 * (1 - v.def.armor[1]), { zone: 1, dtype: 1, kind: 2, x: v.x, y: v.y + 0.9, z: v.z, dx: fx, dy: 0.4, dz: fz, noStagger: true });
+            if (v.alive) knockdown(m, v, k, 1.7);
+          }
+        }
+      }
+      break;
+    case 'misericorde':
+      if (crossed(t0, t1, 0.3)) {
+        let target: Knight | null = null, best = 9;
+        frontal(m, k, 2.3, 40, (v, d) => {
+          // a man on the ground or reeling is the one to finish
+          const sc = d - (v.knockT > 0 || v.stunT > 0 ? 3 : 0);
+          if (sc < best) { best = sc; target = v; }
+        });
+        const v = target as Knight | null;
+        if (v) {
+          const helpless = v.knockT > 0 || v.stunT > 0;
+          const dmg = helpless ? v.hp + 1 : 40 * (1 - v.def.armor[2] * 0.25);
+          m.damage(v, k, dmg, { zone: helpless ? 0 : 1, dtype: 2, kind: 2, x: v.x, y: v.y + (helpless ? 0.4 : 1.3), z: v.z, dx: fx, dy: -0.2, dz: fz, noStagger: !helpless });
+        }
+      }
+      break;
+    case 'bindwounds':
+      if (crossed(t0, t1, 0.5)) {
+        const tend = (a: Knight) => { a.hotT = 4; a.hotRate = 45 / 4; a.bleedT = 0; a.bleedStacks = 0; m.emit({ t: 'heal', k: a.id, amt: 45 }); };
+        tend(k);
+        let ally: Knight | null = null, worst = 1;
+        for (const a of m.knights) {
+          if (!a.alive || a === k || a.team !== k.team || (a.x - k.x) ** 2 + (a.z - k.z) ** 2 > 12) continue;
+          const f = a.hp / a.def.hp;
+          if (f < worst) { worst = f; ally = a; }
+        }
+        if (ally) { tend(ally); k.score += 10; }
+        emitAb(m, k, id);
+      }
+      break;
+    case 'benediction':
+      if (crossed(t0, t1, 0.45)) {
+        for (const a of m.knights) {
+          if (!a.alive || a.team !== k.team || (a.x - k.x) ** 2 + (a.z - k.z) ** 2 > 100) continue;
+          a.stamina = Math.min(a.def.stamina, a.stamina + 40);
+          a.steadyT = 6;
+          if (a !== k) k.score += 5;
+        }
+        emitAb(m, k, id);
+      }
+      break;
+    case 'brace':
+      // the pike set: a foe who comes on at speed runs onto the point
+      if (t1 > 0.3) {
+        frontal(m, k, 3.4, 22, (v) => {
+          if (k.abilityHits.includes(v.id)) return;
+          const tx = k.x - v.x, tz = k.z - v.z, tl = Math.hypot(tx, tz) || 1;
+          const closing = (v.vx * tx + v.vz * tz) / tl;
+          const charging = v.act === Act.Ability && (v.def.abilities[v.abilitySlot] === 'charge' || v.def.abilities[v.abilitySlot] === 'juggernaut');
+          if (closing < 2.6 && !charging) return;
+          k.abilityHits.push(v.id);
+          m.damage(v, k, 75 * (1 - v.def.armor[2] * 0.5), { zone: 1, dtype: 2, kind: 2, x: v.x, y: v.y + 1.2, z: v.z, dx: -tx / tl, dy: 0, dz: -tz / tl, noStagger: true });
+          if (v.alive) {
+            v.ovActive = false; v.vx *= 0.1; v.vz *= 0.1; v.pushX -= (tx / tl) * 2; v.pushZ -= (tz / tl) * 2;
+            v.juggerT = 0;
+            stun(m, v, 1.2);
+          }
+        });
+      }
+      break;
+    case 'pushofpike':
+      if (crossed(t0, t1, 0.4)) {
+        frontal(m, k, 3.6, 14, (v) => {
+          if (isBlocking(v, k.x, k.z)) { spend(v, 22); m.emit({ t: 'block', a: k.id, v: v.id, x: v.x, y: v.y + 1.2, z: v.z, parry: false, shield: !!v.shield, broke: false }); v.pushX += fx * 2.5; v.pushZ += fz * 2.5; return; }
+          m.damage(v, k, 34 * (1 - v.def.armor[2] * 0.7), { zone: 1, dtype: 2, kind: 2, x: v.x, y: v.y + 1.2, z: v.z, dx: fx, dy: 0, dz: fz, noStagger: true });
+          if (v.alive) { v.pushX += fx * 5; v.pushZ += fz * 5; v.act = Act.Stagger; v.actT = 0; v.actDur = 0.5; v.heavy = false; }
+        });
+      }
+      break;
+    case 'hamstring':
+      if (crossed(t0, t1, 0.3)) {
+        let target: Knight | null = null, best = 9;
+        frontal(m, k, 2.6, 35, (v, d) => { if (d < best) { best = d; target = v; } });
+        const v = target as Knight | null;
+        if (v) {
+          if (isBlocking(v, k.x, k.z) && v.shield) { spend(v, 12); m.emit({ t: 'block', a: k.id, v: v.id, x: v.x, y: v.y + 0.5, z: v.z, parry: false, shield: true, broke: false }); }
+          else {
+            m.damage(v, k, 22 * (1 - v.def.armor[0] * 0.6), { zone: 2, dtype: 0, kind: 2, x: v.x, y: v.y + 0.45, z: v.z, dx: fx, dy: 0, dz: fz, noStagger: true });
+            if (v.alive) { v.slowT = 6; applyBleed(v, k); }
+          }
+        }
+      }
       break;
     default:
       break;

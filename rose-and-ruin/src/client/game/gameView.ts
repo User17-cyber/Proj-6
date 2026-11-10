@@ -235,6 +235,13 @@ export class GameView {
           } else if (id === 'juggernaut' || id === 'execute') {
             A.play('shout', { pos: k, bus: 'voice', vol: 0.8, rate: 0.85 });
             A.play('plate', { pos: k, vol: 0.6, rate: 0.7 });
+          } else if (id === 'benediction' || id === 'bindwounds') {
+            A.play('shout', { pos: k, bus: 'voice', vol: 0.5, rate: 0.9 });
+            for (let i = 0; i < 16; i++) this.particles.spawn(5, k.x + (Math.random() - 0.5) * 1.6, k.y + Math.random() * 2, k.z + (Math.random() - 0.5) * 1.6, 0, 0.8 + Math.random(), 0, 0.8 + Math.random() * 0.5, 0.04, [2.2, 2.0, 1.2, 0.6]);
+          } else if (id === 'brace') {
+            A.play('plate', { pos: k, vol: 0.5, rate: 1.2 });
+          } else if (id === 'murderstroke' || id === 'shieldbreaker') {
+            A.play('clang', { pos: k, vol: 0.3, rate: 0.9 });
           } else if (id === 'billhook') {
             A.play('whooshHeavy', { pos: k, vol: 0.6 });
           } else if (id === 'halfsword') {
@@ -288,6 +295,13 @@ export class GameView {
             this.hud?.notify(`${mine ? 'You take' : `${won.name} takes`} the round · ${e.score0}–${e.score1}`, e.winner, true);
           }
           this.hud?.notify(`Round ${e.n}`, -1, true);
+          break;
+        }
+        case 'disarm': {
+          const v = K[e.k];
+          if (v) A.play('clang', { pos: v, vol: 0.8, rate: 0.8 });
+          if (e.k === localId) this.hud?.combatText('Disarmed!', 'broke');
+          else if (e.by === localId) this.hud?.combatText('Disarmed him!', 'parry');
           break;
         }
         case 'shieldBreak': {

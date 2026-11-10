@@ -336,7 +336,7 @@ export class NetSession implements SessionView {
       me.respawnT = y.respawnT >= NEVER ? 9999 : Math.max(0, y.respawnT - this.snapAge);
       me.nextCls = CLASS_IDS[y.nextCls] ?? me.nextCls;
       if (me.alive) me.shield = y.shield;
-      me.buffs = y.buffs;
+      me.buffs = y.buffs; me.debuffs = y.debuffs;
     }
   }
 

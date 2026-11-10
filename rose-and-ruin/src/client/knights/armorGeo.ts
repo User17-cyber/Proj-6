@@ -790,6 +790,32 @@ export function greatAxe(): { steel: THREE.BufferGeometry; wood: THREE.BufferGeo
   };
 }
 
+/** One-handed bearded war axe. */
+export function warAxe(): WeaponGeo {
+  const blade = new THREE.Shape();
+  blade.moveTo(0, -0.03); blade.lineTo(0.05, -0.05); blade.quadraticCurveTo(0.12, -0.1, 0.15, -0.08);
+  blade.quadraticCurveTo(0.17, 0.02, 0.13, 0.1); blade.quadraticCurveTo(0.08, 0.06, 0.04, 0.06); blade.lineTo(0, 0.05); blade.lineTo(0, -0.03);
+  const bg = new THREE.ExtrudeGeometry(blade, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 1, curveSegments: 6 });
+  bg.translate(0, 0, -0.004); bg.rotateY(-Math.PI / 2); bg.translate(0, 0.58, 0);
+  return {
+    wood: xf(new THREE.CylinderGeometry(0.016, 0.019, 0.7, 10), 0, 0.27, 0),
+    steel: merge([bg, xf(new THREE.CylinderGeometry(0.022, 0.022, 0.08, 8), 0, 0.58, 0)]),
+    grip: xf(new THREE.CylinderGeometry(0.019, 0.02, 0.14, 10), 0, 0.0, 0),
+  };
+}
+/** A pike: a long ash shaft with a small steel head and langets. */
+export function pike(): WeaponGeo {
+  return {
+    wood: xf(new THREE.CylinderGeometry(0.017, 0.021, 4.3, 10), 0, 0.55, 0),
+    steel: merge([
+      bladeGeo(0.3, 0.032, 0.014, 0.012, 0.006, 2.68),
+      xf(new THREE.BoxGeometry(0.012, 0.4, 0.044), 0, 2.52, 0),
+      xf(new THREE.ConeGeometry(0.024, 0.06, 8), 0, -1.6, 0, Math.PI, 0, 0),
+    ]),
+    grip: xf(new THREE.CylinderGeometry(0.022, 0.022, 0.14, 10), 0, 0, 0),
+  };
+}
+
 /** Longbow in its frame: +Y along the stave, +Z toward the archer. Built for a given bend. */
 export function longbow(): WeaponGeo {
   const pts: THREE.Vector3[] = [];

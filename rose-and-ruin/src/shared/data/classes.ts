@@ -1,8 +1,8 @@
 import type { WeaponId } from './weapons';
 
-export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'yeoman' | 'marshal' | 'champion';
+export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion';
 /** at most 16: snapshots pack the class index into 4 bits */
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'yeoman', 'marshal', 'champion'];
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion'];
 /** the orders won by renown, in the order they are unlocked */
 export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'champion'];
 
@@ -37,12 +37,18 @@ export type AbilityId =
   | 'dash' | 'bloodletting'
   | 'billhook' | 'holdline'
   | 'halfsword' | 'warcry'
-  | 'execute' | 'juggernaut';
+  | 'execute' | 'juggernaut'
+  | 'murderstroke' | 'disarm'
+  | 'throw' | 'misericorde'
+  | 'bindwounds' | 'benediction'
+  | 'brace' | 'pushofpike'
+  | 'hamstring' | 'shieldbreaker';
 
 export const ABILITY_IDS: readonly AbilityId[] = [
   'shield_bash', 'rally', 'whirlwind', 'charge', 'lunge', 'sweep',
   'earthshaker', 'bulwark', 'volley', 'bodkin', 'dash', 'bloodletting',
   'billhook', 'holdline', 'halfsword', 'warcry', 'execute', 'juggernaut',
+  'murderstroke', 'disarm', 'throw', 'misericorde', 'bindwounds', 'benediction', 'brace', 'pushofpike', 'hamstring', 'shieldbreaker',
 ];
 
 export interface AbilityDef {
@@ -91,6 +97,26 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     description: 'For 10 seconds, any blow of yours that leaves a foe below a third of his vigour slays him outright, and each slaying restores 25 of yours.' },
   juggernaut: { id: 'juggernaut', name: 'Juggernaut', icon: 'jugger', cooldown: 26, duration: 0.5, stamina: 0,
     description: 'For 8 seconds nothing stops you: you move 25% faster, cannot be staggered, stunned or thrown down, and any foe you walk into is bowled off his feet.' },
+  murderstroke: { id: 'murderstroke', name: 'Murder Stroke', icon: 'mord', cooldown: 15, duration: 0.35, stamina: 6,
+    description: 'Seize your sword by the blade and strike with the cross and pommel: your next blow within 6 seconds crushes rather than cuts, ignores most of a harness, and stuns.' },
+  disarm: { id: 'disarm', name: 'Bind & Disarm', icon: 'disarm', cooldown: 18, duration: 0.55, stamina: 10,
+    description: 'Bind the foe\'s blade and wrench it aside: for 2.5 seconds he can neither strike nor guard. It fails against a raised shield.' },
+  throw: { id: 'throw', name: 'Wrestling Throw', icon: 'throw', cooldown: 14, duration: 0.6, stamina: 14,
+    description: 'Close in, take him by the arm and collar and throw him over your hip. A foe within arm\'s reach is thrown down.' },
+  misericorde: { id: 'misericorde', name: 'Misericorde', icon: 'dagger', cooldown: 12, duration: 0.5, stamina: 8,
+    description: 'Draw the thin dagger of mercy. A foe who is down or stunned before you is slain through the gaps of his helm; any other takes a deep stab.' },
+  bindwounds: { id: 'bindwounds', name: 'Bind Wounds', icon: 'bandage', cooldown: 20, duration: 1.0, stamina: 0,
+    description: 'Bandage your hurts and those of the nearest wounded ally beside you: each recovers 45 vigour over 4 seconds and stops bleeding.' },
+  benediction: { id: 'benediction', name: 'Benediction', icon: 'bless', cooldown: 26, duration: 0.9, stamina: 0,
+    description: 'A blessing over the line: every ally within 10 metres recovers 40 stamina and, steadied, cannot be staggered for 6 seconds.' },
+  brace: { id: 'brace', name: 'Brace for the Charge', icon: 'brace', cooldown: 16, duration: 3.5, stamina: 8,
+    description: 'Ground the butt of the pike and level the point. For 3.5 seconds any foe who runs or charges onto it is impaled, stopped dead and stunned.' },
+  pushofpike: { id: 'pushofpike', name: 'Push of Pike', icon: 'push', cooldown: 12, duration: 0.8, stamina: 14,
+    description: 'Drive the pike forward with your whole weight: every foe in its line, up to 3.6 metres off, is struck and shoved back.' },
+  hamstring: { id: 'hamstring', name: 'Hamstring', icon: 'hamstring', cooldown: 13, duration: 0.55, stamina: 10,
+    description: 'A low cut behind the knee: the foe before you bleeds and is lamed, moving 40% slower for 6 seconds.' },
+  shieldbreaker: { id: 'shieldbreaker', name: 'Shield-Breaker', icon: 'shatter', cooldown: 15, duration: 0.3, stamina: 6,
+    description: 'Your next blow within 6 seconds against a raised guard smashes through it: it breaks the guard outright and does four times the harm to a shield.' },
   bloodletting: { id: 'bloodletting', name: 'Bloodletting', icon: 'bleed', cooldown: 18, duration: 0.5, stamina: 0,
     description: 'For 8 seconds every cut opens a wound that bleeds the victim (stacks three times).' },
 };
@@ -206,6 +232,56 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     ratings: { attack: 4, defence: 4, speed: 3, reach: 2, difficulty: 2 },
     armourDesc: 'Visored bascinet, plate harness and surcoat',
     botWeight: 14,
+  },
+  master: {
+    id: 'master', name: 'Master of Defence', title: 'Longsword',
+    description: 'A sworn master of the art of fence, trained in the German and Italian schools. Lightly armoured and lethally quick, with a parry like a door slamming. Murder Stroke turns the sword about to crush plate; Bind & Disarm takes the foe\'s weapon out of the fight.',
+    hp: 100, stamina: 115, speed: 5.0, sprint: 7.3, mass: 0.95, size: { height: 1.0, girth: 0.96 },
+    armor: [0.2, 0.08, 0.16], weapon: 'longsword', shield: null, ranged: false,
+    abilities: ['murderstroke', 'disarm'], hyperArmor: false, attackSpeed: 1.04,
+    ratings: { attack: 4, defence: 3, speed: 4, reach: 4, difficulty: 5 },
+    armourDesc: 'Open-faced bascinet, arming doublet and a brigandine',
+    botWeight: 8,
+  },
+  brigand: {
+    id: 'brigand', name: 'Brigand', title: 'War Axe',
+    description: 'A free company cut-throat who fights to win, not for honour. Wrestling Throw puts a knight on his back, and the Misericorde finishes him there.',
+    hp: 108, stamina: 115, speed: 5.0, sprint: 7.5, mass: 1.0, size: { height: 0.98, girth: 1.04 },
+    armor: [0.2, 0.1, 0.16], weapon: 'waraxe', shield: null, ranged: false,
+    abilities: ['throw', 'misericorde'], hyperArmor: false, attackSpeed: 1.08,
+    ratings: { attack: 4, defence: 2, speed: 4, reach: 2, difficulty: 3 },
+    armourDesc: 'Skull cap, padded jack over mail',
+    botWeight: 9,
+  },
+  chaplain: {
+    id: 'chaplain', name: 'Battle Chaplain', title: 'Flanged Mace',
+    description: 'A priest of a lord\'s household who goes armed among the men, mace in hand. He binds wounds under the blows and blesses the line to hold it together.',
+    hp: 140, stamina: 110, speed: 4.7, sprint: 6.9, mass: 1.05, size: { height: 1.0, girth: 1.06 },
+    armor: [0.36, 0.14, 0.3], weapon: 'mace', shield: null, ranged: false,
+    abilities: ['bindwounds', 'benediction'], hyperArmor: false, attackSpeed: 1.08,
+    ratings: { attack: 3, defence: 3, speed: 3, reach: 2, difficulty: 2 },
+    armourDesc: 'Mail coif, harness under a white surplice-tabard',
+    botWeight: 7,
+  },
+  pikeman: {
+    id: 'pikeman', name: 'Pikeman', title: 'Pike',
+    description: 'A mercenary of the hedgehog, trained to keep men and horses off with eighteen feet of ash. Brace for the Charge impales whoever runs at him; Push of Pike shoves a whole rank back.',
+    hp: 115, stamina: 105, speed: 4.4, sprint: 6.5, mass: 1.05, size: { height: 1.02, girth: 1.0 },
+    armor: [0.26, 0.12, 0.22], weapon: 'pike', shield: null, ranged: false,
+    abilities: ['brace', 'pushofpike'], hyperArmor: false, attackSpeed: 1.1,
+    ratings: { attack: 3, defence: 2, speed: 2, reach: 5, difficulty: 3 },
+    armourDesc: 'Sallet, breastplate over a padded jack',
+    botWeight: 8,
+  },
+  gallowglass: {
+    id: 'gallowglass', name: 'Gallowglass', title: 'Sparth Axe',
+    description: 'A mail-clad axeman of the Isles, hired from the Irish wars. Hamstring lames the man before him; Shield-Breaker smashes straight through a raised guard.',
+    hp: 148, stamina: 110, speed: 4.7, sprint: 6.9, mass: 1.2, size: { height: 1.06, girth: 1.08 },
+    armor: [0.32, 0.13, 0.3], weapon: 'sparth', shield: null, ranged: false,
+    abilities: ['hamstring', 'shieldbreaker'], hyperArmor: true, attackSpeed: 1.04,
+    ratings: { attack: 5, defence: 3, speed: 3, reach: 4, difficulty: 2 },
+    armourDesc: 'Conical bascinet, a long mail hauberk to the knees',
+    botWeight: 8,
   },
   yeoman: {
     id: 'yeoman', name: 'Yeoman of the Guard', title: 'English Bill',

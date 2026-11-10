@@ -60,10 +60,15 @@ let renownNow = Infinity;
 export function setRenown(n: number) { renownNow = n; }
 export const classLocked = (c: ClassId) => !isUnlocked(c, renownNow);
 
-/** Keys that pick an order: 1-9, then 0 and minus. */
-const CLASS_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus'];
-export const classKeyLabel = (i: number) => (i < 9 ? String(i + 1) : i === 9 ? '0' : '-');
-export const classForKey = (code: string): ClassId | null => { const i = CLASS_KEYS.indexOf(code); return i >= 0 && CLASS_IDS[i] ? CLASS_IDS[i] : null; };
+/** Keys that pick an order: 1-9 and 0 for the first ten, then Shift+1 to Shift+6. */
+const CLASS_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'];
+export const classKeyLabel = (i: number) => (i < 9 ? String(i + 1) : i === 9 ? '0' : `⇧${i - 9}`);
+export const classForKey = (code: string, shift = false): ClassId | null => {
+  const i = CLASS_KEYS.indexOf(code);
+  if (i < 0) return null;
+  const idx = shift ? (i < 9 ? 10 + i : -1) : i;
+  return idx >= 0 && CLASS_IDS[idx] ? CLASS_IDS[idx] : null;
+};
 export const CLASS_KEY_CODES = CLASS_KEYS;
 
 export function classList(container: HTMLElement, selected: ClassId, onSelect: (c: ClassId) => void, withKeys = true): (c: ClassId) => void {

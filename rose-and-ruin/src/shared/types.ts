@@ -101,7 +101,9 @@ export type SimEvent =
   | { t: 'block'; a: number; v: number; x: number; y: number; z: number; parry: boolean; shield: boolean; broke: boolean }
   | { t: 'swing'; k: number; atk: number; heavy: boolean }
   | { t: 'kill'; killer: number; victim: number; assist: number; weapon: number; head: boolean; dx: number; dy: number; dz: number; force: number }
-  | { t: 'spawn'; k: number }
+  | { t: 'spawn'; k: number; yaw: number }
+  /** Bind & Disarm: k's weapon is wrenched aside by `by` */
+  | { t: 'disarm'; k: number; by: number }
   | { t: 'ability'; k: number; ab: number; x: number; y: number; z: number }
   | { t: 'kick'; a: number; v: number; hit: boolean; broke: boolean }
   | { t: 'arrow'; id: number; k: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; bodkin: boolean }

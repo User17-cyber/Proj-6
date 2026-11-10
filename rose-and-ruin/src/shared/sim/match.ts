@@ -23,7 +23,7 @@ export type MatchPhase = 'warmup' | 'live' | 'ended';
 export const WARMUP_TIME = 6;
 export const END_TIME = 14;
 /** single combat: seconds between a round's deciding blow and the next round */
-export const ROUND_PAUSE = 4;
+export const ROUND_PAUSE = 6;
 /** single combat: the count of seconds, at the marks, before each round after the first */
 export const ROUND_COUNTDOWN = 3;
 
@@ -176,8 +176,6 @@ export class Match {
     if (zone !== undefined) k.spawnPref = Number.isInteger(zone) && zone >= 0 && zone < this.map.spawns[k.team].length ? zone : -1;
     if (!this.classAllowed(k, cls)) return;
     k.nextCls = cls;
-    // single combat: a change of order at the marks, before the fight begins, takes effect at once
-    if (this.settings.mode === 'duel' && k.alive && this.roundReadyT > 0 && k.cls !== cls) this.spawn(k, true);
     if (!k.alive) k.wantSpawn = true;
   }
 
@@ -275,6 +273,7 @@ export class Match {
     k.stunT = k.knockT = k.invulnT = 0;
     k.bulwarkT = k.rallyT = k.bloodletT = k.bleedT = k.hotT = 0;
     k.holdT = k.halfT = k.hasteT = k.execT = k.juggerT = 0;
+    k.mordT = k.sbT = k.disarmT = k.slowT = k.steadyT = 0;
     k.bleedStacks = 0; k.bodkin = false; k.draw = 0;
     k.shieldHp = k.def.shield ? SHIELDS[k.def.shield].hp : 0;
     k.cds[0] = 0; k.cds[1] = 0;
@@ -285,7 +284,7 @@ export class Match {
     k.prevButtons = 0;
     k.wantSpawn = false;
     this.brains.get(k.id)?.reset();
-    this.emit({ t: 'spawn', k: k.id });
+    this.emit({ t: 'spawn', k: k.id, yaw: k.yaw });
   }
 
   // ------------------------------------------------------------------- damage
@@ -319,7 +318,7 @@ export class Match {
       return true;
     }
     // flinch: interrupt wind-ups unless armoured against it
-    if (!opts.noStagger && amount >= 14 && victim.bulwarkT <= 0 && victim.juggerT <= 0) {
+    if (!opts.noStagger && amount >= 14 && victim.bulwarkT <= 0 && victim.juggerT <= 0 && victim.steadyT <= 0) {
       const a = victim.act;
       const interruptible = a === Act.Windup || a === Act.Charge || a === Act.Draw || a === Act.Idle || a === Act.Recover || a === Act.Loose;
       const hyper = victim.def.hyperArmor && victim.heavy && (a === Act.Windup || a === Act.Charge);
@@ -404,11 +403,18 @@ export class Match {
       const brain = this.brains.get(k.id);
       if (brain) updateBot(this, k, brain);
     }
-    // single combat countdown: both fighters stand at their marks until it runs out
-    if (this.roundReadyT > 0 && this.phase === 'live') {
-      this.roundReadyT = Math.max(0, this.roundReadyT - DT);
-      for (const k of this.knights) { k.input = { ...k.input, mx: 0, mz: 0, buttons: 0 }; k.prevButtons = 0; }
-      if (this.roundReadyT <= 0) this.emit({ t: 'horn', team: -1, kind: 0 });
+    // single combat countdown: both fighters stand at their marks, squarely facing each other,
+    // until it runs out (and so through the muster before the first round)
+    if (this.settings.mode === 'duel' && (this.phase === 'warmup' || (this.roundReadyT > 0 && this.phase === 'live'))) {
+      if (this.phase === 'live') this.roundReadyT = Math.max(0, this.roundReadyT - DT);
+      for (const k of this.knights) {
+        const o = this.knights.find((x) => x !== k && x.alive && x.active);
+        const yaw = o ? Math.atan2(-(o.x - k.x), -(o.z - k.z)) : k.yaw;
+        k.yaw = yaw;
+        k.input = { ...k.input, yaw, pitch: 0, mx: 0, mz: 0, buttons: this.phase === 'warmup' ? k.input.buttons : 0 };
+        if (this.phase === 'live') k.prevButtons = 0;
+      }
+      if (this.phase === 'live' && this.roundReadyT <= 0) this.emit({ t: 'horn', team: -1, kind: 0 });
     }
     for (const k of this.knights) {
       if (!k.active) continue;
@@ -423,6 +429,13 @@ export class Match {
       updateKnight(this, k, DT);
     }
     this.separate();
+    // at the marks, re-aim after any nudge from the crowd or the scenery
+    if (this.settings.mode === 'duel' && (this.phase === 'warmup' || this.roundReadyT > 0)) {
+      for (const k of this.knights) {
+        const o = this.knights.find((x) => x !== k && x.alive && x.active);
+        if (o) { k.yaw = Math.atan2(-(o.x - k.x), -(o.z - k.z)); k.input = { ...k.input, yaw: k.yaw }; }
+      }
+    }
     resolveCombat(this);
     stepArrows(this, DT);
     stepVolleys(this, DT);
@@ -559,7 +572,8 @@ export class Match {
   }
 
   /** Remaining match time in seconds. */
-  get timeLeft() { if (this.settings.mode === 'duel') return this.phase === 'live' ? this.roundReadyT : 0; return this.phase === 'live' ? Math.max(0, this.settings.timeLimit - this.phaseT) : this.phase === 'warmup' ? this.settings.timeLimit : 0; }
+  /** single combat: the countdown at the marks, or (while a fallen man lies there) the pause before it */
+  get timeLeft() { if (this.settings.mode === 'duel') return this.phase === 'live' ? (this.roundReadyT > 0 ? this.roundReadyT : this.roundT) : 0; return this.phase === 'live' ? Math.max(0, this.settings.timeLimit - this.phaseT) : this.phase === 'warmup' ? this.settings.timeLimit : 0; }
 }
 
 /** Uniform grid of knights rebuilt every tick for neighbour queries. */

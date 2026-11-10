@@ -40,6 +40,8 @@ export interface HudFrame {
   timeScale: number;
   online: boolean;
   firstPerson: boolean;
+  /** the mouse is captured for fighting */
+  locked?: boolean;
 }
 
 interface DmgNum { el: HTMLElement; x: number; y: number; z: number; t: number; drift: number }
@@ -80,7 +82,7 @@ export class Hud implements HudSink {
   private notice!: HTMLElement; private noticeQ: { text: string; team: number; big: boolean }[] = []; private noticeT = 0;
   private kbanner!: HTMLElement;
   private plates: HTMLElement[] = [];
-  private roundPick!: HTMLElement; private plateLayer!: HTMLElement;
+  private plateLayer!: HTMLElement;
   private objMarkers: HTMLElement[] = [];
   private warm!: HTMLElement;
   private spec!: HTMLElement;
@@ -150,7 +152,6 @@ export class Hud implements HudSink {
     this.kbanner = h('killbanner', '<div class="k1"></div><div class="k2"></div><div class="k3"></div>');
     this.plateLayer = h('');
     this.warm = h('warmup hidden', '<div class="w1"></div><div class="w2"></div>');
-    this.roundPick = h('roundpick hidden');
     this.spec = h('spectate-bar panel hidden');
     this.chatBox = h('chat');
     this.chatLog = h('');
@@ -164,7 +165,7 @@ export class Hud implements HudSink {
       if (e.key === 'Escape') this.closeChat();
     });
     this.chatBox.append(this.chatLog, this.chatIn);
-    R.append(this.splatLayer, this.plateLayer, this.mapWrap, this.score, this.feed, this.vitals, this.abil, this.dirWrap, this.cross, this.hitmark, this.skull, this.ctext, this.dmgLayer, this.notice, this.kbanner, this.warm, this.roundPick, this.spec, this.chatBox);
+    R.append(this.splatLayer, this.plateLayer, this.mapWrap, this.score, this.feed, this.vitals, this.abil, this.dirWrap, this.cross, this.hitmark, this.skull, this.ctext, this.dmgLayer, this.notice, this.kbanner, this.warm, this.spec, this.chatBox);
     // overlays live in #ui so they can take the mouse
     const ui = this.root.parentElement!;
     this.board = h('overlay hidden', '<div class="board parchment"></div>');
@@ -336,7 +337,7 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>9</kbd> <kbd>0</kbd> <kbd>-</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
+      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>+<kbd>1</kbd>–<kbd>6</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
     this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c) || classLocked(c)) return; this.setLoadout(c); this.host.selectClass(c); });
@@ -363,25 +364,10 @@ export class Hud implements HudSink {
     };
   }
 
-  /** Single combat, between rounds or at the marks: choose the order for the next round. */
-  get roundPickOpen() { return !this.roundPick.classList.contains('hidden'); }
-  private updateRoundPick(s: SessionView, me: KnightState | null) {
-    const foe = me ? s.knights.find((k) => k.team !== me.team) : null;
-    const open = s.settings.mode === 'duel' && s.phase === 'live' && !!me && me.alive && !this.deathOpen && (s.timeLeft > 0 || (!!foe && !foe.alive));
-    this.roundPick.classList.toggle('hidden', !open);
-    if (!open || !me) return;
-    const key = `${me.nextCls}:${s.timeLeft > 0 ? 1 : 0}`;
-    if (this.roundPick.dataset.k === key) return;
-    this.roundPick.dataset.k = key;
-    const items = CLASS_IDS.map((c, i) => ({ c, i })).filter(({ c }) => !classLocked(c));
-    this.roundPick.innerHTML = `<div class="rp-title">${s.timeLeft > 0 ? 'Your knight for this round' : 'Your knight for the next round'}</div><div class="rp-row">${items.map(({ c, i }) =>
-      `<div class="rp ${c === me.nextCls ? 'on' : ''}" title="${esc(CLASSES[c].name)}">${icon(c)}<kbd>${classKeyLabel(i)}</kbd></div>`).join('')}</div><div class="rp-name">${esc(CLASSES[me.nextCls].name)} <span>· number keys or the mouse wheel</span></div>`;
-  }
-
   /** Keyboard shortcuts on the death screen; returns true if consumed. */
-  deathKey(code: string): boolean {
+  deathKey(code: string, shift = false): boolean {
     if (this.death.classList.contains('hidden')) return false;
-    const c = classForKey(code);
+    const c = classForKey(code, shift);
     if (c) { if (!this.spent.has(c) && !classLocked(c)) { this.setLoadout(c); this.host.selectClass(c); } return true; }
     if (code === 'Space' || code === 'Enter') { if (!this.respawnBtn.disabled) this.host.respawn(this.deathCls); return true; }
     return false;
@@ -502,14 +488,13 @@ export class Hud implements HudSink {
         w1.textContent = 'The hosts are mustering';
         w2.textContent = String(Math.max(1, Math.ceil(6 - s.phaseT)));
       }
-    } else if (s.settings.mode === 'duel' && s.phase === 'live' && s.timeLeft > 0) {
+    } else if (s.settings.mode === 'duel' && s.phase === 'live' && s.timeLeft > 0 && s.knights.every((k) => k.alive)) {
       // single combat: the count at the marks before each round
       this.warm.classList.remove('hidden');
       const [w1, w2] = Array.from(this.warm.children) as HTMLElement[];
       w1.textContent = `Round ${s.teams[0].tickets + s.teams[1].tickets + 1} · to your marks`;
-      w2.textContent = String(Math.max(1, Math.ceil(s.timeLeft)));
+      w2.innerHTML = String(Math.max(1, Math.ceil(s.timeLeft))) + (f.locked === false ? '<br><span style="font-size:15px;letter-spacing:.12em;font-family:var(--caps)">Click to take up your weapon</span>' : '');
     } else this.warm.classList.add('hidden');
-    this.updateRoundPick(s, me);
     // spectator bar
     if (f.spectating || (me && !me.alive && !this.deathOpen && this.deadSince >= 0 && me.respawnT > 900)) {
       this.spec.classList.remove('hidden');
@@ -517,20 +502,26 @@ export class Hud implements HudSink {
       const html = `<div class="who">${who}</div><div class="keys"><kbd>1</kbd> director <kbd>2</kbd> follow <kbd>3</kbd> free <kbd>←</kbd><kbd>→</kbd> knight <kbd>-</kbd><kbd>+</kbd> pace ×${f.timeScale.toFixed(2).replace(/\.?0+$/, '')}${s.paused ? ' · paused' : ''} <kbd>P</kbd> pause <kbd>Tab</kbd> roll <kbd>Esc</kbd> menu</div>`;
       if (this.spec.dataset.h !== html) { this.spec.innerHTML = html; this.spec.dataset.h = html; }
     } else this.spec.classList.add('hidden');
-    // death screen
-    if (me && !me.alive && s.phase !== 'ended' && !f.spectating) {
+    // death screen; in single combat the same knight menu opens after every round, won or lost
+    const duel = s.settings.mode === 'duel';
+    const foe = duel && me ? s.knights.find((k) => k.team !== me.team) : undefined;
+    const interlude = duel && s.phase === 'live' && !!me && !!foe && (!me.alive || !foe.alive);
+    if (me && (!me.alive || interlude) && s.phase !== 'ended' && !f.spectating) {
       if (this.deadSince < 0) this.deadSince = this.time;
-      const canRespawn = me.respawnT < 900;
-      if (this.time - this.deadSince > 1.6 && canRespawn && this.death.classList.contains('hidden')) {
-        (this.death.querySelector('.by') as HTMLElement).innerHTML = this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
+      const canRespawn = me.respawnT < 900 || duel;
+      if ((duel || this.time - this.deadSince > 1.6) && canRespawn && this.death.classList.contains('hidden')) {
+        const round = s.teams[0].tickets + s.teams[1].tickets + 2;
+        (this.death.querySelector('h1') as HTMLElement).textContent = duel ? (me.alive ? 'The Round Is Yours' : 'Thou Art Bested') : 'Thou Art Slain';
+        (this.death.querySelector('.by') as HTMLElement).innerHTML = duel ? `Choose your knight for round ${round}` : this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
+        this.respawnBtn.style.display = duel ? 'none' : '';
         this.renderSpawnPick(me.team);
         this.death.classList.remove('hidden');
         this.deathShownAt = this.time;
       }
       if (!this.death.classList.contains('hidden')) {
-        const t = Math.max(0, me.respawnT);
+        const t = Math.max(0, duel ? s.timeLeft : me.respawnT);
         this.respawnBtn.disabled = t > 0;
-        this.respawnTimer.textContent = s.settings.mode === 'duel' ? (t > 0 ? `The next round begins in ${Math.ceil(t)}` : 'To your marks') : t > 0 ? `Reinforcements muster in ${Math.ceil(t)}` : 'The line awaits you';
+        this.respawnTimer.textContent = duel ? (t > 0 ? `The next round begins in ${Math.ceil(t)}` : 'To your marks') : t > 0 ? `Reinforcements muster in ${Math.ceil(t)}` : 'The line awaits you';
       }
     } else {
       if (!this.death.classList.contains('hidden')) this.death.classList.add('hidden');
@@ -601,6 +592,11 @@ export class Hud implements HudSink {
     if (me.buffs & 4) b.push('<span class="buff">War cry</span>');
     if (me.buffs & 8) b.push('<span class="buff">Executioner</span>');
     if (me.buffs & 16) b.push('<span class="buff">Juggernaut</span>');
+    if (me.buffs & 32) b.push('<span class="buff">Murder stroke</span>');
+    if (me.buffs & 64) b.push('<span class="buff">Shield-breaker</span>');
+    if (me.debuffs & 4) b.push('<span class="buff">Blessed</span>');
+    if (me.debuffs & 1) b.push('<span class="buff bad">Disarmed</span>');
+    if (me.debuffs & 2) b.push('<span class="buff bad">Lamed</span>');
     if (me.shieldBroken && hasShield) b.push('<span class="buff bad">Shield broken</span>');
     if (me.bleedStacks > 0) b.push(`<span class="buff bad">Bleeding${me.bleedStacks > 1 ? ' ×' + me.bleedStacks : ''}</span>`);
     const bh = b.join('');

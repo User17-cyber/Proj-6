@@ -11,7 +11,7 @@ import type { Match } from '../sim/match';
 import type { Knight } from '../sim/knight';
 import { wrapAngle } from '../math';
 
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 export const SNAP_EVERY = 3; // ticks between snapshots (60 / 3 = 20 Hz)
 export const MSG_SNAPSHOT = 1;
 export const MSG_INPUT = 2;
@@ -56,8 +56,10 @@ export interface SnapKnight {
 export interface SnapYou {
   id: number; stamina: number; cd0: number; cd1: number; rallyT: number; bloodletT: number; spawnProt: number;
   bleedStacks: number; bodkin: boolean; respawnT: number; nextCls: number;
-  /** the renowned orders' buffs: 1 hold the line, 2 half-sword, 4 haste, 8 executioner, 16 juggernaut */
+  /** buffs: 1 hold the line, 2 half-sword, 4 haste, 8 executioner, 16 juggernaut, 32 murder stroke, 64 shield-breaker */
   buffs: number;
+  /** afflictions: 1 disarmed, 2 lamed, 4 steadied (a blessing) */
+  debuffs: number;
   /** shield durability left, 0..1 */
   shield: number;
 }
@@ -129,7 +131,7 @@ export class SnapshotWriter {
 
   /** Full message for one client. */
   build(tick: number, ack: number, you: Knight | null): ArrayBuffer {
-    const youLen = you ? 1 + 1 + 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 : 1;
+    const youLen = you ? 1 + 1 + 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 + 1 : 1;
     const total = 1 + 4 + 4 + this.head.length + youLen + this.knightsBytes.length;
     const out = new ArrayBuffer(total);
     const dv = new DataView(out);
@@ -153,6 +155,7 @@ export class SnapshotWriter {
       dv.setUint16(o, isFinite(you.respawnT) ? q(Math.max(0, you.respawnT), 10, 0, 65534) : 65535, true); o += 2;
       dv.setUint8(o, CLASS_IDS.indexOf(you.nextCls)); o += 1;
       dv.setUint8(o, you.def.shield ? q(you.shieldHp / SHIELDS[you.def.shield].hp, 255, 0, 255) : 0); o += 1;
+      dv.setUint8(o, debuffBits(you)); o += 1;
     } else { dv.setUint8(o, 0); o += 1; }
     bytes.set(this.knightsBytes, o);
     return out;
@@ -178,8 +181,9 @@ export function decodeSnapshot(buf: ArrayBuffer): Snapshot {
   if (u8() === 1) {
     const id = u8(), stamina = u8() / 255, cd0 = u16() / 100, cd1 = u16() / 100, rallyT = u8() / 10, bloodletT = u8() / 10, spawnProt = u8() / 10, bleedStacks = u8(), bb = u8(), bodkin = (bb & 1) === 1, buffs = bb >> 1;
     const rr = u16();
-    you = { id, stamina, cd0, cd1, rallyT, bloodletT, spawnProt, bleedStacks, bodkin, respawnT: rr === 65535 ? NEVER : rr / 10, nextCls: u8(), shield: 0, buffs };
+    you = { id, stamina, cd0, cd1, rallyT, bloodletT, spawnProt, bleedStacks, bodkin, respawnT: rr === 65535 ? NEVER : rr / 10, nextCls: u8(), shield: 0, buffs, debuffs: 0 };
     you.shield = u8() / 255;
+    you.debuffs = u8();
   }
   const n = u8();
   const knights: SnapKnight[] = [];
@@ -248,5 +252,9 @@ export function compactEvent(e: SimEvent, tk: number): SimEvent & { tk: number }
 
 /** The renowned orders' buffs as bits (see SnapYou.buffs). */
 export function buffBits(k: Knight): number {
-  return (k.holdT > 0 ? 1 : 0) | (k.halfT > 0 ? 2 : 0) | (k.hasteT > 0 ? 4 : 0) | (k.execT > 0 ? 8 : 0) | (k.juggerT > 0 ? 16 : 0);
+  return (k.holdT > 0 ? 1 : 0) | (k.halfT > 0 ? 2 : 0) | (k.hasteT > 0 ? 4 : 0) | (k.execT > 0 ? 8 : 0) | (k.juggerT > 0 ? 16 : 0) | (k.mordT > 0 ? 32 : 0) | (k.sbT > 0 ? 64 : 0);
+}
+/** Afflictions as bits (see SnapYou.debuffs). */
+export function debuffBits(k: Knight): number {
+  return (k.disarmT > 0 ? 1 : 0) | (k.slowT > 0 ? 2 : 0) | (k.steadyT > 0 ? 4 : 0);
 }

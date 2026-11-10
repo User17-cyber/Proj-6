@@ -176,11 +176,14 @@ function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px
     let cost = (k.heavy ? 26 : a.kind === 'thrust' ? 11 : 14) * v.blockStamina * (a.damage / 50);
     if (parry) cost *= 0.25;
     const shield = !!v.shield;
-    const broke = !parry && v.stamina < cost;
+    // Shield-Breaker: the blow smashes straight through the guard
+    const smash = k.sbT > 0;
+    if (smash) k.sbT = 0;
+    const broke = smash || (!parry && v.stamina < cost);
     spend(v, cost);
     m.emit({ t: 'block', a: k.id, v: v.id, x: px, y: py, z: pz, parry, shield, broke });
     // the shield takes the blow: maces and axes splinter it fastest, a parry barely marks it
-    if (shield && wearShield(m, v, k.id, dmg * (a.dtype === 1 ? 1.35 : a.dtype === 2 ? 0.8 : 1) * (k.heavy ? 1.3 : 1) * (parry ? 0.3 : 1), px, py, pz)) {
+    if (shield && wearShield(m, v, k.id, dmg * (a.dtype === 1 ? 1.35 : a.dtype === 2 ? 0.8 : 1) * (k.heavy ? 1.3 : 1) * (parry ? 0.3 : 1) * (smash ? 4 : 1), px, py, pz)) {
       k.act = Act.Recover; k.actT = 0; k.actDur = a.recover * attackSpeed(k);
       return;
     }
@@ -200,12 +203,17 @@ function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px
   // at the half-sword the point is guided into the gaps of the harness
   const half = k.halfT > 0 && a.kind === 'thrust';
   if (half) dmg *= 1.3;
-  dmg *= ZONE_MULT[zone][a.dtype] * (1 - v.def.armor[a.dtype] * (half ? 0.3 : 1));
+  // Murder Stroke: the sword reversed, the cross and pommel crush rather than cut
+  const mord = k.mordT > 0;
+  if (mord) { k.mordT = 0; dmg *= 1.15; }
+  const dtype = mord ? 1 : a.dtype;
+  dmg *= ZONE_MULT[zone][dtype] * (1 - v.def.armor[dtype] * (half ? 0.3 : mord ? 0.3 : 1));
   const l = Math.hypot(sdx, sdy, sdz) || 1;
-  const died = m.damage(v, k, dmg, { zone, dtype: a.dtype, kind: 0, heavy: k.heavy, x: px, y: py, z: pz, dx: sdx / l, dy: sdy / l, dz: sdz / l });
+  const died = m.damage(v, k, dmg, { zone, dtype, kind: 0, heavy: k.heavy, x: px, y: py, z: pz, dx: sdx / l, dy: sdy / l, dz: sdz / l });
   if (!died && v.alive) {
     if (k.bloodletT > 0 && a.dtype === 0) applyBleed(v, k);
     if (zone === 0 && a.dtype === 1 && k.heavy && v.bulwarkT <= 0) stun(m, v, 0.7);
+    if (mord) stun(m, v, 1.0);
     v.pushX += (sdx / l) * 1.2; v.pushZ += (sdz / l) * 1.2;
   }
   if (k.hitList.length >= a.maxTargets) {

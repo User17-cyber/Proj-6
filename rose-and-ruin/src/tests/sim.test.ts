@@ -270,24 +270,27 @@ if (!only) {
   m.damage(foe, me, 9999, { zone: 1, dtype: 0, kind: 0, x: foe.x, y: foe.y + 1, z: foe.z, dx: 0, dy: 0, dz: 1 });
   m.requestSpawn(me.id, 'vanguard');
   let counted = false, still = true;
-  for (let i = 0; i < 60 * 6 && !counted; i++) { m.step(); m.events.length = 0; if (m.roundReadyT > 0) counted = true; }
+  for (let i = 0; i < 60 * 9 && !counted; i++) { m.step(); m.events.length = 0; if (m.roundReadyT > 0) counted = true; }
   if (!counted) fail('no countdown before round two');
   if (me.cls !== 'vanguard') fail(`order chosen between rounds not used (fighting as ${me.cls})`);
-  // during the count: pushing forward and attacking does nothing; a change of order applies at once
-  m.requestSpawn(me.id, 'errant');
-  if (me.cls !== 'errant') fail('order changed at the marks did not take effect at once');
+  // during the count: pushing forward, turning and attacking do nothing
   m.step(); m.events.length = 0;
+  // both fighters stand squarely facing each other at the marks
+  const face = Math.atan2(-(foe.x - me.x), -(foe.z - me.z));
+  if (Math.abs(Math.atan2(Math.sin(me.yaw - face), Math.cos(me.yaw - face))) > 0.02) fail(`player not facing the foe at the marks (off by ${(me.yaw - face).toFixed(2)} rad)`);
   const x0 = me.x, z0 = me.z;
   while (m.roundReadyT > 0) {
-    me.input = { ...me.input, mz: 1, buttons: Btn.Attack };
+    // the player tries to turn away and charge in early: he is held, facing his foe
+    me.input = { ...me.input, mz: 1, buttons: Btn.Attack, yaw: face + 1.5 };
     m.step(); m.events.length = 0;
     if (me.act === Act.Windup || Math.hypot(me.x - x0, me.z - z0) > 0.3) still = false;
   }
   if (!still) fail('a fighter moved or struck during the countdown');
+  if (Math.abs(Math.atan2(Math.sin(me.yaw - face), Math.cos(me.yaw - face))) > 0.05) fail('the player was turned away from his foe when the round began');
   let moved = false;
   for (let i = 0; i < 60; i++) { me.input = { ...me.input, mz: 1, buttons: 0 }; m.step(); m.events.length = 0; if (Math.hypot(me.x - x0, me.z - z0) > 0.5) moved = true; }
   if (!moved) fail('fighters still held after the countdown');
-  console.log(`duel rounds: countdown held both still; fought round two as ${me.cls}`);
+  console.log(`duel rounds: countdown held both still and facing; fought round two as ${me.cls}`);
 }
 // single combat: one knight a side on the duelling ground, first to three rounds
 for (const def of MAPS) {

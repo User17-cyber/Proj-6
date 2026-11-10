@@ -11,7 +11,7 @@ import { KnightRenderer } from '../knights/knightRenderer';
 import type { WorldView } from '../render/world';
 
 /** a fixed, well-groomed face for each order in the armoury */
-const CLASSES_SEED: Record<ClassId, number> = { manatarms: 11, vanguard: 4, halberdier: 23, banneret: 9, longbowman: 31, errant: 17, pavisier: 26, bachelor: 14, yeoman: 19, marshal: 8, champion: 3 };
+const CLASSES_SEED: Record<ClassId, number> = { manatarms: 11, vanguard: 4, halberdier: 23, banneret: 9, longbowman: 31, errant: 17, pavisier: 26, bachelor: 14, yeoman: 19, marshal: 8, champion: 3, master: 12, brigand: 27, chaplain: 6, pikeman: 21, gallowglass: 15 };
 
 interface Step { act: Act; dur: number; atk?: number; heavy?: boolean; slot?: number }
 

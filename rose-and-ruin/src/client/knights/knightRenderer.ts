@@ -76,6 +76,11 @@ const BODY_SURF: Record<ClassId, [string, string, string, string, string]> = {
   pavisier: ['mail', 'mail', 'hoseLivery', 'skin', 'skin'],
   bachelor: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
   yeoman: ['mail', 'mail', 'hoseLivery', 'skin', 'skin'],
+  master: ['doublet', 'doublet', 'hoseLivery', 'skin', 'skin'],
+  brigand: ['quilt', 'mail', 'hose', 'skin', 'skin'],
+  chaplain: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
+  pikeman: ['quilt', 'doublet', 'hoseLivery', 'skin', 'skin'],
+  gallowglass: ['mail', 'mail', 'hose', 'skin', 'skin'],
   marshal: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
   champion: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
 };

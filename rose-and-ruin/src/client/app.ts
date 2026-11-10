@@ -469,7 +469,11 @@ export class App implements HudHost, MenuHost {
     this.session?.requestSpawn(cls);
     this.ui('tick');
   }
-  selectClass(cls: ClassId) { this.loadout.cls = cls; }
+  selectClass(cls: ClassId) {
+    this.loadout.cls = cls;
+    // single combat: the choice in the menu is the knight for the next round
+    if (this.session?.settings.mode === 'duel') this.pickRoundClass(cls);
+  }
   resume() {
     this.hud.showPause(false);
     if (this.session && !this.session.online) this.session.paused = false;
@@ -570,17 +574,12 @@ export class App implements HudHost, MenuHost {
     const tab = I.keys.has('Tab');
     if (tab !== this.boardHeld) { this.boardHeld = tab; this.hud.showBoard(tab); }
     // death screen choices
-    // single combat: between rounds the number keys always choose the next round's knight (there
-    // is no fighting to do then), and the mouse wheel cycles through them
-    if (this.hud.roundPickOpen && me) {
-      for (const code of CLASS_KEY_CODES) if (I.consumeKey(code)) { const c = classForKey(code); if (c) this.pickRoundClass(c); }
-      if (I.wheel !== 0) {
-        const open = CLASS_IDS.filter((c) => !classLocked(c));
-        const i = open.indexOf(me.nextCls);
-        this.pickRoundClass(open[(i + (I.wheel > 0 ? 1 : -1) + open.length) % open.length]);
-      }
-    }
-    if (this.hud.deathOpen) for (const code of [...CLASS_KEY_CODES, 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
+    // single combat: at the marks the camera and aim are turned squarely on the foe
+    if (s.settings.mode === 'duel' && me && me.alive && (s.phase === 'warmup' || (s.timeLeft > 0 && s.knights.every((k) => k.alive)))) { I.yaw = me.yaw; I.pitch = 0; }
+    // the knight menu (death screen, or single combat between rounds): number keys pick an order
+    // (1-0, then Shift+1-6), Space or Enter rejoins
+    const shift = I.keys.has('ShiftLeft') || I.keys.has('ShiftRight');
+    if (this.hud.deathOpen) for (const code of [...CLASS_KEY_CODES, 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code, shift) && (code === 'Space' || code === 'Enter') && s.settings.mode !== 'duel') { this.input.enabled = true; this.input.requestLock(); } }
     if (s.online && !this.hud.chatting && I.consumeKey(this.prefs.bindings.chat)) { this.hud.openChat(); this.input.enabled = false; }
     if (I.consumeAction('camera', this.prefs.bindings.camera) && me) {
       this.firstPerson = !this.firstPerson;
@@ -716,7 +715,7 @@ export class App implements HudHost, MenuHost {
         heading: this.spectating || !me || !me.alive ? this.camHeading() : this.input.yaw,
         viewX: me && me.alive && !this.spectating ? me.x : watched && this.specCam === 'follow' ? watched.x : this.r.camera.position.x,
         viewZ: me && me.alive && !this.spectating ? me.z : watched && this.specCam === 'follow' ? watched.z : this.r.camera.position.z,
-        timeScale: this.baseScale, online: s.online, firstPerson: this.firstPerson,
+        timeScale: this.baseScale, online: s.online, firstPerson: this.firstPerson, locked: this.input.locked,
       };
       this.hud.update(dt, hf);
       // the death and end screens need the mouse
@@ -755,7 +754,8 @@ export class App implements HudHost, MenuHost {
         case 'spawn':
           if (e.k === me) {
             const k = s.knights[me];
-            if (k) { this.input.yaw = k.yaw; this.input.pitch = 0; }
+            // face the way the knight was set down (the sim's view may already hold the old aim)
+            if (k) { this.input.yaw = e.yaw ?? k.yaw; this.input.pitch = 0; }
             this.rig.mode = this.firstPerson ? 'first' : 'third';
             this.killerId = -1;
             this.deathAt = -1;

@@ -16,7 +16,7 @@ export const DMG_CUT = 0, DMG_BLUNT = 1, DMG_PIERCE = 2;
 export const DMG_NAMES = ['cut', 'blunt', 'pierce'] as const;
 
 type BaseWeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
-export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe';
+export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth';
 
 export interface AttackDef {
   name: string;
@@ -60,7 +60,7 @@ export interface WeaponDef {
   blockStamina: number; // multiplier on stamina lost when blocking
   parryWindow: number; // seconds after raising the guard that count as a parry
   /** visual weapon kind for the renderer */
-  visual: 'sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'bow' | 'falchion' | 'spear' | 'mace' | 'bill' | 'bastard' | 'greataxe';
+  visual: 'sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'bow' | 'falchion' | 'spear' | 'mace' | 'bill' | 'bastard' | 'greataxe' | 'waraxe' | 'pike';
 }
 
 const A = (o: Omit<AttackDef, 'maxTargets' | 'moveMult' | 'lunge'> & Partial<AttackDef>): AttackDef => ({
@@ -323,6 +323,31 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     id: 'greataxe', name: 'Great Axe', visual: 'greataxe', time: 1.0, dmg: 1.18, dtype: 0,
     blurb: 'A broad bearded axe on a long haft, gilded for a champion. Each blow can end a man.',
     hitStart: 1.0, hitEnd: 1.52,
+  }),
+  // the fencing master's longsword: lighter and quicker than the marshal's, a generous parry
+  longsword: derive(BASE.greatsword, {
+    id: 'longsword', name: 'Longsword', visual: 'bastard', time: 0.8, dmg: 0.9,
+    blurb: 'A plain, keen longsword in the hands of a master of the art: quick, precise, and always on guard.',
+    hitStart: 0.14, hitEnd: 1.2, blockArc: 145, blockStamina: 0.75, parryWindow: 0.24,
+  }),
+  // a one-handed bearded war axe: the mace's moves, cutting
+  waraxe: derive(BASE.mace, {
+    id: 'waraxe', name: 'War Axe', visual: 'waraxe', time: 0.88, dmg: 1.02, dtype: 0,
+    blurb: 'A short bearded axe, quick and brutal, carried by men who fight dirty.',
+    hitStart: 0.44, hitEnd: 0.66, blockArc: 115, blockStamina: 0.95,
+  }),
+  // the pike: an ash shaft of five metres, held in both hands; every blow is a thrust
+  pike: derive(BASE.spear, {
+    id: 'pike', name: 'Pike', visual: 'pike', time: 1.08, dmg: 1.05,
+    blurb: 'Eighteen feet of ash with a steel head. Nobody reaches a pikeman with a sword before the point reaches him.',
+    // the upper shaft and langets wound too, so a foe who slips inside the point is not safe
+    hitStart: 1.1, hitEnd: 2.95, blockArc: 110, blockStamina: 1.0, parryWindow: 0.16,
+  }),
+  // the gallowglass's sparth: a long-hafted broad axe, swung in great two-handed blows
+  sparth: derive(BASE.poleaxe, {
+    id: 'sparth', name: 'Sparth Axe', visual: 'greataxe', time: 0.95, dmg: 1.1, dtype: 0,
+    blurb: 'The long broad axe of the Irish gallowglass, swung two-handed in blows that shear through mail.',
+    hitStart: 1.0, hitEnd: 1.5,
   }),
 };
 

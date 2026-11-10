@@ -488,6 +488,16 @@ function tryBotAbility(m: Match, k: Knight, b: BotBrain, t: Knight, dist: number
       case 'halfsword': use = dist < 4 && t.def.armor[0] >= 0.3; break;
       case 'warcry': use = countEnemies(m, k, 6.5) >= 2 || (dist < 3 && t.act === Act.Windup && b.rng.chance(0.4)); break;
       case 'execute': use = dist < 4 && t.hp < t.def.hp * 0.75; break;
+      case 'murderstroke': use = dist < 3.2 && t.def.armor[0] >= 0.3; break;
+      case 'disarm': use = dist < 2.4 && !t.shield && (t.act === Act.Windup || t.act === Act.Block || b.rng.chance(0.25)); break;
+      case 'throw': use = dist < 1.7 && b.rng.chance(0.5); break;
+      case 'misericorde': use = dist < 2.2 && (t.knockT > 0 || t.stunT > 0 || b.rng.chance(0.1)); break;
+      case 'bindwounds': use = k.hp < k.def.hp * 0.6 || k.bleedStacks > 0; break;
+      case 'benediction': use = countEnemies(m, k, 8) >= 2 || k.stamina < 40; break;
+      case 'brace': use = dist > 3.2 && dist < 8 && (t.act === Act.Ability || Math.hypot(t.vx, t.vz) > 3) && b.rng.chance(0.5); break;
+      case 'pushofpike': use = dist > 1.4 && dist < 3.4 && (countEnemies(m, k, 3.6) >= 2 || b.rng.chance(0.25)); break;
+      case 'hamstring': use = dist < 2.5 && t.slowT <= 0 && b.rng.chance(0.4); break;
+      case 'shieldbreaker': use = dist < 4 && (!!t.shield || t.act === Act.Block); break;
       case 'juggernaut': use = countEnemies(m, k, 8) >= 3 || (t.def.ranged && dist > 3 && dist < 22) || (dist > 3 && dist < 9 && b.rng.chance(0.15)); break;
       default: break;
     }
