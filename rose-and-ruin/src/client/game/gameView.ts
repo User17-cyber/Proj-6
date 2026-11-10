@@ -287,8 +287,7 @@ export class GameView {
             const mine = me && me.team === e.winner;
             this.hud?.notify(`${mine ? 'You take' : `${won.name} takes`} the round · ${e.score0}–${e.score1}`, e.winner, true);
           }
-          this.hud?.notify(`Round ${e.n} · fight!`, -1, true);
-          A.play('hornShort', { bus: 'ui', vol: 0.5, rateVar: 0 });
+          this.hud?.notify(`Round ${e.n}`, -1, true);
           break;
         }
         case 'shieldBreak': {
@@ -315,7 +314,10 @@ export class GameView {
           break;
         }
         case 'horn':
-          if (e.kind === 0) { A.play('horn', { bus: 'ui', vol: 0.75, rateVar: 0 }); this.hud?.notify('To arms! The battle is joined', -1, true); }
+          if (e.kind === 0) {
+            A.play('horn', { bus: 'ui', vol: 0.75, rateVar: 0 });
+            this.hud?.notify(this.s.settings.mode === 'duel' ? 'Fight!' : 'To arms! The battle is joined', -1, true);
+          }
           break;
         case 'streak': {
           if (e.k === localId) {

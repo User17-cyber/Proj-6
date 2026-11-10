@@ -15,8 +15,8 @@ import { CameraRig, type FocusKnight } from './camera';
 import { Hud, type HudHost, type HudFrame } from './ui/hud';
 import { Menus, type MenuHost, type MpState } from './ui/menus';
 import { ClassPreview } from './ui/preview';
-import { CLASS_KEY_CODES, classLocked, setRenown } from './ui/classInfo';
-import { UNLOCK_ORDER } from '../shared/data/classes';
+import { CLASS_KEY_CODES, classForKey, classLocked, setRenown } from './ui/classInfo';
+import { UNLOCK_ORDER, CLASS_IDS } from '../shared/data/classes';
 import { lockedClasses, nextUnlock, FINISH_BOUNTY, VICTORY_BOUNTY } from './progress';
 import { loadPrefs, syncGore, savePrefs, type Prefs } from './prefs';
 import { Act, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
@@ -460,6 +460,15 @@ export class App implements HudHost, MenuHost {
     savePrefs(this.prefs);
     this.ui('tick');
   }
+  /** Single combat: the order to fight the next round as (or this one, while still at the marks). */
+  private pickRoundClass(cls: ClassId) {
+    if (classLocked(cls)) return;
+    this.loadout.cls = cls;
+    this.prefs.lastClass = cls;
+    savePrefs(this.prefs);
+    this.session?.requestSpawn(cls);
+    this.ui('tick');
+  }
   selectClass(cls: ClassId) { this.loadout.cls = cls; }
   resume() {
     this.hud.showPause(false);
@@ -561,6 +570,17 @@ export class App implements HudHost, MenuHost {
     const tab = I.keys.has('Tab');
     if (tab !== this.boardHeld) { this.boardHeld = tab; this.hud.showBoard(tab); }
     // death screen choices
+    // single combat: choose the next round's knight with the number keys (those not bound to an
+    // action) or the mouse wheel
+    if (this.hud.roundPickOpen && me) {
+      const bound = new Set<string>([...Object.values(this.prefs.bindings), ...this.prefs.customBinds.map((c) => c.code)]);
+      for (const code of CLASS_KEY_CODES) if (!bound.has(code) && I.consumeKey(code)) { const c = classForKey(code); if (c) this.pickRoundClass(c); }
+      if (I.wheel !== 0) {
+        const open = CLASS_IDS.filter((c) => !classLocked(c));
+        const i = open.indexOf(me.nextCls);
+        this.pickRoundClass(open[(i + (I.wheel > 0 ? 1 : -1) + open.length) % open.length]);
+      }
+    }
     if (this.hud.deathOpen) for (const code of [...CLASS_KEY_CODES, 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code) && (code === 'Space' || code === 'Enter')) { this.input.enabled = true; this.input.requestLock(); } }
     if (s.online && !this.hud.chatting && I.consumeKey(this.prefs.bindings.chat)) { this.hud.openChat(); this.input.enabled = false; }
     if (I.consumeAction('camera', this.prefs.bindings.camera) && me) {

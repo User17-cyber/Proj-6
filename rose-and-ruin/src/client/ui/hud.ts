@@ -11,7 +11,7 @@ import { CLASSES, ABILITIES, CLASS_IDS, type ClassId } from '../../shared/data/c
 import { icon, crestSvg, objectiveSvg } from './icons';
 import { TEAM_CSS, TEAM_CSS_LIGHT, roseDataUrl } from '../render/heraldry';
 import { Minimap } from './minimap';
-import { classDetailHtml, classList, esc, keyLabel, classForKey, classLocked } from './classInfo';
+import { classDetailHtml, classList, esc, keyLabel, classForKey, classLocked, classKeyLabel } from './classInfo';
 import type { Prefs } from '../prefs';
 
 export interface HudHost {
@@ -79,7 +79,8 @@ export class Hud implements HudSink {
   private mapWrap!: HTMLElement;
   private notice!: HTMLElement; private noticeQ: { text: string; team: number; big: boolean }[] = []; private noticeT = 0;
   private kbanner!: HTMLElement;
-  private plates: HTMLElement[] = []; private plateLayer!: HTMLElement;
+  private plates: HTMLElement[] = [];
+  private roundPick!: HTMLElement; private plateLayer!: HTMLElement;
   private objMarkers: HTMLElement[] = [];
   private warm!: HTMLElement;
   private spec!: HTMLElement;
@@ -149,6 +150,7 @@ export class Hud implements HudSink {
     this.kbanner = h('killbanner', '<div class="k1"></div><div class="k2"></div><div class="k3"></div>');
     this.plateLayer = h('');
     this.warm = h('warmup hidden', '<div class="w1"></div><div class="w2"></div>');
+    this.roundPick = h('roundpick hidden');
     this.spec = h('spectate-bar panel hidden');
     this.chatBox = h('chat');
     this.chatLog = h('');
@@ -162,7 +164,7 @@ export class Hud implements HudSink {
       if (e.key === 'Escape') this.closeChat();
     });
     this.chatBox.append(this.chatLog, this.chatIn);
-    R.append(this.splatLayer, this.plateLayer, this.mapWrap, this.score, this.feed, this.vitals, this.abil, this.dirWrap, this.cross, this.hitmark, this.skull, this.ctext, this.dmgLayer, this.notice, this.kbanner, this.warm, this.spec, this.chatBox);
+    R.append(this.splatLayer, this.plateLayer, this.mapWrap, this.score, this.feed, this.vitals, this.abil, this.dirWrap, this.cross, this.hitmark, this.skull, this.ctext, this.dmgLayer, this.notice, this.kbanner, this.warm, this.roundPick, this.spec, this.chatBox);
     // overlays live in #ui so they can take the mouse
     const ui = this.root.parentElement!;
     this.board = h('overlay hidden', '<div class="board parchment"></div>');
@@ -361,6 +363,21 @@ export class Hud implements HudSink {
     };
   }
 
+  /** Single combat, between rounds or at the marks: choose the order for the next round. */
+  get roundPickOpen() { return !this.roundPick.classList.contains('hidden'); }
+  private updateRoundPick(s: SessionView, me: KnightState | null) {
+    const foe = me ? s.knights.find((k) => k.team !== me.team) : null;
+    const open = s.settings.mode === 'duel' && s.phase === 'live' && !!me && me.alive && !this.deathOpen && (s.timeLeft > 0 || (!!foe && !foe.alive));
+    this.roundPick.classList.toggle('hidden', !open);
+    if (!open || !me) return;
+    const key = `${me.nextCls}:${s.timeLeft > 0 ? 1 : 0}`;
+    if (this.roundPick.dataset.k === key) return;
+    this.roundPick.dataset.k = key;
+    const items = CLASS_IDS.map((c, i) => ({ c, i })).filter(({ c }) => !classLocked(c));
+    this.roundPick.innerHTML = `<div class="rp-title">${s.timeLeft > 0 ? 'Your knight for this round' : 'Your knight for the next round'}</div><div class="rp-row">${items.map(({ c, i }) =>
+      `<div class="rp ${c === me.nextCls ? 'on' : ''}" title="${esc(CLASSES[c].name)}">${icon(c)}<kbd>${classKeyLabel(i)}</kbd></div>`).join('')}</div><div class="rp-name">${esc(CLASSES[me.nextCls].name)} <span>· number keys or the mouse wheel</span></div>`;
+  }
+
   /** Keyboard shortcuts on the death screen; returns true if consumed. */
   deathKey(code: string): boolean {
     if (this.death.classList.contains('hidden')) return false;
@@ -485,7 +502,14 @@ export class Hud implements HudSink {
         w1.textContent = 'The hosts are mustering';
         w2.textContent = String(Math.max(1, Math.ceil(6 - s.phaseT)));
       }
+    } else if (s.settings.mode === 'duel' && s.phase === 'live' && s.timeLeft > 0) {
+      // single combat: the count at the marks before each round
+      this.warm.classList.remove('hidden');
+      const [w1, w2] = Array.from(this.warm.children) as HTMLElement[];
+      w1.textContent = `Round ${s.teams[0].tickets + s.teams[1].tickets + 1} · to your marks`;
+      w2.textContent = String(Math.max(1, Math.ceil(s.timeLeft)));
     } else this.warm.classList.add('hidden');
+    this.updateRoundPick(s, me);
     // spectator bar
     if (f.spectating || (me && !me.alive && !this.deathOpen && this.deadSince >= 0 && me.respawnT > 900)) {
       this.spec.classList.remove('hidden');

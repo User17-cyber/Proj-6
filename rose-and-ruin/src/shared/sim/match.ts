@@ -24,6 +24,8 @@ export const WARMUP_TIME = 6;
 export const END_TIME = 14;
 /** single combat: seconds between a round's deciding blow and the next round */
 export const ROUND_PAUSE = 4;
+/** single combat: the count of seconds, at the marks, before each round after the first */
+export const ROUND_COUNTDOWN = 3;
 
 export class Match {
   readonly settings: MatchSettings;
@@ -54,6 +56,8 @@ export class Match {
   round = 0;
   roundT = 0;
   roundWinner = 0;
+  /** single combat: seconds left of the countdown at the marks (both fighters held still) */
+  roundReadyT = 0;
   /** A* searches bots may still run this tick */
   aiBudget = 0;
 
@@ -172,6 +176,8 @@ export class Match {
     if (zone !== undefined) k.spawnPref = Number.isInteger(zone) && zone >= 0 && zone < this.map.spawns[k.team].length ? zone : -1;
     if (!this.classAllowed(k, cls)) return;
     k.nextCls = cls;
+    // single combat: a change of order at the marks, before the fight begins, takes effect at once
+    if (this.settings.mode === 'duel' && k.alive && this.roundReadyT > 0 && k.cls !== cls) this.spawn(k, true);
     if (!k.alive) k.wantSpawn = true;
   }
 
@@ -398,6 +404,12 @@ export class Match {
       const brain = this.brains.get(k.id);
       if (brain) updateBot(this, k, brain);
     }
+    // single combat countdown: both fighters stand at their marks until it runs out
+    if (this.roundReadyT > 0 && this.phase === 'live') {
+      this.roundReadyT = Math.max(0, this.roundReadyT - DT);
+      for (const k of this.knights) { k.input = { ...k.input, mx: 0, mz: 0, buttons: 0 }; k.prevButtons = 0; }
+      if (this.roundReadyT <= 0) this.emit({ t: 'horn', team: -1, kind: 0 });
+    }
     for (const k of this.knights) {
       if (!k.active) continue;
       if (!k.alive) {
@@ -533,6 +545,7 @@ export class Match {
       if (k.bot) k.nextCls = this.pickBotClass(k.team);
       this.spawn(k, true);
     }
+    this.roundReadyT = ROUND_COUNTDOWN;
     this.emit({ t: 'round', n: this.round, winner: w, score0: this.teams[0].tickets, score1: this.teams[1].tickets });
   }
 
@@ -546,7 +559,7 @@ export class Match {
   }
 
   /** Remaining match time in seconds. */
-  get timeLeft() { return this.phase === 'live' ? Math.max(0, this.settings.timeLimit - this.phaseT) : this.phase === 'warmup' ? this.settings.timeLimit : 0; }
+  get timeLeft() { if (this.settings.mode === 'duel') return this.phase === 'live' ? this.roundReadyT : 0; return this.phase === 'live' ? Math.max(0, this.settings.timeLimit - this.phaseT) : this.phase === 'warmup' ? this.settings.timeLimit : 0; }
 }
 
 /** Uniform grid of knights rebuilt every tick for neighbour queries. */

@@ -258,6 +258,37 @@ if (!only) {
   if (!me.alive || d > 12) fail(`chosen mustering place ignored: ${z.name} is ${d.toFixed(1)} m away`);
   console.log(`locks and mustering: locked order refused; returned at ${z.name} (${d.toFixed(1)} m from its centre); ${zones.length} places for the house`);
 }
+// single combat rounds: a countdown at the marks, and the player may change order between rounds
+{
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'duel', rounds: 5, seed: 51 }, buildMap('bodiam'));
+  const me = m.addPlayer('Tester', 1, 0, 'manatarms');
+  while (m.phase !== 'live') m.step();
+  const foe = m.knights.find((k) => k !== me)!;
+  m.brains.delete(foe.id); foe.input = { ...foe.input, buttons: 0, mx: 0, mz: 0 };
+  // win round one, then ask for another order while standing over the fallen
+  foe.spawnProt = 0; foe.invulnT = 0;
+  m.damage(foe, me, 9999, { zone: 1, dtype: 0, kind: 0, x: foe.x, y: foe.y + 1, z: foe.z, dx: 0, dy: 0, dz: 1 });
+  m.requestSpawn(me.id, 'vanguard');
+  let counted = false, still = true;
+  for (let i = 0; i < 60 * 6 && !counted; i++) { m.step(); m.events.length = 0; if (m.roundReadyT > 0) counted = true; }
+  if (!counted) fail('no countdown before round two');
+  if (me.cls !== 'vanguard') fail(`order chosen between rounds not used (fighting as ${me.cls})`);
+  // during the count: pushing forward and attacking does nothing; a change of order applies at once
+  m.requestSpawn(me.id, 'errant');
+  if (me.cls !== 'errant') fail('order changed at the marks did not take effect at once');
+  m.step(); m.events.length = 0;
+  const x0 = me.x, z0 = me.z;
+  while (m.roundReadyT > 0) {
+    me.input = { ...me.input, mz: 1, buttons: Btn.Attack };
+    m.step(); m.events.length = 0;
+    if (me.act === Act.Windup || Math.hypot(me.x - x0, me.z - z0) > 0.3) still = false;
+  }
+  if (!still) fail('a fighter moved or struck during the countdown');
+  let moved = false;
+  for (let i = 0; i < 60; i++) { me.input = { ...me.input, mz: 1, buttons: 0 }; m.step(); m.events.length = 0; if (Math.hypot(me.x - x0, me.z - z0) > 0.5) moved = true; }
+  if (!moved) fail('fighters still held after the countdown');
+  console.log(`duel rounds: countdown held both still; fought round two as ${me.cls}`);
+}
 // single combat: one knight a side on the duelling ground, first to three rounds
 for (const def of MAPS) {
   const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', teamSize: 24, rounds: 3, difficulty: 2, seed: 11 }, buildMap(def.id));
