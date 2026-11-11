@@ -9,7 +9,7 @@ import { icon } from './icons';
 import { mapArt } from './mapArt';
 import { classDetailHtml, classList, classForKey, classLocked, esc, keyLabel, setRenown } from './classInfo';
 import { nextUnlock, renownLine } from '../progress';
-import { exportCode, exportSave, importSave } from '../prefs';
+import { exportCode, importSave } from '../prefs';
 import { roseDataUrl } from '../render/heraldry';
 import { QUALITY_NAMES, type Quality } from '../render/renderer';
 import { BIND_ACTIONS, DEFAULT_BINDINGS, type BindAction, type Bindings } from '../input';
@@ -322,7 +322,7 @@ export class Menus {
           <button class="btn iron small" data-a="pastecode">Paste a save code</button>
         </div>
         <div class="save-code hidden"><textarea class="textin" rows="3" spellcheck="false" placeholder="Paste a save code (it begins RR1:)"></textarea><button class="btn small" data-a="applycode">Load this code</button></div>
-        <input type="file" accept=".json,.txt,application/json" class="save-file" hidden>
+        <input type="file" accept=".rrsave,.json,.txt" class="save-file" hidden>
       </div>
       <div class="sheet-foot"><button class="btn iron" data-a="reset">Restore defaults</button><button class="btn" data-a="close">Done</button></div>`;
     };
@@ -407,10 +407,10 @@ export class Menus {
       const a = (t.closest('[data-a]') as HTMLElement | null)?.dataset.a;
       if (a === 'close') { this.host.ui('tick'); if (overlay) wrap.remove(); onClose(); }
       if (a === 'savefile') {
-        const blob = new Blob([exportSave(p)], { type: 'application/json' });
+        const blob = new Blob([exportCode(p)], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url; link.download = `rose-and-ruin-save-${new Date().toISOString().slice(0, 10)}.json`;
+        link.href = url; link.download = `rose-and-ruin-save-${new Date().toISOString().slice(0, 10)}.rrsave`;
         document.body.appendChild(link); link.click(); link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 2000);
         this.host.ui('tick'); this.toast('Progress saved to a file. Load it into any other copy of the game.');
