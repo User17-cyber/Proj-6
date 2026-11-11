@@ -162,6 +162,9 @@ Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with o
 - **Warwick Castle**, Warwickshire, 1469: Caesar's and Guy's towers, the barbican and Ethelfleda's Mound.
 - **Conwy Castle**, North Wales, 1461: eight drum towers on a rock above the estuary, two wards and a cross wall, the walled town to the west.
 - **Kenilworth Castle**, Warwickshire, 1459: the red keep and John of Gaunt's hall on the Great Mere, reached over the tiltyard causeway.
+- **Ludlow Castle**, Shropshire, 1459: the Duke of York's seat on its cliff above the Teme, with the round chapel and Norman great tower in the inner bailey. Come over Ludford Bridge to a fresh breach, or force the gate from the town.
+- **Middleham Castle**, Wensleydale, 1469: Warwick's stronghold, where a vast Norman keep leaves only a narrow ward to fight round. The old ringwork of William's Hill stands to the south-west.
+- **Raglan Castle**, Monmouthshire, 1468: Herbert's palace-fortress, with many-sided towers round the Pitched Stone and Fountain courts. The hexagonal Yellow Tower stands on its own moat, reached by a single bridge.
 
 ## How it works
 

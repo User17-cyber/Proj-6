@@ -149,3 +149,8 @@ export function ground(b: MapBuilder, kind: GroundKind, x: number, z: number, r 
   }
   b.front([x, z]);
 }
+
+/** The yaw that faces from (x, z) toward (tx, tz) (a knight looks along -sin(yaw), -cos(yaw)). */
+export function toward(x: number, z: number, tx: number, tz: number): number {
+  return Math.atan2(-(tx - x), -(tz - z));
+}

@@ -7,8 +7,11 @@ import { tower } from './tower';
 import { warwick } from './warwick';
 import { conwy } from './conwy';
 import { kenilworth } from './kenilworth';
+import { ludlow } from './ludlow';
+import { middleham } from './middleham';
+import { raglan } from './raglan';
 
-export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth];
+export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan];
 
 export function getMap(id: string): MapDef {
   return MAPS.find((m) => m.id === id) ?? MAPS[0];

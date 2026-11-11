@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village, fields, woodlandRing, ground } from './common';
+import { village, fields, woodlandRing, ground, toward } from './common';
 
 // Kenilworth: the red sandstone fortress of the Duchy of Lancaster, ringed on two sides by the
 // Great Mere. The tiltyard causeway runs over the water to Mortimer's Tower; inside stand
@@ -70,10 +70,10 @@ export const kenilworth: MapDef = {
     b.path([[0, -56], [0, -110], [0, -200]], 5);
     b.path([[42, 60], [42, 200], [80, 230]], 5);
 
-    b.spawn(0, 4, 8, Math.PI, 18, 10, 'The inner court');
-    b.spawn(0, -46, 0, 0, 14, 10, 'The outer ward');
-    b.spawn(1, 50, 214, Math.PI, 30, 10, 'The tiltyard');
-    b.spawn(1, 0, -132, 0, 30, 10, 'The north road');
+    b.spawn(0, 4, 8, toward(4, 8, 0, -132), 18, 10, 'The inner court');
+    b.spawn(0, -46, 0, toward(-46, 0, 0, -132), 14, 10, 'The outer ward');
+    b.spawn(1, 50, 214, toward(50, 214, 0, 0), 30, 10, 'The tiltyard');
+    b.spawn(1, 0, -132, toward(0, -132, 0, 0), 30, 10, 'The north road');
 
     b.objective('Mortimer\'s Tower', 'A', 42, 66, 8);
     b.objective('Leicester\'s Gate', 'B', 0, -64, 8);
@@ -90,9 +90,9 @@ export const kenilworth: MapDef = {
     b.forest({ kind: 'rect', x: 0, z: -236, hx: 200, hz: 14 }, 70, { minSpacing: 6 });
     woodlandRing(b, { kind: 'rect', x: 20, z: 10, hx: 170, hz: 230 }, 255, 20);
 
-    b.spawn(1, 120, -60, -2.03, 12, 8, 'The east meadow', true);
-    b.spawn(1, 130, 120, -0.83, 12, 8, 'The hill fort', true);
-    b.spawn(0, -110, -110, -2.36, 12, 8, 'The ruined chapel', true);
+    b.spawn(1, 120, -60, toward(120, -60, 0, 0), 12, 8, 'The east meadow', true);
+    b.spawn(1, 130, 120, toward(130, 120, 0, 0), 12, 8, 'The hill fort', true);
+    b.spawn(0, -99, -99, toward(-99, -99, 0, 0), 12, 8, 'The ruined chapel', true);
     b.bounds(-140, 190, -210, 236);
     b.cinematic(-90, 20, 90, 0, 22, 0);
     b.cinematic(90, 26, 120, 40, 18, 60);

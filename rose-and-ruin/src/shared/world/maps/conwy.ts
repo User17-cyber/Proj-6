@@ -1,5 +1,5 @@
 import type { MapDef } from '../mapgen';
-import { village, fields, woodlandRing, ground } from './common';
+import { village, fields, woodlandRing, ground, toward } from './common';
 
 // Conwy: Edward I's long fortress on a ridge of rock where the River Conwy meets the sea.
 // Eight great round towers in a line, two wards split by a cross wall, a barbican at either
@@ -78,10 +78,10 @@ export const conwy: MapDef = {
     b.path([[-130, 0], [-200, 0]], 5);
     b.path([[-150, -60], [-150, -140]], 4);
 
-    b.spawn(0, 36, 0, -Math.PI / 2, 14, 8, 'The inner ward');
-    b.spawn(0, -24, 0, -Math.PI / 2, 22, 8, 'The outer ward');
-    b.spawn(1, -180, -20, -Math.PI / 2, 30, 12, 'The town camp');
-    b.spawn(1, -150, 90, -2.2, 24, 10, 'The river gate');
+    b.spawn(0, 36, 0, toward(36, 0, -150, 90), 14, 8, 'The inner ward');
+    b.spawn(0, -24, 0, toward(-24, 0, -150, 90), 22, 8, 'The outer ward');
+    b.spawn(1, -180, -20, toward(-180, -20, 0, 0), 30, 12, 'The town camp');
+    b.spawn(1, -150, 90, toward(-150, 90, 0, 0), 24, 10, 'The river gate');
 
     b.objective('The West Barbican', 'A', -76, 0, 8);
     b.objective('The Great Hall', 'B', -18, 0, 10);
@@ -99,9 +99,9 @@ export const conwy: MapDef = {
     b.forest({ kind: 'rect', x: -60, z: -236, hx: 180, hz: 14 }, 70, { minSpacing: 6 });
     woodlandRing(b, { kind: 'rect', x: -60, z: -20, hx: 180, hz: 170 }, 255, 20);
 
-    b.spawn(0, 20, -110, 0.18, 12, 8, 'The chapel', true);
-    b.spawn(1, -140, -150, -0.75, 12, 8, 'The north meadow', true);
-    b.spawn(1, -60, -165, -0.35, 12, 8, 'The hill fort', true);
+    b.spawn(0, 17, -95, toward(17, -95, 0, 0), 12, 8, 'The chapel', true);
+    b.spawn(1, -140, -150, toward(-140, -150, 0, 0), 12, 8, 'The north meadow', true);
+    b.spawn(1, -60, -165, toward(-60, -165, 0, 0), 12, 8, 'The hill fort', true);
     b.bounds(-228, 116, -200, 110);
     b.cinematic(100, 24, -70, 0, 28, 0);
     b.cinematic(-140, 22, 50, -40, 26, 0);
