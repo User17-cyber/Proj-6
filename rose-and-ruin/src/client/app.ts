@@ -90,6 +90,8 @@ export class App implements HudHost, MenuHost {
     this.prefs = loadPrefs();
     syncGore(this.prefs);
     setRenown(this.prefs.renown);
+    // closing the page mid-battle still banks the renown earned
+    window.addEventListener('pagehide', () => this.settleRenown());
     if (!this.prefs.name) {
       this.prefs.name = knightName(new Rng((Math.random() * 1e9) | 0), 0, 'manatarms', new Set());
       savePrefs(this.prefs);
@@ -491,7 +493,24 @@ export class App implements HudHost, MenuHost {
     this.input.enabled = false;
     this.input.exitLock();
   }
+  /** Bank everything earned so far in this battle (leaving early forfeits only the end bounty). */
+  private settleRenown(): number {
+    const s = this.session;
+    if (s && this.mode === 'battle' && !this.spectating) {
+      this.trackRenown(s);
+      // offline, the simulation may be a frame ahead of the view: count that too
+      if (s instanceof LocalSession && s.localId >= 0) {
+        const k = s.match.knights[s.localId], T = this.renownTrack;
+        if (k && k.score > T.seen) { this.awardRenown(k.score - T.seen); T.seen = k.score; }
+      }
+    }
+    savePrefs(this.prefs);
+    return this.renownTrack.gained;
+  }
   leave() {
+    const early = this.mode === 'battle' && !!this.session && this.session.phase !== 'ended' && !this.spectating;
+    const gained = this.settleRenown();
+    this.renownTrack = { seen: 0, gained: 0, ended: true };
     this.hud.showPause(false);
     this.hud.showBoard(false);
     this.input.exitLock();
@@ -501,6 +520,7 @@ export class App implements HudHost, MenuHost {
     this.startAttract();
     this.menus.showMain(this.caption());
     this.musicMode = '';
+    if (early && gained > 0) this.menus.toast(`You leave the field with +${gained.toLocaleString()} renown (${this.prefs.renown.toLocaleString()} in all).`);
   }
   restart() {
     if (!this.lastMatch) return this.leave();
