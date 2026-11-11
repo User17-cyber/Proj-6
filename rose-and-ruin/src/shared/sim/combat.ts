@@ -205,9 +205,11 @@ function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px
   if (half) dmg *= 1.3;
   // Murder Stroke: the sword reversed, the cross and pommel crush rather than cut
   const mord = k.mordT > 0;
-  if (mord) { k.mordT = 0; dmg *= 1.15; }
+  if (mord) k.mordT = 0;
   const dtype = mord ? 1 : a.dtype;
-  dmg *= ZONE_MULT[zone][dtype] * (1 - v.def.armor[dtype] * (half ? 0.3 : mord ? 0.3 : 1));
+  dmg *= ZONE_MULT[zone][dtype] * (1 - v.def.armor[dtype] * (half ? 0.3 : mord ? 0.5 : 1));
+  // it rings a man's helm and lays him open; it does not fell a whole man in one blow
+  if (mord) dmg = Math.min(dmg, v.def.hp * 0.5);
   const l = Math.hypot(sdx, sdy, sdz) || 1;
   const died = m.damage(v, k, dmg, { zone, dtype, kind: 0, heavy: k.heavy, x: px, y: py, z: pz, dx: sdx / l, dy: sdy / l, dz: sdz / l });
   if (!died && v.alive) {

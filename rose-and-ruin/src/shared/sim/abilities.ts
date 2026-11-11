@@ -325,7 +325,8 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
         const v = target as Knight | null;
         if (v) {
           const helpless = v.knockT > 0 || v.stunT > 0;
-          const dmg = helpless ? v.hp + 1 : 40 * (1 - v.def.armor[2] * 0.25);
+          // the dagger finds the gaps of a helpless man: grievous, but not a sure kill from full vigour
+          const dmg = helpless ? v.def.hp * 0.5 : 40 * (1 - v.def.armor[2] * 0.25);
           m.damage(v, k, dmg, { zone: helpless ? 0 : 1, dtype: 2, kind: 2, x: v.x, y: v.y + (helpless ? 0.4 : 1.3), z: v.z, dx: fx, dy: -0.2, dz: fz, noStagger: !helpless });
         }
       }

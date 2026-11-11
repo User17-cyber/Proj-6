@@ -720,7 +720,9 @@ export class App implements HudHost, MenuHost {
       this.hud.update(dt, hf);
       // the death and end screens need the mouse
       if ((this.hud.deathOpen || this.hud.endOpen) && this.input.locked) this.input.exitLock();
-      const needLock = !this.spectating && me && me.alive && !this.input.locked && !this.hud.paused && !this.hud.chatting && !this.hud.endOpen;
+      // (not over the knight menu, nor over the duel count, which carries its own prompt)
+      const duelCount = s.settings.mode === 'duel' && s.phase === 'live' && s.timeLeft > 0 && s.knights.every((k) => k.alive);
+      const needLock = !this.spectating && me && me.alive && !this.input.locked && !this.hud.paused && !this.hud.chatting && !this.hud.endOpen && !this.hud.deathOpen && !duelCount;
       this.lockHint.classList.toggle('hidden', !needLock);
       if (this.spectating && (this.specCam === 'free' || this.specCam === 'follow') && !this.input.locked) this.lockHint.classList.add('hidden');
     } else this.lockHint.classList.add('hidden');

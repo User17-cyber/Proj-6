@@ -104,8 +104,8 @@ Keys can be rebound in Settings. Under **Your own keybinds** you can also add as
 | Knight-Errant | Falchion and buckler | Sidestep, Bloodletting |
 | Pavisier | War spear and hand pavise | Shield Bash, Iron Bulwark |
 | Knight Bachelor | Flanged mace and heater shield | Shield Bash, Battle Charge |
-| Master of Defence | Longsword, little armour | Murder Stroke (reverse the sword and strike with the cross: crushes through plate and stuns), Bind & Disarm (bind a foe's blade and wrench it from him; useless against a raised shield) |
-| Brigand | War axe and brigandine | Wrestling Throw (hip-throw a foe to the ground; much heavier men may resist), Misericorde (the mercy dagger: slays a downed or stunned foe, else a deep stab) |
+| Master of Defence | Longsword, little armour | Murder Stroke (reverse the sword and strike with the cross: crushes through plate and stuns, up to half a man's vigour), Bind & Disarm (bind a foe's blade and wrench it from him; useless against a raised shield) |
+| Brigand | War axe and brigandine | Wrestling Throw (hip-throw a foe to the ground; much heavier men may resist), Misericorde (the mercy dagger: half a downed or stunned foe's vigour, else a lesser stab) |
 | Battle Chaplain | Flanged mace and mail | Bind Wounds (heal yourself and the most hurt ally close by), Benediction (allies near you regain wind and cannot be staggered for a while) |
 | Pikeman | Pike | Brace for the Charge (set the butt: anyone who rushes or charges onto the point is impaled), Push of Pike (a long shove that drives a foe back and staggers him) |
 | Gallowglass | Sparth axe and mail | Hamstring (a low cut that lames a foe and bleeds him), Shield-Breaker (blows smash shields and guards apart) |

@@ -512,7 +512,7 @@ export class Hud implements HudSink {
       if ((duel || this.time - this.deadSince > 1.6) && canRespawn && this.death.classList.contains('hidden')) {
         const round = s.teams[0].tickets + s.teams[1].tickets + 2;
         (this.death.querySelector('h1') as HTMLElement).textContent = duel ? (me.alive ? 'The Round Is Yours' : 'Thou Art Bested') : 'Thou Art Slain';
-        (this.death.querySelector('.by') as HTMLElement).innerHTML = duel ? `Choose your knight for round ${round}` : this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
+        (this.death.querySelector('.by') as HTMLElement).innerHTML = duel ? (!me.alive && this.deathKiller ? `Struck down ${this.deathKiller} · ` : '') + `Choose your knight for round ${round}` : this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
         this.respawnBtn.style.display = duel ? 'none' : '';
         this.renderSpawnPick(me.team);
         this.death.classList.remove('hidden');
