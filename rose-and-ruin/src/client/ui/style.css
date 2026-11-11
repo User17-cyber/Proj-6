@@ -147,8 +147,8 @@ button { font: inherit; color: inherit; }
 .map-blurb b { font-family: var(--caps); letter-spacing: 0.08em; }
 .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px 22px; margin-top: 18px; }
 .opt label { display: block; font-family: var(--caps); font-size: 12px; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 6px; text-transform: uppercase; }
-.seg { display: flex; border: 1px solid #000; box-shadow: inset 0 0 0 1px rgba(201, 162, 79, 0.45); }
-.seg button { flex: 1; padding: 9px 6px; background: rgba(0, 0, 0, 0.35); border: 0; cursor: pointer; color: var(--parch); font-family: var(--caps); font-size: 12px; letter-spacing: 0.08em; border-right: 1px solid rgba(201, 162, 79, 0.25); }
+.seg { display: flex; flex-wrap: wrap; min-width: 0; max-width: 100%; overflow: hidden; border: 1px solid #000; box-shadow: inset 0 0 0 1px rgba(201, 162, 79, 0.45); }
+.seg button { flex: 1 1 auto; min-width: 0; padding: 9px 7px; line-height: 1.15; white-space: nowrap; box-shadow: 0 1px 0 rgba(201, 162, 79, 0.25); background: rgba(0, 0, 0, 0.35); border: 0; cursor: pointer; color: var(--parch); font-family: var(--caps); font-size: 12px; letter-spacing: 0.05em; border-right: 1px solid rgba(201, 162, 79, 0.25); }
 .seg button:last-child { border-right: 0; }
 .seg button:hover { background: rgba(142, 27, 27, 0.35); }
 .seg button.on { background: linear-gradient(180deg, #5a1a18, #3a0f0e); color: var(--gold-hi); }
@@ -168,7 +168,7 @@ button { font: inherit; color: inherit; }
 .classbtn svg { width: clamp(32px, 5.6vh, 48px); height: clamp(32px, 5.6vh, 48px); fill: var(--gold-hi); filter: drop-shadow(0 2px 2px #000); }
 .classbtn .cn { font-family: var(--caps); font-size: 15px; letter-spacing: 0.07em; color: var(--parch); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .classbtn .ct { font-size: 13px; font-style: italic; color: rgba(232, 219, 189, 0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.classbtn kbd { font-family: var(--caps); font-size: 11px; color: var(--gold); border: 1px solid rgba(201, 162, 79, 0.5); padding: 2px 6px; }
+.classbtn kbd { flex: none; box-sizing: border-box; min-width: 30px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--caps); font-size: 11px; line-height: 1; white-space: nowrap; color: var(--gold); border: 1px solid rgba(201, 162, 79, 0.5); padding: 0 4px; }
 .class-detail { padding: 18px 22px; min-height: 420px; }
 .class-detail h3 { margin: 0; font-family: var(--caps); font-size: 30px; letter-spacing: 0.1em; color: var(--ink); }
 .class-detail .ttl { font-style: italic; font-size: 17px; color: var(--ink-soft); margin-bottom: 10px; }
@@ -178,10 +178,10 @@ button { font: inherit; color: inherit; }
 .pips { display: flex; gap: 4px; }
 .pips i { width: 26px; height: 9px; background: rgba(60, 40, 20, 0.18); box-shadow: inset 0 0 0 1px rgba(60, 40, 20, 0.35); transform: skewX(-18deg); }
 .pips i.on { background: linear-gradient(180deg, #a52a22, #6e1410); box-shadow: inset 0 0 0 1px #3a0a08; }
-.abil { display: grid; grid-template-columns: 52px 1fr; gap: 12px; margin: 10px 0; align-items: start; }
-.abil .ic { width: 52px; height: 52px; display: grid; place-items: center; background: linear-gradient(180deg, #2b2520, #15110e); box-shadow: inset 0 0 0 1px var(--gold-lo), 0 2px 6px rgba(0, 0, 0, 0.4); position: relative; }
-.abil .ic svg { width: 38px; height: 38px; fill: var(--gold-hi); }
-.abil .ic kbd { position: absolute; right: -6px; bottom: -6px; font-family: var(--caps); font-size: 11px; background: var(--ink); color: var(--gold-hi); padding: 1px 5px; }
+.abil { display: grid; grid-template-columns: 50px 1fr; gap: 12px; margin: 8px 0; align-items: start; padding: 8px 10px; border: 1px solid rgba(90, 64, 38, 0.35); background: rgba(255, 248, 230, 0.18); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+.abil .ic { width: 50px; display: flex; flex-direction: column; align-items: stretch; background: linear-gradient(180deg, #2b2520, #15110e); box-shadow: inset 0 0 0 1px var(--gold-lo), 0 2px 6px rgba(0, 0, 0, 0.35); overflow: hidden; }
+.abil .ic svg { width: 34px; height: 34px; margin: 6px auto 4px; fill: var(--gold-hi); }
+.abil .ic kbd { display: block; text-align: center; font-family: var(--caps); font-size: 11px; line-height: 16px; letter-spacing: 0.08em; color: var(--gold-hi); background: rgba(201, 162, 79, 0.16); border-top: 1px solid var(--gold-lo); }
 .abil b { font-family: var(--caps); letter-spacing: 0.08em; }
 .abil .cd { font-size: 13px; color: var(--ink-soft); font-style: italic; }
 .armour-line { font-style: italic; color: var(--ink-soft); font-size: 14px; border-top: 1px solid rgba(60, 40, 20, 0.25); padding-top: 10px; margin-top: 12px; }

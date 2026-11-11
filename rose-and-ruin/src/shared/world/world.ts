@@ -158,6 +158,11 @@ export class StaticWorld {
     return best;
   }
 
+  /** True if a knight standing at (x, z) with feet at y is out of the water (bridges count as dry). */
+  dry(x: number, z: number, y: number, margin = 0.1): boolean {
+    const w = this.waterAt(x, z);
+    return !w || y >= w.level - margin;
+  }
   waterAt(x: number, z: number): WaterBody | null {
     for (const w of this.water) if (x >= w.minX && x <= w.maxX && z >= w.minZ && z <= w.maxZ) return w;
     return null;

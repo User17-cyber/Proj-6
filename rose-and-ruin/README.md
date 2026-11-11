@@ -1,6 +1,6 @@
 # Rose & Ruin
 
-A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 80 knights each at seven real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
+A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 100 knights each at ten real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
 
 ## Run it
 
@@ -152,7 +152,7 @@ Health bars hang only over enemies; allies show just their names (spectators see
 
 ### The castles
 
-Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with open fighting grounds around it: a trampled meadow, a hill ringed by a broken palisade, a ruined chapel and its churchyard, a crossroads, and the nearby village. In a pitched battle the hosts split into bands that are sent to different grounds, so fights break out across the whole field, not only at the walls.
+Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with open fighting grounds around it: a trampled meadow, a hill ringed by a broken palisade, a ruined chapel and its churchyard, a crossroads, and the nearby village. In a pitched battle the hosts split into bands that are sent to different grounds, so fights break out across the whole field, not only at the walls. Moats, rivers and the sea are not for wading: no knight is placed in the water, bots route around it, and a bank or bridge edge holds a knight back like a low wall (one who does end up in the water can always climb out).
 
 
 - **Bodiam Castle**, East Sussex, 1483: a moated quadrangular castle with bridges, barbican and a breach.

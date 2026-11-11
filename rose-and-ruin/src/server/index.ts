@@ -242,7 +242,7 @@ function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSettings 
   return {
     mapId: MAPS.some((m) => m.id === s?.mapId) ? s!.mapId! : d.mapId,
     mode: modes.includes(s?.mode as GameMode) ? (s!.mode as GameMode) : d.mode,
-    teamSize: n(s?.teamSize, 5, 80, d.teamSize),
+    teamSize: n(s?.teamSize, 5, 100, d.teamSize),
     difficulty: n(s?.difficulty, 0, 3, d.difficulty) as MatchSettings['difficulty'],
     friendlyFire: !!s?.friendlyFire,
     timeLimit: n(s?.timeLimit, 300, 3600, d.timeLimit),

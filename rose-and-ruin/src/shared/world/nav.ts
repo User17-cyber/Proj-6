@@ -42,7 +42,8 @@ export class NavGrid {
       const g = W.groundAt(x, z, 999, 0);
       const i = iz * this.w + ix;
       this.hgt[i] = g;
-      let ok = W.walkable(x, z, g);
+      // fords and the shallows of moats are wadeable, but nobody should plan a route through them
+      let ok = W.walkable(x, z, g) && W.dry(x, z, g);
       if (ok) {
         W.forColliders(x, z, INFLATE + 0.6, (c) => {
           if (!ok) return;

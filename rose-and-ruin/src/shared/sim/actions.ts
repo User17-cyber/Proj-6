@@ -399,6 +399,9 @@ export function movement(world: StaticWorld, k: Knight, dt: number, live: boolea
 function stepOk(world: StaticWorld, ox: number, oy: number, oz: number, nx: number, nz: number): boolean {
   const g = world.groundAt(nx, nz, oy);
   if (!world.walkable(nx, nz, g)) return false;
+  // the bank of a moat or river, and the edge of a bridge, hold like a low wall: a knight on dry
+  // ground does not wade in past his knees (one already in the water may always climb out)
+  if (!world.dry(nx, nz, g, 0.1) && world.dry(ox, oz, oy, 0.1)) return false;
   const climb = g - oy;
   if (climb > 0.62) return false;
   if (climb <= 0.002) return true;

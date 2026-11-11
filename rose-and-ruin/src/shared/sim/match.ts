@@ -260,7 +260,12 @@ export class Match {
       px = zone.x + lx * c + lz * s;
       pz = zone.z - lx * s + lz * c;
       const g = this.world.groundAt(px, pz, 999);
-      if (this.world.walkable(px, pz, g) && !this.world.pointBlocked(px, g + 1, pz, KNIGHT_RADIUS) && this.nav.isWalkable(px, pz)) break;
+      if (this.world.walkable(px, pz, g) && this.world.dry(px, pz, g, -0.15) && !this.world.pointBlocked(px, g + 1, pz, KNIGHT_RADIUS) && this.nav.isWalkable(px, pz)) break;
+      if (attempt === 29) {
+        // no clear ground found at random: take the nearest dry walkable cell to the camp
+        const i = this.nav.nearestWalkable(zone.x, zone.z, 40);
+        if (i >= 0) { px = this.nav.cx(i); pz = this.nav.cz(i); }
+      }
     }
     k.x = px; k.z = pz; k.y = this.world.groundAt(px, pz, 999);
     k.vx = k.vy = k.vz = 0;
@@ -442,10 +447,15 @@ export class Match {
     this.updateMode();
   }
 
+  private sepX = new Float32Array(0);
+  private sepZ = new Float32Array(0);
   private separate() {
     const ks = this.knights;
     // the broadest knights reach 0.38 * 1.12; query wide enough for any pair
     const rmax = KNIGHT_RADIUS * 2.3;
+    const W = this.world;
+    if (this.sepX.length < ks.length) { this.sepX = new Float32Array(ks.length * 2); this.sepZ = new Float32Array(ks.length * 2); }
+    for (const k of ks) { this.sepX[k.id] = k.x; this.sepZ[k.id] = k.z; }
     for (const a of ks) {
       if (!a.alive || a.knockT > 0) continue;
       const ra = a.radius;
@@ -472,6 +482,9 @@ export class Match {
     // re-resolve against the static world after crowd pushing
     for (const k of ks) {
       if (!k.alive) continue;
+      // the press of the crowd does not shove a man off the bank or the bridge into the water
+      const ox = this.sepX[k.id], oz = this.sepZ[k.id];
+      if ((k.x !== ox || k.z !== oz) && W.dry(ox, oz, k.y, 0.1) && !W.dry(k.x, k.z, W.groundAt(k.x, k.z, k.y), 0.1)) { k.x = ox; k.z = oz; }
       this.world.resolveCylinder(k, k.radius, 1.8 * k.def.size.height);
       const b = this.world.bounds;
       k.x = clamp(k.x, b.minX + 0.5, b.maxX - 0.5);
