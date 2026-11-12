@@ -6,6 +6,8 @@ A desktop VPN for Windows, macOS and Linux. It has three main parts:
 - **Ad and tracker blocking for every app.** DNS filtering runs inside the tunnel and uses well-known blocklists. It also catches trackers hidden behind first-party names (CNAME cloaking).
 - **Privacy protection.** A kill switch, DNS and IPv6 leak protection, and encrypted DNS. Location changes happen without dropping the kill switch.
 
+![Meridian connected to Amsterdam: the map shows the route from your real location, with live traffic and ad-blocking counters](docs/meridian-home.png)
+
 Meridian is built on [WireGuard](https://www.wireguard.com/) (the userspace `wireguard-go` implementation). It works with any standard WireGuard server, including your own.
 
 ## Where the locations come from
@@ -33,6 +35,8 @@ Download the file for your computer from the repository's **Releases** page. Bui
 - **Locations** lists your servers grouped by country. You can add favorites, rename a server, correct its country or city, show a phone QR code, export its config or remove it.
 - **Ad blocker** has an on/off switch, counters, the most-blocked domains and a live activity log with one-click **Allow** or **Block**. It also lists the available blocklists: StevenBlack, HaGeZi Light/Pro, OISD, a threat-intelligence feed, Apple/Windows telemetry, and social, gambling, adult and fake-news filters. You can add your own lists and your own allow/block rules.
 - **Settings** cover the kill switch, local network access, IPv6 leak blocking, auto-connect at startup, the DNS server (automatic, or encrypted Quad9, Cloudflare, Mullvad, Google or custom) and more.
+
+![The ad blocker: counters, most-blocked domains and the live activity log](docs/meridian-adblocker.png)
 
 Command line (any OS): `meridian status`, `meridian connect [name|country]`, `meridian disconnect`, `meridian import *.conf`, `meridian locations`.
 
