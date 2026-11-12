@@ -23,6 +23,8 @@ export interface Prefs {
   spawnPref: Record<string, number>;
   damageNumbers: boolean;
   nameplates: boolean;
+  /** the aiming mark at the centre of the screen */
+  crosshair: boolean;
   firstPerson: boolean;
   lastClass: ClassId;
   lastTeam: 0 | 1 | -1;
@@ -76,6 +78,7 @@ export function defaultPrefs(): Prefs {
     spawnPref: {},
     damageNumbers: true,
     nameplates: true,
+    crosshair: true,
     firstPerson: false,
     lastClass: 'manatarms',
     lastTeam: -1,

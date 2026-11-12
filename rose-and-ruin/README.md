@@ -70,7 +70,7 @@ From the great hall:
 
 You can leave a battle at any moment: Esc opens the menu with **Leave the Battle** whether you are fighting, mustering, fallen or watching; the death screen has its own **Leave the Battle** button; and a castle that is still loading can be abandoned with **Turn Back**.
 
-Keys can be rebound in Settings. Under **Your own keybinds** you can also add as many extra keys as you like (mouse side buttons too), each to any action: attack, guard, thrust, kick, either ability, sprint, jump, movement or change view. They work alongside the main keys and are saved in your browser.
+Keys can be rebound in Settings, where you can also hide the crosshair (hit markers still show). Under **Your own keybinds** you can also add as many extra keys as you like (mouse side buttons too), each to any action: attack, guard, thrust, kick, either ability, sprint, jump, movement or change view. They work alongside the main keys and are saved in your browser.
 
 ### Combat
 

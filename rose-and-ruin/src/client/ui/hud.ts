@@ -372,6 +372,8 @@ export class Hud implements HudSink {
     if (code === 'Space' || code === 'Enter') { if (!this.respawnBtn.disabled) this.host.respawn(this.deathCls); return true; }
     return false;
   }
+  /** settings changed in the menu (or loaded from a save) */
+  setPrefs(p: Prefs) { this.prefs = p; }
   get deathOpen() { return !this.death.classList.contains('hidden'); }
   get endOpen() { return !this.end.classList.contains('hidden'); }
 
@@ -462,7 +464,7 @@ export class Hud implements HudSink {
     const showPlayerHud = !!me && me.alive && !f.spectating;
     this.vitals.classList.toggle('hidden', !showPlayerHud);
     this.abil.classList.toggle('hidden', !showPlayerHud);
-    this.cross.classList.toggle('hidden', !showPlayerHud || this.endShown);
+    this.cross.classList.toggle('hidden', !showPlayerHud || this.endShown || !this.prefs.crosshair);
     if (me && showPlayerHud) this.updateVitals(me, f);
     this.updateScore(s);
     this.updateNotices(dt);

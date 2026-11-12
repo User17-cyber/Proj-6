@@ -297,6 +297,7 @@ export class Menus {
           <div class="opt"><label>Slow-motion kills</label>${tog('slowmo', p.slowmo)}<div class="hint">A moment of slow motion on your heaviest killing blows (single player).</div></div>
           <div class="opt"><label>Damage numbers</label>${tog('damageNumbers', p.damageNumbers)}</div>
           <div class="opt"><label>Nameplates</label>${tog('nameplates', p.nameplates)}</div>
+          <div class="opt"><label>Crosshair</label>${tog('crosshair', p.crosshair)}<div class="hint">Hide the aiming mark for a cleaner view; hit markers still show.</div></div>
           <div class="opt"><label>Master volume</label>${range('master', 0, 1, 0.05, p.volumes.master, pct)}</div>
           <div class="opt"><label>Music</label>${range('music', 0, 1, 0.05, p.volumes.music, pct)}</div>
           <div class="opt"><label>Effects</label>${range('sfx', 0, 1, 0.05, p.volumes.sfx, pct)}</div>
@@ -397,7 +398,7 @@ export class Menus {
         if (k === 'quality') { p.gfx.quality = Number(v) as Quality; p.gfx.shadowQuality = p.gfx.quality; p.gfx.ao = p.gfx.quality >= 1; }
         else if (k === 'ao' || k === 'bloom' || k === 'adaptive') p.gfx[k] = v === '1';
         else if (k === 'colour') p.gfx.colour = Number(v);
-        else if (k === 'invertY' || k === 'slowmo' || k === 'damageNumbers' || k === 'nameplates' || k === 'firstPerson') (p as unknown as Record<string, boolean>)[k] = v === '1';
+        else if (k === 'invertY' || k === 'slowmo' || k === 'damageNumbers' || k === 'nameplates' || k === 'crosshair' || k === 'firstPerson') (p as unknown as Record<string, boolean>)[k] = v === '1';
         else if (k === 'gore') { p.gore = Number(v) as 0 | 1 | 2; p.blood = p.gore > 0; }
         this.host.ui('tick');
         changed();

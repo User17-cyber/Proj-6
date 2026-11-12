@@ -364,6 +364,7 @@ export class App implements HudHost, MenuHost {
 
   prefsChanged(p: Prefs) {
     this.prefs = p;
+    this.hud.setPrefs(p);
     this.r.applySettings({ ...p.gfx });
     this.input.sensitivity = p.sensitivity;
     this.input.invertY = p.invertY;
