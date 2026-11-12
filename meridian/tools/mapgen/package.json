@@ -1,0 +1,14 @@
+{
+  "name": "meridian-mapgen",
+  "private": true,
+  "description": "Build-time generator for the world map and country table used by the Meridian UI.",
+  "type": "module",
+  "scripts": { "build": "node generate.mjs" },
+  "dependencies": {
+    "d3-geo": "3.1.1",
+    "i18n-iso-countries": "7.14.0",
+    "topojson-client": "3.1.0",
+    "topojson-simplify": "3.0.3",
+    "world-atlas": "2.0.2"
+  }
+}
