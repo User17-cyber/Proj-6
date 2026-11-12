@@ -319,7 +319,7 @@ export class KnightAnimator {
     const knocked = k.act === Act.Knockdown || k.knockT > 0;
     const fallTarget = knocked ? (k.knockT > 0.45 ? 1 : k.knockT / 0.45) : 0;
     this.fall = knocked && this.fall < fallTarget ? Math.min(fallTarget, this.fall + dt / 0.32) : lerp(this.fall, fallTarget, 1 - Math.exp(-dt * 10));
-    if (this.fall > 0.001) this.applyFall(J, root, right, fwd, ground, k.y);
+    if (this.fall > 0.001) this.applyFall(J, root, right, fwd, ground, k.y, grip, bladeDir, weapon.hitEnd);
 
     // ---------------- bone frames
     const gripDirL = _gl;
@@ -497,10 +497,12 @@ export class KnightAnimator {
     void time;
   }
 
-  private applyFall(J: Joints, root: THREE.Vector3, right: THREE.Vector3, fwd: THREE.Vector3, ground: GroundFn, y: number) {
+  private applyFall(J: Joints, root: THREE.Vector3, right: THREE.Vector3, fwd: THREE.Vector3, ground: GroundFn, y: number, grip: THREE.Vector3, bladeDir: THREE.Vector3, len: number) {
     const ang = smoothstep(0, 1, this.fall) * (Math.PI / 2 - 0.08);
     const pivot = _a.copy(root);
     const q = _q.setFromAxisAngle(right, ang);
+    // the hand keeps hold of the weapon: it goes down with the arm rather than hanging in the air
+    const offset = _e.subVectors(grip, J.wristR);
     for (const key in J) {
       const p = (J as unknown as Record<string, THREE.Vector3>)[key];
       p.sub(pivot).applyQuaternion(q).add(pivot);
@@ -512,6 +514,30 @@ export class KnightAnimator {
     for (const key in J) {
       const p = (J as unknown as Record<string, THREE.Vector3>)[key];
       if (p.y < gy + 0.08) p.y = gy + 0.08;
+    }
+    grip.copy(J.wristR).add(offset.applyQuaternion(q));
+    bladeDir.applyQuaternion(q);
+    // as he lands the weapon drops flat on the ground beside him, the point thrown out to his right
+    const lie = smoothstep(0.35, 1, this.fall);
+    if (lie > 0) {
+      _f.copy(right).multiplyScalar(0.85).addScaledVector(fwd, 0.45);
+      _f.y = 0;
+      _f.normalize();
+      bladeDir.lerp(_f, lie).normalize();
+    }
+    // nothing of the weapon may stand up out of a fallen man, nor sink into the earth
+    const gripY = gy + 0.06;
+    if (grip.y < gripY) grip.y = gripY;
+    const reach = Math.max(0.6, len);
+    const tipY = grip.y + bladeDir.y * reach;
+    const lo = gy + 0.04, hi = grip.y + 0.25 * (1 - lie) + 0.06;
+    if (tipY < lo || tipY > hi) {
+      const want = clamp(tipY, lo, hi);
+      bladeDir.y = (want - grip.y) / reach;
+      const h = Math.hypot(bladeDir.x, bladeDir.z) || 1;
+      const flat = Math.sqrt(Math.max(0, 1 - bladeDir.y * bladeDir.y));
+      bladeDir.x *= flat / h; bladeDir.z *= flat / h;
+      bladeDir.normalize();
     }
   }
 }
