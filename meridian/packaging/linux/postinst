@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ] && command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+	systemctl daemon-reload || true
+	systemctl enable meridian.service >/dev/null 2>&1 || true
+	systemctl restart meridian.service || true
+fi
+command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q || true
+command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t /usr/share/icons/hicolor || true
+exit 0

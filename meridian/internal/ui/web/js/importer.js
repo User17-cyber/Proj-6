@@ -131,9 +131,10 @@ function serverPane() {
   const keyPass = h('input', { class: 'input hidden', type: 'password', placeholder: 'Key passphrase (if any)', autocomplete: 'off' });
   const useKey = h('input', { type: 'checkbox' });
   useKey.addEventListener('change', () => {
-    pass.classList.toggle('hidden', useKey.checked);
+    pass.closest('label').classList.toggle('hidden', useKey.checked);
     key.classList.toggle('hidden', !useKey.checked);
     keyPass.classList.toggle('hidden', !useKey.checked);
+    key.closest('.keybox').classList.toggle('hidden', !useKey.checked);
   });
   const adblock = h('input', { type: 'checkbox', checked: true });
   const log = h('div', { class: 'progress-log hidden' });
@@ -197,7 +198,7 @@ function serverPane() {
           h('label', { class: 'f full' }, 'Username', user),
           h('label', { class: 'f full' }, 'Password', pass),
           h('label', { class: 'row full', style: { fontSize: '13px' } }, useKey, 'Use an SSH private key instead'),
-          h('div', { class: 'full' }, key), h('div', { class: 'full' }, keyPass),
+          h('div', { class: 'full keybox hidden', style: { display: 'grid', gap: '10px' } }, key, keyPass),
           h('label', { class: 'row full', style: { fontSize: '13px' } }, adblock, 'Also block ads on the server for phones using the WireGuard app')),
         h('div', { class: 'row mt' }, scriptBtn, h('span', { class: 'spacer' }), go),
         log, outcome),

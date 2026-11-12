@@ -88,7 +88,7 @@ export function ago(date) {
 
 export function clock(date) {
   const d = new Date(date);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 
 // Emoji flags do not render on Windows; detect support once.

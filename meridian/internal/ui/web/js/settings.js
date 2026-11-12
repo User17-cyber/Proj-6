@@ -34,7 +34,7 @@ function render() {
   const presets = state.meta?.dnsPresets || [];
 
   const upstream = h('select', { class: 'input', 'aria-label': 'DNS server' },
-    h('option', { value: 'auto', selected: s.dnsUpstream === 'auto' }, 'Automatic (the location\'s own resolver)'),
+    h('option', { value: 'auto', selected: s.dnsUpstream === 'auto' }, 'Automatic'),
     presets.map((p) => h('option', { value: p.id, selected: s.dnsUpstream === p.id }, p.name)),
     h('option', { value: 'custom', selected: s.dnsUpstream === 'custom' }, 'Custom…'));
   const custom = h('input', { class: 'input' + (s.dnsUpstream === 'custom' ? '' : ' hidden'), value: s.customDns || '', placeholder: '9.9.9.9, 149.112.112.112 or https://…/dns-query' });
@@ -61,7 +61,9 @@ function render() {
 
     h('div', { class: 'set-group' }, h('h2', null, 'Protection'), h('div', { class: 'card' },
       toggle('killSwitch', 'Kill switch', 'Block all internet traffic outside the VPN while connected, so nothing leaks if the connection drops.', 'Kill switch on', 'Kill switch off'),
-      toggle('allowLan', 'Allow local network', 'Keep printers, file shares and casting working while the kill switch is on.', 'Local network allowed', 'Local network blocked'),
+      toggle('allowLan', 'Allow local network', state.meta?.os === 'windows'
+        ? 'Keep printers and file shares reachable. On Windows this works with the kill switch off; with it on, only the VPN is reachable.'
+        : 'Keep printers, file shares and casting working while the kill switch is on.', 'Local network allowed', 'Local network blocked'),
       toggle('blockIPv6Leaks', 'Block IPv6 leaks', 'Send IPv6 into the tunnel too, so a location without IPv6 cannot expose your real address.', 'IPv6 leak protection on', 'IPv6 leak protection off'))),
 
     h('div', { class: 'set-group' }, h('h2', null, 'Connection'), h('div', { class: 'card' },
@@ -71,7 +73,7 @@ function render() {
       toggle('showHomeLocation', 'Show my real location when disconnected', 'Looks up your unprotected address so you can compare.', 'On', 'Off'))),
 
     h('div', { class: 'set-group' }, h('h2', null, 'DNS'), h('div', { class: 'card' },
-      h('div', { class: 'set' }, h('div', { class: 't' }, h('b', null, 'DNS server'), h('span', null, 'Where allowed lookups are answered. Always reached through the tunnel; the encrypted options hide lookups even from the VPN server.')),
+      h('div', { class: 'set' }, h('div', { class: 't' }, h('b', null, 'DNS server'), h('span', null, 'Where allowed lookups are answered, always through the tunnel. Automatic uses the location\'s own resolver; the encrypted options hide lookups even from the VPN server.')),
         h('div', { style: { display: 'grid', gap: '8px' } }, upstream, custom)),
       toggle('interceptAllDns', 'Filter apps that use their own DNS', 'Also apply the blocker to lookups sent straight to other servers (for example 8.8.8.8).', 'On', 'Off'),
       toggle('blockDoT', 'Block DNS-over-TLS bypass', 'Stop apps from hiding lookups on port 853 so the blocker sees them.', 'On', 'Off'),

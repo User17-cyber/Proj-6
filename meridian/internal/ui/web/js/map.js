@@ -32,7 +32,8 @@ export class WorldMap {
     this.overlay = s('g');
     this.svg.append(land, this.overlay);
     this.tip = h('div', { class: 'map-tip hidden' });
-    this.el = h('div', { class: 'map-wrap' }, this.svg, this.tip);
+    this.legend = h('div', { class: 'map-legend' });
+    this.el = h('div', { class: 'map-wrap' }, this.svg, this.tip, this.legend);
     this.counts = {};
 
     land.addEventListener('mousemove', (e) => {
@@ -62,6 +63,10 @@ export class WorldMap {
   // pins: [{id, lat, lon, cc, label}], here: {lat, lon, cc} | null,
   // home: {lat, lon} | null, busy: bool
   update({ pins, here, home, connected }) {
+    const dot = (color, label) => h('span', null, h('i', { style: { background: color } }), label);
+    this.legend.replaceChildren(
+      dot('var(--accent-2)', connected ? 'You appear here' : 'Your locations'),
+      home ? dot('var(--amber)', 'Your real location') : '');
     this.counts = {};
     for (const p of pins) if (p.cc) this.counts[p.cc] = (this.counts[p.cc] || 0) + 1;
     for (const [cc, paths] of this.paths) {

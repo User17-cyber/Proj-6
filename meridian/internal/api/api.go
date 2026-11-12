@@ -14,6 +14,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -612,6 +613,7 @@ func (s *Server) meta(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, map[string]any{
 		"version":    s.b.Version(),
+		"os":         runtime.GOOS,
 		"dnsPresets": presets,
 		"virtualDns": dnsproxy.DefaultVirtualIP.String(),
 		"geo":        geo.Providers,

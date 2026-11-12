@@ -1,5 +1,7 @@
 # Drillion
 
+> This repository also contains **[Meridian VPN](meridian/README.md)**, a desktop VPN with an ad blocker and location switching.
+
 An 8-bit deep-sea trivia dive. Pilot the Drillion, a drill-nosed submarine, from the surface toward the sea floor at 10,935 m. You get 7 prompts, like *"Name a country that borders at least 4 other countries."* Any answer that fits scores, but **rarer answers score more**: the most obvious answer is worth about 10 points, an obscure one up to 100.
 
 **Points are drill power.** Every 100 points breaks through to the next zone, and each prompt comes from the zone the drill has reached, so strong answers unlock the deep categories. You have **25 seconds of air** for each prompt. A wrong answer hauls up an old boot and running out of air scores nothing: either way, 0 points and the drill doesn't move. Your final score is the depth you reach; seven perfect answers hit the sea floor.

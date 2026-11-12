@@ -22,7 +22,7 @@ export function mountHome(el) {
   panel = h('div', { class: 'panel' });
   statsEl = h('div', { class: 'stats' });
   emptyEl = h('div', { class: 'card empty-hero hidden' });
-  const hero = h('div', { class: 'hero' }, map.el, panel);
+  const hero = h('div', { class: 'hero' }, panel, map.el);
   replace(root, emptyEl, hero, statsEl);
   subscribe(render);
   timer = setInterval(tick, 1000);
@@ -107,12 +107,14 @@ function render() {
     icon('chev'));
 
   replace(panel,
-    h('div', { class: 'status-line ' + hl.cls }, icon(hl.ic), hl.label),
-    h('div', { class: 'headline' }, title),
-    h('div', { class: 'subline' }, sub),
-    h('div', { class: 'connect-row' }, power, picker),
-    st?.warning ? h('div', { class: 'warnbox' }, st.warning) : null,
-    st?.error && !active ? h('div', { class: 'errbox' }, st.error) : null);
+    power,
+    h('div', { class: 'info' },
+      h('div', { class: 'status-line ' + hl.cls }, icon(hl.ic), hl.label),
+      h('div', { class: 'headline' }, title),
+      h('div', { class: 'subline' }, sub),
+      st?.warning ? h('div', { class: 'warnbox' }, st.warning) : null,
+      st?.error && !active ? h('div', { class: 'errbox' }, st.error) : null),
+    picker);
 
   renderStats();
 }

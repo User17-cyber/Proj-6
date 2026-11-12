@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Meridian VPN
+GenericName=VPN
+Comment=Private VPN with ad blocking and location switching
+Exec=/usr/bin/meridian
+Icon=meridian
+Terminal=false
+Categories=Network;Security;
+Keywords=vpn;wireguard;privacy;adblock;
+StartupWMClass=Meridian

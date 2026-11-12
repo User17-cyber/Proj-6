@@ -1,0 +1,142 @@
+name: Meridian
+
+# Tests Meridian on Windows, macOS and Linux and builds the downloadable
+# apps. Pushing a tag such as "meridian-v1.0.0" also publishes them as a
+# GitHub release.
+
+on:
+  push:
+    paths:
+      - "meridian/**"
+      - ".github/workflows/meridian.yml"
+    tags:
+      - "meridian-v*"
+  pull_request:
+    paths:
+      - "meridian/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: meridian
+    shell: bash
+
+jobs:
+  test:
+    name: Unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: meridian/go.mod
+          cache-dependency-path: meridian/go.sum
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: The app builds and runs
+        run: |
+          go build -o meridian-test${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/meridian
+          ./meridian-test${{ runner.os == 'Windows' && '.exe' || '' }} version
+
+  e2e-linux:
+    name: End-to-end with real tunnels (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: meridian/go.mod
+          cache-dependency-path: meridian/go.sum
+      - run: sudo apt-get update -q && sudo apt-get install -y -q wireguard-tools dnsutils nftables
+      - run: |
+          sudo env "PATH=$PATH" "HOME=$HOME" "GOCACHE=$(go env GOCACHE)" "GOMODCACHE=$(go env GOMODCACHE)" \
+            "GOPATH=$(go env GOPATH)" scripts/e2e-linux.sh
+
+  server:
+    name: Server installer (${{ matrix.base }})
+    strategy:
+      fail-fast: false
+      matrix:
+        base: ["ubuntu:22.04", "ubuntu:24.04", "debian:12"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: meridian/go.mod
+          cache-dependency-path: meridian/go.sum
+      - run: sudo apt-get update -q && sudo apt-get install -y -q wireguard-tools dnsutils
+      - run: |
+          sudo env "PATH=$PATH" "HOME=$HOME" "GOCACHE=$(go env GOCACHE)" "GOMODCACHE=$(go env GOMODCACHE)" \
+            "GOPATH=$(go env GOPATH)" BASE="${{ matrix.base }}" scripts/test-server-docker.sh
+
+  build:
+    name: Build apps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: meridian/go.mod
+          cache-dependency-path: meridian/go.sum
+      - run: sudo apt-get update -q && sudo apt-get install -y -q nsis
+      - name: Version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/meridian-v* ]]; then
+            v="${GITHUB_REF#refs/tags/meridian-v}"
+          else
+            v="0.0.0-dev.$(date -u +%Y%m%d).${GITHUB_SHA::7}"
+          fi
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+      - run: scripts/build-release.sh "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meridian-${{ env.VERSION }}
+          path: meridian/dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/meridian-v')
+    needs: [test, e2e-linux, server, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${GITHUB_REF_NAME#meridian-v}"
+          cat > notes.md <<EOF
+          ## Download Meridian VPN $v
+
+          | Your computer | Download |
+          | --- | --- |
+          | Windows 10/11 (most PCs) | \`Meridian-Setup-$v-windows-x64.exe\` |
+          | Windows on ARM | \`Meridian-Setup-$v-windows-arm64.exe\` |
+          | Mac (Apple silicon or Intel) | \`Meridian-$v-macos.zip\` |
+          | Ubuntu, Debian, Mint, Pop!_OS | \`meridian_${v}_amd64.deb\` |
+          | Other Linux | \`meridian-$v-linux-amd64.tar.gz\` |
+          | A VPN server of your own | \`meridian-server.sh\` |
+
+          The Mac app is not signed by Apple: after the first launch attempt, open
+          System Settings > Privacy & Security and choose "Open Anyway".
+          Checksums are in \`SHA256SUMS\`.
+          EOF
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "Meridian VPN $v" --notes-file notes.md
