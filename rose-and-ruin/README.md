@@ -45,6 +45,15 @@ This runs the headless simulation checks (pose reach, map connectivity, a 150-se
 From the great hall:
 
 - **Take the Field**: choose castle, manner of battle, army size, bot prowess, house, time limit, reserves and friendly fire, then pick your knight in the armoury. The hosts stay drawn up until you press Space (or click) to sound the charge.
+
+**Bot prowess.** Higher levels give bots quicker reactions, surer guards and better aim, and they also fight more cleverly:
+
+- **Recruit**: plain brawlers, as before.
+- **Veteran**: finishes off wounded and reeling foes, and punishes openings more often.
+- **Champion**: minds his stamina and won't swing himself breathless. He flanks a foe who is busy with a comrade, cuts in under a slow heavy blow, and punishes a missed swing. When he is outnumbered and hurt he falls back on his friends, and the host sends men where the fighting is hardest.
+- **Legend**: the host fights as one. Knights share a target with one or two comrades but never mob it. They go for an enemy's back, rescue archers and badly wounded comrades, and march to the fighting grounds as a band. In conquest they weigh each objective by how many foes are on it and how many comrades are already heading there. Rallying cries and blessings wait until the line is close. A Legend also slips a blow aimed at the edge of its reach by stepping back, then strikes.
+
+In bot-versus-bot tests with the same reflexes and accuracy, Legend tactics won 13 of 14 pitched battles and 58% of single-combat rounds against the old brain.
 - **Watch the Battle**: start a battle of bots alone; it begins as soon as it loads. A director camera chooses shots; you can follow any knight or fly freely, and slow or speed up time.
 - **Join a Muster**: connect to a server, join a running battle or raise your own. Bots fill every place no player holds.
 

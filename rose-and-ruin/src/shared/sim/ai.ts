@@ -1,6 +1,15 @@
 // Bot brains. Bots drive their knight through the same InputFrame a human produces, so
 // every combat rule applies to them equally. Difficulty sets reaction time, guard skill,
 // aim and tactical sense; each bot also gets a little personality jitter.
+//
+// Tactics grow with the level (Recruit keeps the plain brawler's mind):
+//  Veteran   finishes wounded and reeling foes, punishes openings more often
+//  Champion  minds his wind, flanks a foe who is busy with a comrade, cuts in under a slow heavy
+//            blow, punishes a whiff, falls back on his friends when outnumbered, and the host sends
+//            men where the fighting is hardest
+//  Legend    fights as one host: shares a target without mobbing it, rescues hard-pressed archers
+//            and wounded comrades, marches as a band, weighs every objective by what it needs,
+//            saves rallying cries until the line is close, and baits swings out of reach
 
 import { Act, Btn, type Difficulty } from '../types';
 import { ABILITIES } from '../data/classes';
@@ -10,12 +19,12 @@ import { angleDiff, clamp, wrapAngle, yawTo } from '../math';
 import type { Knight } from './knight';
 import type { Match } from './match';
 
-interface Skill { reaction: number; block: number; parry: number; think: number; turn: number; aim: number; ability: number; feint: number }
+interface Skill { reaction: number; block: number; parry: number; think: number; turn: number; aim: number; ability: number; feint: number; tactics: number; punish: number }
 const SKILL: readonly Skill[] = [
-  { reaction: 0.32, block: 0.32, parry: 0.04, think: 0.26, turn: 5.0, aim: 1.9, ability: 0.3, feint: 0.0 },
-  { reaction: 0.24, block: 0.52, parry: 0.12, think: 0.18, turn: 7.0, aim: 1.3, ability: 0.5, feint: 0.04 },
-  { reaction: 0.19, block: 0.68, parry: 0.24, think: 0.12, turn: 9.0, aim: 0.9, ability: 0.7, feint: 0.09 },
-  { reaction: 0.14, block: 0.8, parry: 0.38, think: 0.08, turn: 12.0, aim: 0.6, ability: 0.9, feint: 0.14 },
+  { reaction: 0.32, block: 0.32, parry: 0.04, think: 0.26, turn: 5.0, aim: 1.9, ability: 0.3, feint: 0.0, tactics: 0, punish: 0.25 },
+  { reaction: 0.24, block: 0.52, parry: 0.12, think: 0.18, turn: 7.0, aim: 1.3, ability: 0.5, feint: 0.04, tactics: 1, punish: 0.4 },
+  { reaction: 0.19, block: 0.68, parry: 0.24, think: 0.12, turn: 9.0, aim: 0.9, ability: 0.7, feint: 0.09, tactics: 2, punish: 0.6 },
+  { reaction: 0.14, block: 0.8, parry: 0.38, think: 0.08, turn: 12.0, aim: 0.6, ability: 0.9, feint: 0.14, tactics: 3, punish: 0.75 },
 ];
 
 export class BotBrain {
@@ -40,6 +49,8 @@ export class BotBrain {
   pressKick = false;
   pressThrust = false;
   pressAbility = -1;
+  /** a quick light blow, now (Champion+ cutting in under a heavy) */
+  pressQuick = false;
   strafe = 1;
   strafeT = 0;
   stuckT = 0;
@@ -57,14 +68,19 @@ export class BotBrain {
   retreatT = 0;
   yaw = 0;
   lastX = 0; lastZ = 0;
+  /** time left falling back toward comrades (Champion and above) */
+  regroupT = 0;
+  regroupCd = 0;
 
-  constructor(readonly k: Knight, difficulty: Difficulty, seed: number) {
+  /** `tactics` overrides the level's tactical sense (for tests); the level sets the rest */
+  constructor(readonly k: Knight, difficulty: Difficulty, seed: number, tactics?: number) {
     this.rng = new Rng(Math.floor(seed * 4294967295));
     const base = SKILL[difficulty];
     const j = (v: number, f: number) => v * (1 + (this.rng.next() - 0.5) * f);
     this.skill = {
       reaction: j(base.reaction, 0.4), block: clamp(j(base.block, 0.35), 0, 0.95), parry: j(base.parry, 0.5),
       think: j(base.think, 0.3), turn: j(base.turn, 0.2), aim: j(base.aim, 0.4), ability: base.ability, feint: base.feint,
+      tactics: tactics ?? base.tactics, punish: tactics !== undefined ? SKILL[clamp(tactics, 0, 3)].punish : base.punish,
     };
     this.aggression = this.rng.range(0.3, 1);
     this.strafe = this.rng.sign();
@@ -77,8 +93,32 @@ export class BotBrain {
     this.holdAttack = this.holdBlock = 0;
     this.threatId = -1;
     this.retreatT = 0;
+    this.regroupT = 0;
     this.yaw = this.k.yaw;
   }
+}
+
+/** How many bots of each house are set on each knight, counted once per tick (Legend focus). */
+const focusCache = new WeakMap<Match, { tick: number; n: Int16Array }>();
+function focusOn(m: Match, id: number): number {
+  let c = focusCache.get(m);
+  if (!c || c.n.length < m.knights.length) { c = { tick: -1, n: new Int16Array(m.knights.length + 8) }; focusCache.set(m, c); }
+  if (c.tick !== m.tick) {
+    c.tick = m.tick; c.n.fill(0);
+    for (const br of m.brains.values()) if (br.target >= 0 && br.k.alive) c.n[br.target]++;
+  }
+  return c.n[id] ?? 0;
+}
+/** Is this foe busy with one of my comrades (facing him, close)? */
+function engagedElsewhere(m: Match, me: Knight, e: Knight): Knight | null {
+  let found: Knight | null = null;
+  const fx = -Math.sin(e.yaw), fz = -Math.cos(e.yaw);
+  m.hash.query(e.x, e.z, 3.4, (a) => {
+    if (found || a === me || !a.alive || a.team !== me.team) return;
+    const dx = a.x - e.x, dz = a.z - e.z, d = Math.hypot(dx, dz) || 1;
+    if ((dx * fx + dz * fz) / d > 0.6) found = a;
+  });
+  return found;
 }
 
 const reachOf = (k: Knight) => ((k.weapon.attacks[0].hitEnd ?? k.weapon.hitEnd) + 0.55) * k.def.size.height;
@@ -94,7 +134,7 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
     return;
   }
   const dt = 1 / 60;
-  b.retargetT -= dt; b.thinkT -= dt; b.pathT -= dt; b.strafeT -= dt; b.goalT -= dt; b.retreatT -= dt;
+  b.retargetT -= dt; b.thinkT -= dt; b.pathT -= dt; b.strafeT -= dt; b.goalT -= dt; b.retreatT -= dt; b.regroupT -= dt; b.regroupCd -= dt;
   if (b.retargetT <= 0) { pickTarget(m, k, b); b.retargetT = 0.45 + b.rng.range(0, 0.35); }
   let t = b.target >= 0 ? m.knights[b.target] : null;
   if (t && (!t.alive || t.team === k.team)) { t = null; b.target = -1; b.retargetT = 0; }
@@ -139,6 +179,48 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
           wantZ += (oz / d) * (1.8 - d) * 0.9;
         });
         if (dist > reach * 1.1) sprint = dist > 5 && k.stamina > 50 && b.aggression > 0.6;
+        const T = b.skill.tactics;
+        // Champion+: a foe busy with a comrade is taken from the flank (a Legend goes for his back)
+        if (T >= 2 && b.retreatT <= 0) {
+          const ally = engagedElsewhere(m, k, t);
+          if (ally) {
+            const fx = -Math.sin(t.yaw), fz = -Math.cos(t.yaw);
+            const side = (fx * (k.z - t.z) - fz * (k.x - t.x)) >= 0 ? 1 : -1;
+            const ang = (T >= 3 ? 2.4 : 1.6) * side;
+            const c = Math.cos(ang), sn = Math.sin(ang);
+            const ox = fx * c - fz * sn, oz = fx * sn + fz * c;
+            const px = t.x + ox * ideal, pz = t.z + oz * ideal;
+            const dpx = px - k.x, dpz = pz - k.z, dp = Math.hypot(dpx, dpz);
+            if (dp > 0.6) {
+              // swing wide of the foe's point on the way round
+              const awayX = k.x - t.x, awayZ = k.z - t.z, ad = Math.hypot(awayX, awayZ) || 1;
+              const push = dist < reach * 0.9 ? 0.6 : 0;
+              wantX = dpx / dp + (awayX / ad) * push; wantZ = dpz / dp + (awayZ / ad) * push;
+              if (dp > 3 && k.stamina > 40) sprint = true;
+            }
+          }
+        }
+        // Champion+: hard pressed and alone, fall back on the nearest comrades
+        if (T >= 2 && b.regroupCd <= 0) {
+          b.regroupCd = 0.5;
+          const foes = countEnemies(m, k, 6);
+          if (foes >= 3 && k.hp < k.def.hp * (T >= 3 ? 0.8 : 0.6)) {
+            let friends = 0;
+            m.hash.query(k.x, k.z, 6, (o) => { if (o !== k && o.alive && o.team === k.team) friends++; });
+            if (foes >= friends + 3) b.regroupT = 1.6;
+          }
+        }
+        if (T >= 2 && b.regroupT > 0) {
+          let best: Knight | null = null, bd = 30 * 30;
+          m.hash.query(k.x, k.z, 30, (o) => {
+            if (o === k || !o.alive || o.team !== k.team) return;
+            const d2 = (o.x - k.x) ** 2 + (o.z - k.z) ** 2;
+            if (d2 > 36 && d2 < bd) { bd = d2; best = o; }
+          });
+          const f = best as Knight | null;
+          if (f) { wantX = f.x - k.x; wantZ = f.z - k.z; sprint = k.stamina > 25; faceYaw = dist < 4 ? toT : Math.atan2(-wantX, -wantZ); }
+          else b.regroupT = 0;
+        }
       }
     }
   } else {
@@ -162,6 +244,17 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
         if (!m.objectives.length && (b.idleAtGoal += dt) > 7) { b.idleAtGoal = 0; b.goalT = 0; }
       }
       sprint = dg > 25 && k.stamina > 60;
+      // Legend: a band marches together; one who has outstripped his fellows checks his pace
+      if (b.skill.tactics >= 3 && m.settings.mode === 'battle' && dg > 40) {
+        let near = 0, behind = false;
+        m.hash.query(k.x, k.z, 30, (o) => {
+          if (o === k || !o.alive || o.team !== k.team) return;
+          const d2 = (o.x - k.x) ** 2 + (o.z - k.z) ** 2;
+          if (d2 < 64) near++;
+          else if (Math.hypot(gx - o.x, gz - o.z) > dg + 6) behind = true;
+        });
+        if (near === 0 && behind) { wantX *= 0.3; wantZ *= 0.3; sprint = false; }
+      }
       if (Math.hypot(wantX, wantZ) > 0.1) faceYaw = Math.atan2(-wantX, -wantZ);
     }
   }
@@ -229,6 +322,29 @@ function pickTarget(m: Match, k: Knight, b: BotBrain) {
     m.hash.query(e.x, e.z, 2.6, (o) => { if (o.alive && o.team === k.team && o !== k) crowd++; });
     score += Math.max(0, crowd - 1) * 5;
     if (e.id === cur) score -= 5;
+    const T = b.skill.tactics;
+    if (T >= 1) {
+      // finish the wounded and the reeling
+      score -= (1 - e.hp / e.def.hp) * 4;
+      if (d < 7 && (e.stunT > 0 || e.knockT > 0 || e.act === Act.Stagger)) score -= 4;
+    }
+    if (T >= 2 && !k.def.ranged && d < 10 && engagedElsewhere(m, k, e)) score -= 4; // his back is to me
+    if (T >= 2 && k.def.ranged) {
+      if (e.def.ranged) score -= 6; // silence their bows first
+      if (e.shield && Math.abs(angleDiff(e.yaw, yawTo(e.x, e.z, k.x, k.z))) < 1.1) score += 6; // a raised shield takes the arrow
+      if (m.settings.friendlyFire && crowd > 0) score += 15;
+    }
+    if (T >= 3) {
+      // the host shares its targets: join one or two comrades, never a mob
+      const f = focusOn(m, e.id) - (e.id === cur ? 1 : 0);
+      if (!k.def.ranged) score += f >= 1 && f <= 2 ? -4 : f >= 3 ? 6 : 0;
+      // rescue: a foe on a comrade archer or a badly wounded comrade is dealt with first
+      if (!k.def.ranged && d < 16) {
+        let ward = false;
+        m.hash.query(e.x, e.z, 3.2, (o) => { if (!ward && o !== k && o.alive && o.team === k.team && (o.def.ranged || o.hp < o.def.hp * 0.35)) ward = true; });
+        if (ward) score -= 6;
+      }
+    }
     if (d > 12 && !m.nav.los(k.x, k.z, e.x, e.z)) score += 14;
     if (k.def.ranged && !m.world.los(k.x, k.y + 1.5, k.z, e.x, e.y + 1.3, e.z)) score += 60;
     if (m.nav.component(e.x, e.z) !== m.nav.component(k.x, k.z) && !k.def.ranged) score += 80;
@@ -257,10 +373,18 @@ function pickGoal(m: Match, k: Knight, b: BotBrain): [number, number, number, nu
     if (b.goalIdx < 0 || b.goalT <= 0 || (m.objectives[b.goalIdx].owner === k.team && !m.objectives[b.goalIdx].contested && b.rng.chance(0.02))) {
       // weigh objectives: not ours first, closer first, a few defenders stay
       let best = 0, bs = Infinity;
+      const T = b.skill.tactics;
       m.objectives.forEach((o, i) => {
         const d = Math.hypot(o.def.x - k.x, o.def.z - k.z);
-        let s = d + b.rng.range(0, 40);
-        if (o.owner === k.team) s += o.contested ? -10 : 70;
+        let s = d + b.rng.range(0, T >= 3 ? 15 : 40);
+        if (T >= 3) {
+          // Legend: weigh each objective by what it needs: foes on it against comrades bound there
+          let foes = 0, coming = 0;
+          for (const e of m.knights) if (e.alive && e.team !== k.team && (e.x - o.def.x) ** 2 + (e.z - o.def.z) ** 2 < (o.def.r + 14) ** 2) foes++;
+          for (const br of m.brains.values()) if (br !== b && br.k.team === k.team && br.k.alive && br.goalIdx === i) coming++;
+          const need = foes * 1.3 + (o.owner !== k.team ? 3 : 0) + (o.contested ? 4 : 0) - coming;
+          s = d * 0.6 + b.rng.range(0, 15) - need * 12 + (o.owner === k.team && !o.contested && foes === 0 ? 70 : 0);
+        } else if (o.owner === k.team) s += o.contested ? -10 : 70;
         else if (o.owner >= 0) s -= 10;
         if (s < bs) { bs = s; best = i; }
       });
@@ -280,7 +404,8 @@ function pickGoal(m: Match, k: Knight, b: BotBrain): [number, number, number, nu
     let rank = 0;
     for (const o of m.knights) if (o.team === k.team && o.id < k.id) rank++;
     const band = Math.floor(rank / 5);
-    if (b.rng.chance(0.75)) {
+    const T = b.skill.tactics;
+    if (b.rng.chance(T >= 3 ? 0.15 : T >= 2 ? 0.5 : 0.75)) {
       // the bands' grounds rotate every two minutes, the same for both hosts
       const epoch = Math.floor(m.time / 120);
       b.goalIdx = (band * 3 + epoch * 5 + 1) % rally.length;
@@ -293,8 +418,11 @@ function pickGoal(m: Match, k: Knight, b: BotBrain): [number, number, number, nu
           if (!o.alive || o === k || (o.x - p[0]) ** 2 + (o.z - p[1]) ** 2 > 900) continue;
           if (o.team === k.team) friends++; else foes++;
         }
+        // a Legend host also counts the comrades already on their way there
+        let coming = 0;
+        if (T >= 3) for (const br of m.brains.values()) if (br !== b && br.k.team === k.team && br.k.alive && br.goalIdx === i) coming++;
         const sc = Math.hypot(p[0] - k.x, p[1] - k.z) * 0.35 + Math.hypot(p[0] - es.x, p[1] - es.z) * 0.15
-          - 4 * foes - 12 * Math.max(0, foes - friends) + (foes === 0 ? 20 : 0) + b.rng.range(0, 80);
+          - 4 * foes - 12 * Math.max(0, foes - friends - coming) + (foes === 0 ? 20 : 0) + coming * (T >= 3 ? 2 : 0) + b.rng.range(0, T >= 3 ? 25 : T >= 2 ? 50 : 80);
         if (sc < bs) { bs = sc; bi = i; }
       });
       b.goalIdx = bi;
@@ -374,6 +502,16 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
       b.threatBlock = canBlock && !committed && b.rng.chance(clamp(S.block + shieldBonus, 0, 0.97));
       // a skilled bot waits to raise the guard at the last instant for a parry
       b.threatParryAt = b.rng.chance(S.parry) ? Math.max(0, remainingWindup(threat) - 0.1) : 0;
+      // Legend: a blow begun at the edge of its reach is slipped by stepping back, then punished
+      if (S.tactics >= 3 && Math.hypot(threat.x - k.x, threat.z - k.z) > reachOf(threat) - 0.75 && remainingWindup(threat) > 0.25 && b.rng.chance(0.4)) {
+        b.threatBlock = false; b.retreatT = 0.45;
+      }
+      // Champion+: cut in under a slow heavy blow with a quick one
+      else if (S.tactics >= 2 && threat.heavy && Math.hypot(threat.x - k.x, threat.z - k.z) <= reach && (k.act === Act.Idle || k.act === Act.Block)
+        && remainingWindup(threat) > k.weapon.attacks[0].windup / k.def.attackSpeed + 0.1 && k.stamina > 10 && b.rng.chance(0.5)) {
+        b.threatBlock = false; b.holdAttack = 0; b.holdBlock = 0;
+        if (k.weapon.attacks[3] && b.rng.chance(0.5)) b.pressThrust = true; else b.pressQuick = true;
+      }
       if (!b.threatBlock && k.def.abilities.includes('dash') && b.rng.chance(0.35 * S.ability)) b.pressAbility = k.def.abilities.indexOf('dash');
       if (b.threatBlock) b.holdAttack = 0;
     }
@@ -395,8 +533,10 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
   // track how long the target has turtled
   if (t.act === Act.Block) b.targetBlockT += dt; else b.targetBlockT = 0;
   // the foe just bounced off our guard or was parried: punish it
-  if ((t.act === Act.Deflect || t.act === Act.Parried || t.act === Act.Stagger || t.act === Act.Stun || t.knockT > 0) && dist <= reach + 0.2 && (k.act === Act.Idle || k.act === Act.Block) && b.holdBlock <= 0.05) {
-    if (b.rng.chance(0.25)) { buttons |= Btn.Attack; b.thinkT = S.think; return buttons; }
+  const opening = t.act === Act.Deflect || t.act === Act.Parried || t.act === Act.Stagger || t.act === Act.Stun || t.knockT > 0
+    || (S.tactics >= 2 && t.act === Act.Recover && t.actT < t.actDur * 0.6); // a whiffed blow leaves him open
+  if (opening && dist <= reach + 0.2 && (k.act === Act.Idle || k.act === Act.Block) && b.holdBlock <= 0.05) {
+    if (b.rng.chance(S.punish)) { buttons |= Btn.Attack; b.thinkT = S.think; return buttons; }
   }
 
   // --- held attack (heavy charge) in progress
@@ -409,6 +549,8 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
 
   if (b.pressKick) { buttons |= Btn.Kick; b.pressKick = false; }
   if (b.pressThrust) { buttons |= Btn.Thrust; b.pressThrust = false; }
+  if (b.pressQuick && (k.act === Act.Idle || k.act === Act.Block)) { buttons = (buttons & ~Btn.Block) | Btn.Attack; b.pressQuick = false; }
+  else if (b.pressQuick && k.act !== Act.Recover) b.pressQuick = false;
   if (b.pressAbility >= 0) { buttons |= b.pressAbility === 0 ? Btn.Ability1 : Btn.Ability2; b.pressAbility = -1; }
 
   if (b.thinkT > 0) return buttons;
@@ -422,6 +564,13 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
   // --- abilities
   if (tryBotAbility(m, k, b, t, dist)) return buttons;
 
+  // Champion+: winded, he keeps his guard up and steps off to get his breath back
+  if (S.tactics >= 2 && k.stamina < 22 && t.act !== Act.Stun && t.knockT <= 0) {
+    if (k.blockArc > 0 && dist < reach * 1.4) b.holdBlock = b.rng.range(0.3, 0.6);
+    else b.retreatT = 0.5;
+    return buttons;
+  }
+
   // --- guard stance: a cautious fighter raises his guard while sizing the foe up
   if (dist <= reach * 1.35 && k.blockArc > 0 && t.act !== Act.Block && b.rng.chance(0.22 * (1.2 - b.aggression)) && k.stamina > 30) {
     b.holdBlock = b.rng.range(0.25, 0.7);
@@ -430,10 +579,16 @@ function meleeCombat(m: Match, k: Knight, b: BotBrain, t: Knight): number {
   // --- offence
   if (dist <= reach + 0.15 && facingErr < 0.45 && k.stamina > 6) {
     if (b.targetBlockT > 0.35 && b.rng.chance(0.55)) { b.pressKick = true; return buttons; }
+    // Champion+: against a guard, mix in feinted heavies and thrusts rather than battering it
+    if (S.tactics >= 2 && t.act === Act.Block && b.targetBlockT > 0.15 && b.rng.chance(0.5)) {
+      if (b.rng.chance(0.5) && k.stamina > 30) b.holdAttack = k.weapon.attacks[2].windup / k.def.attackSpeed + 0.3;
+      else b.pressThrust = true;
+      return buttons;
+    }
     const r = b.rng.next();
     const polearm = k.weapon.visual === 'halberd' || k.weapon.visual === 'poleaxe' || k.weapon.visual === 'spear';
     if (r < (polearm ? 0.3 : 0.22)) b.pressThrust = true;
-    else if (r < (polearm ? 0.5 : 0.44) && k.stamina > 30) b.holdAttack = k.weapon.attacks[2].windup / k.def.attackSpeed + b.rng.range(0.05, 0.45);
+    else if (r < (polearm ? 0.5 : 0.44) && k.stamina > (S.tactics >= 3 ? 45 : 30)) b.holdAttack = k.weapon.attacks[2].windup / k.def.attackSpeed + b.rng.range(0.05, 0.45);
     else { buttons |= Btn.Attack; b.holdAttack = 0; }
   } else if (dist < reach * 0.55 && b.rng.chance(0.25)) {
     b.pressKick = true; // too close: shove them off
@@ -500,6 +655,12 @@ function tryBotAbility(m: Match, k: Knight, b: BotBrain, t: Knight, dist: number
       case 'shieldbreaker': use = dist < 4 && (!!t.shield || t.act === Act.Block); break;
       case 'juggernaut': use = countEnemies(m, k, 8) >= 3 || (t.def.ranged && dist > 3 && dist < 22) || (dist > 3 && dist < 9 && b.rng.chance(0.15)); break;
       default: break;
+    }
+    // Legend: cries and blessings that serve the whole line wait until the line is close by
+    if (use && b.skill.tactics >= 3 && (id === 'rally' || id === 'benediction' || id === 'holdline' || id === 'warcry') && k.hp > k.def.hp * 0.35) {
+      let near = 0;
+      m.hash.query(k.x, k.z, 9, (a) => { if (a !== k && a.alive && a.team === k.team) near++; });
+      if (near < 2) use = false;
     }
     if (use && b.rng.chance(clamp(p, 0, 1))) { b.pressAbility = slot; return true; }
   }
