@@ -76,7 +76,13 @@ Section "Meridian" SecMain
     nsExec::ExecToLog '"$INSTDIR\Meridian.exe" service stop'
   Sleep 1500
   File "${SRCDIR}\Meridian.exe"
-  File "${SRCDIR}\wintun.dll"
+  !if /FileExists "${SRCDIR}\wintun.dll"
+    File "${SRCDIR}\wintun.dll"
+  !else
+    ; Not bundled: "Meridian.exe service install" downloads the official
+    ; Wintun release and checks its pinned SHA-256.
+    DetailPrint "The Wintun driver will be downloaded from wintun.net."
+  !endif
   File "${SRCDIR}\LICENSE.txt"
   File /oname=meridian.ico "..\icons\icon.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -111,6 +117,7 @@ Section "Uninstall"
   Delete "$DESKTOP\Meridian VPN.lnk"
   Delete "$INSTDIR\Meridian.exe"
   Delete "$INSTDIR\wintun.dll"
+  Delete "$INSTDIR\wintun-LICENSE.txt"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\meridian.ico"
   Delete "$INSTDIR\Uninstall.exe"

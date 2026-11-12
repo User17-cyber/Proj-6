@@ -437,12 +437,17 @@ func (e *Engine) Connect(t Target) error {
 		}
 	} else {
 		e.stopMonitor()
-		if err := e.dev.IpcSet(uapi); err != nil {
-			e.mu.Unlock()
-			return fmt.Errorf("switching location: %w", err)
+		err := e.dev.IpcSet(uapi)
+		if err == nil {
+			err = e.opts.Net.Update(plan)
 		}
-		if err := e.opts.Net.Update(plan); err != nil {
+		if err != nil {
+			// A half-switched tunnel is in an unknown state: tear it down
+			// rather than leave something running that may leak.
+			e.teardownLocked()
+			e.status = Status{State: Disconnected, Error: "switching location failed: " + err.Error()}
 			e.mu.Unlock()
+			e.changed()
 			return fmt.Errorf("switching location: %w", err)
 		}
 	}
@@ -518,14 +523,7 @@ func (e *Engine) Disconnect() error {
 	e.changed()
 
 	e.mu.Lock()
-	e.stopMonitor()
-	var errs []error
-	if e.netUp {
-		errs = append(errs, e.opts.Net.Down())
-		e.netUp = false
-	}
-	e.dev.Close()
-	e.dev, e.tunDev, e.proxy, e.bind, e.target, e.cfgUsed = nil, nil, nil, nil, nil, nil
+	errs := e.teardownLocked()
 	e.status = Status{State: Disconnected}
 	checkHome := e.settings.CheckExit
 	e.mu.Unlock()
@@ -535,6 +533,22 @@ func (e *Engine) Disconnect() error {
 		go e.RefreshHome()
 	}
 	return errors.Join(errs...)
+}
+
+// teardownLocked stops the monitor, restores the system and closes the
+// device. The caller holds e.mu.
+func (e *Engine) teardownLocked() []error {
+	e.stopMonitor()
+	var errs []error
+	if e.netUp {
+		errs = append(errs, e.opts.Net.Down())
+		e.netUp = false
+	}
+	if e.dev != nil {
+		e.dev.Close()
+	}
+	e.dev, e.tunDev, e.proxy, e.bind, e.target, e.cfgUsed = nil, nil, nil, nil, nil, nil
+	return errs
 }
 
 // Apply changes settings, updating a running tunnel in place.

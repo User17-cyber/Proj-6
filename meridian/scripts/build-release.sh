@@ -168,7 +168,7 @@ if [ -n "$wintun" ]; then
 	fi
 	unzip -q -o "$wintun" -d "$WORK/wintun"
 else
-	echo "warning: Wintun not available (set WINTUN_ZIP or allow access to wintun.net); skipping Windows packages" >&2
+	echo "note: Wintun not bundled (no access to wintun.net); the Windows app downloads and verifies it on first install" >&2
 fi
 for arch in amd64 arm64; do
 	label=x64
@@ -176,24 +176,30 @@ for arch in amd64 arm64; do
 	d=$WORK/win-$arch
 	mkdir -p "$d"
 	build windows $arch "$d/Meridian.exe" "-H=windowsgui"
-	[ -n "$wintun" ] || continue
-	cp "$WORK/wintun/wintun/bin/$arch/wintun.dll" "$d/wintun.dll"
 	notices "$d/Meridian.exe" "$d/LICENSE.txt"
-	{
-		printf '\n================================================================\nWintun (wintun.dll)\n================================================================\n\n'
-		cat "$WORK/wintun/wintun/LICENSE.txt"
-	} >>"$d/LICENSE.txt"
+	files="Meridian.exe README.txt LICENSE.txt"
+	if [ -n "$wintun" ]; then
+		cp "$WORK/wintun/wintun/bin/$arch/wintun.dll" "$d/wintun.dll"
+		files="$files wintun.dll"
+		{
+			printf '\n================================================================\nWintun (wintun.dll)\n================================================================\n\n'
+			cat "$WORK/wintun/wintun/LICENSE.txt"
+		} >>"$d/LICENSE.txt"
+	fi
 	cat >"$d/README.txt" <<EOF
 Meridian VPN $VERSION for Windows 10 and 11 ($label)
 
-Portable use: keep Meridian.exe and wintun.dll in the same folder and open
-Meridian.exe. Windows asks for administrator approval once to install the
-Meridian service into Program Files. The installer (Meridian-Setup) does the
-same and adds Start menu and desktop shortcuts.
+Portable use: open Meridian.exe (keep wintun.dll next to it if it came with
+this zip). Windows asks for administrator approval once to install the
+Meridian service into Program Files; if wintun.dll is missing it is
+downloaded from wintun.net and checked against a pinned SHA-256. The
+installer (Meridian-Setup) does the same and adds Start menu and desktop
+shortcuts.
 
 Command line (from a terminal): Meridian.exe status | connect [location] | disconnect
 EOF
-	(cd "$d" && zip -q "$DIST/Meridian-$VERSION-windows-$label.zip" Meridian.exe wintun.dll README.txt LICENSE.txt)
+	# shellcheck disable=SC2086
+	(cd "$d" && zip -q "$DIST/Meridian-$VERSION-windows-$label.zip" $files)
 	if command -v makensis >/dev/null; then
 		(cd packaging/windows && makensis -V2 -DVERSION="$NUMVER" -DARCH="$label" -DSRCDIR="$d" \
 			-DOUTFILE="$DIST/Meridian-Setup-$VERSION-windows-$label.exe" installer.nsi)

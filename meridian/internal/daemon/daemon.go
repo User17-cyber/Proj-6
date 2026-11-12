@@ -133,11 +133,7 @@ func Run(ctx context.Context, o Options) error {
 	go d.listUpdater(ctx)
 	go d.totalsLoop(ctx)
 	if set.AutoConnect {
-		go func() {
-			if err := d.Connect(set.AutoConnectTo); err != nil {
-				o.Logf("daemon: auto-connect failed: %v", err)
-			}
-		}()
+		go d.autoConnect(ctx, set.AutoConnectTo)
 	} else if set.ShowHomeLocation && set.CheckExit {
 		go d.eng.RefreshHome()
 	}
@@ -147,6 +143,28 @@ func Run(ctx context.Context, o Options) error {
 	d.eng.Close()
 	d.flushTotals()
 	return nil
+}
+
+// autoConnect connects at startup, retrying while the network comes up
+// (at boot, Wi-Fi and DNS may take a while).
+func (d *Daemon) autoConnect(ctx context.Context, id string) {
+	delay := 2 * time.Second
+	for attempt := 1; ; attempt++ {
+		err := d.Connect(id)
+		if err == nil {
+			return
+		}
+		d.opts.Logf("daemon: auto-connect attempt %d failed: %v", attempt, err)
+		if attempt >= 12 || d.eng.Status().State != engine.Disconnected {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(delay):
+		}
+		delay = min(delay*2, 30*time.Second)
+	}
 }
 
 func randomToken() (string, error) {

@@ -46,7 +46,15 @@ func waitForService(d time.Duration) (daemon.UIInfo, error) {
 // ensureService starts (installing if needed) the background service.
 func ensureService() (daemon.UIInfo, error) {
 	if info, ok := serviceReady(); ok {
-		return info, nil
+		if info.Version == version || version == "dev" || info.Version == "dev" {
+			return info, nil
+		}
+		// The app was updated but the background service still runs the
+		// old copy: reinstall it (asks for administrator approval).
+		if err := installServiceElevated(); err != nil {
+			return info, nil // keep working with the old service
+		}
+		return waitForNewService(info.PID)
 	}
 	if serviceInstalled() {
 		_ = startServiceAsUser()
@@ -58,6 +66,18 @@ func ensureService() (daemon.UIInfo, error) {
 		return daemon.UIInfo{}, err
 	}
 	return waitForService(30 * time.Second)
+}
+
+// waitForNewService waits until a service other than oldPID answers.
+func waitForNewService(oldPID int) (daemon.UIInfo, error) {
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		if info, ok := serviceReady(); ok && info.PID != oldPID {
+			return info, nil
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	return waitForService(5 * time.Second)
 }
 
 // appBrowsers are Chromium-based browsers that can show a page as an app

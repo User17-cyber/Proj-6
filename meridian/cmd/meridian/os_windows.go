@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"meridian/internal/assets"
 	"meridian/internal/daemon"
 	"meridian/internal/platform"
+	"meridian/internal/wintun"
 )
 
 const (
@@ -184,7 +186,10 @@ func installService() error {
 		}
 	}
 	if !fileExists(filepath.Join(dir, wintunDLL)) {
-		return fmt.Errorf("%s is missing; keep it in the same folder as Meridian.exe", wintunDLL)
+		fmt.Println("Downloading the Wintun driver from wintun.net…")
+		if err := fetchWintun(dir); err != nil {
+			return fmt.Errorf("%s is missing and could not be downloaded (%v); put it in the same folder as Meridian.exe", wintunDLL, err)
+		}
 	}
 	m, err := mgr.Connect()
 	if err != nil {
@@ -215,6 +220,23 @@ func installService() error {
 	}
 	fmt.Println("Meridian service installed and started.")
 	return nil
+}
+
+// fetchWintun downloads the official Wintun release, checks it against the
+// pinned SHA-256 and installs the DLL for this architecture into dir.
+func fetchWintun(dir string) error {
+	data, err := wintun.Download(nil, wintun.URL)
+	if err != nil {
+		return err
+	}
+	dll, license, err := wintun.Extract(data, wintun.SHA256, runtime.GOARCH)
+	if err != nil {
+		return err
+	}
+	if len(license) > 0 {
+		_ = os.WriteFile(filepath.Join(dir, "wintun-LICENSE.txt"), license, 0o644)
+	}
+	return os.WriteFile(filepath.Join(dir, wintunDLL), dll, 0o644)
 }
 
 func fileExists(p string) bool {
