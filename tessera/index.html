@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tessera Wilds</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="tint"></div>
+
+<div id="hud" class="hidden">
+  <div id="compass"><div id="compassStrip"></div><div id="compassTick"></div></div>
+  <div id="place"></div>
+  <div id="cross"><span></span><span></span></div>
+  <div id="targetInfo"></div>
+  <div id="toasts"></div>
+  <div id="say" class="hidden"><b></b><p></p></div>
+  <div id="banner" class="hidden"><h2></h2><p></p></div>
+  <div id="bottom">
+    <div id="stats"><div id="hearts"></div><div id="air"></div><div id="armorPips"></div></div>
+    <div id="hotbar"></div>
+    <div id="heldName"></div>
+  </div>
+  <div id="debug" class="hidden"></div>
+</div>
+
+<div id="title" class="overlay">
+  <div class="titleBox">
+    <div class="logo"><i></i><i></i><i></i><i></i></div>
+    <h1>Tessera Wilds</h1>
+    <p class="tag">An endless world of blocks. Dig, farm, build, fight.</p>
+    <div class="row">
+      <button id="btnNew" class="primary">New World</button>
+      <button id="btnContinue">Continue</button>
+    </div>
+    <label class="seedRow">Seed <input id="seedIn" placeholder="random" maxlength="18" spellcheck="false"></label>
+    <div class="cols">
+      <div>
+        <h3>Controls</h3>
+        <ul class="keys">
+          <li><kbd>W A S D</kbd> move <kbd>Space</kbd> jump <kbd>Shift</kbd> sprint</li>
+          <li><kbd>Left click</kbd> dig or attack</li>
+          <li><kbd>Right click</kbd> place, use, till, plant, eat</li>
+          <li><kbd>1</kbd>–<kbd>9</kbd> or wheel: pick a hotbar slot</li>
+          <li><kbd>E</kbd> inventory <kbd>Esc</kbd> pause <kbd>F3</kbd> details</li>
+          <li><kbd>Mouse</kbd> or <kbd>Arrow keys</kbd> look around</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Getting started</h3>
+        <ul class="keys">
+          <li>You start with a <b>Maker Table</b> and a set of seeds.</li>
+          <li>Place the table, then right-click it: every tool, weapon, armour piece and building block is made on its 3 × 3 grid.</li>
+          <li>Punch a tree for logs. Logs make planks, planks make sticks and your first Pick, Spade and Tiller.</li>
+        </ul>
+      </div>
+    </div>
+    <div id="places"></div>
+  </div>
+</div>
+
+<div id="loading" class="overlay hidden">
+  <div class="loadBox"><h2 id="loadTitle">Shaping the world</h2><div class="bar"><i id="loadBar"></i></div><p id="loadText"></p></div>
+</div>
+
+<div id="pause" class="overlay hidden">
+  <div class="menuBox">
+    <h2 id="pauseTitle">Paused</h2>
+    <p id="pauseText"></p>
+    <button id="btnResume" class="primary">Resume</button>
+    <label class="slider">View distance <input id="viewDist" type="range" min="4" max="12" step="1" value="7"><span id="viewDistV">7</span></label>
+    <label class="slider">Sound <input id="volume" type="range" min="0" max="10" step="1" value="6"><span id="volumeV">6</span></label>
+    <button id="btnSaveQuit">Save and quit to title</button>
+  </div>
+</div>
+
+<div id="death" class="overlay hidden">
+  <div class="menuBox"><h2>You fell</h2><p>Your pack is safe. You wake at your spawn point.</p><button id="btnRespawn" class="primary">Wake up</button></div>
+</div>
+
+<div id="screen" class="overlay hidden"><div id="panel"></div></div>
+<div id="cursorStack" class="hidden"></div>
+<div id="tooltip" class="hidden"></div>
+
+<script src="vendor/three.min.js"></script>
+<script src="src/util.js"></script>
+<script src="src/blocks.js"></script>
+<script src="src/items.js"></script>
+<script src="src/structures.js"></script>
+<script src="src/worldgen.js"></script>
+<script src="src/world.js"></script>
+<script src="src/mesher.js"></script>
+<script src="src/render.js"></script>
+<script src="src/entities.js"></script>
+<script src="src/player.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

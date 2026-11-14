@@ -1,3 +1,10 @@
+# Games
+
+Two browser games, each in its own folder. Neither needs a build step or a server.
+
+- **[Tessera Wilds](tessera/README.md)**: an endless voxel sandbox with biomes, farming, crafting on a 3 × 3 Maker Table, creatures to fight and places to find. Open `tessera/index.html`.
+- **Drillion** (below): an 8-bit deep-sea trivia dive. Open `drillion/index.html`.
+
 # Drillion
 
 An 8-bit deep-sea trivia dive. Pilot the Drillion, a drill-nosed submarine, from the surface toward the sea floor at 10,935 m. You get 7 prompts, like *"Name a country that borders at least 4 other countries."* Any answer that fits scores, but **rarer answers score more**: the most obvious answer is worth about 10 points, an obscure one up to 100.
