@@ -64,6 +64,13 @@ for (const f of FACES) {
     cr[axes[0]] += c[axes[0]] ? 1 : -1; cr[axes[1]] += c[axes[1]] ? 1 : -1;
     return [o(s1), o(s2), o(cr), d];
   });
+  f.aov = f.c.map((c) => {
+    const axes = [0, 1, 2].filter((a) => f.n[a] === 0);
+    const s1 = f.n.slice(), s2 = f.n.slice(), cr = f.n.slice();
+    s1[axes[0]] += c[axes[0]] ? 1 : -1; s2[axes[1]] += c[axes[1]] ? 1 : -1;
+    cr[axes[0]] += c[axes[0]] ? 1 : -1; cr[axes[1]] += c[axes[1]] ? 1 : -1;
+    return [s1, s2, cr];
+  });
 }
 
 /* Small box-built shapes, in 1/16ths of a block: [x0,y0,z0, x1,y1,z1, colour index, pattern]. */
@@ -186,6 +193,7 @@ function meshChunk(world, chunk) {
           const sh = SHAPES[id];
           if (!sh) continue;
           const sky = skyAt(x + 1, z + 1, y);
+          const sway = d.shape !== 'box' && id !== B.PUMPKIN_2 && id !== B.PUMPKIN_3;
           const ox = d.shape === 'plant' ? ((hsh >>> 16) & 3) / 16 - 0.09 : 0, oz = d.shape === 'plant' ? ((hsh >>> 18) & 3) / 16 - 0.09 : 0;
           for (const s of sh.boxes) {
             let c = sh.colors[s[6]];
@@ -193,7 +201,7 @@ function meshChunk(world, chunk) {
             if (c === null) { r = tint[li] / 255; g = tint[li + 1] / 255; b = tint[li + 2] / 255; }
             else { r = c[0]; g = c[1]; b = c[2]; }
             const k = d.shape === 'plant' ? 0.9 + ((hsh >>> (s[0] & 7)) & 7) / 40 : 1;
-            box(O, x + ox, y, z + oz, s, r * k, g * k, b * k, (s[7] || 0) + tile * 64, sky, d.shape !== 'box');
+            box(O, x + ox, y, z + oz, s, r * k, g * k, b * k, (s[7] || 0) + tile * 64 + (sway ? 16384 : 0), sky, d.shape !== 'box');
           }
           continue;
         }
@@ -228,7 +236,14 @@ function meshChunk(world, chunk) {
             if (k === 0) a0 = lvl; else if (k === 1) a1 = lvl; else if (k === 2) a2 = lvl; else a3 = lvl;
             const vx = x + cr[0], vy = y + (cr[1] ? lower : 0), vz = z + cr[2];
             const lamp = nLights ? lampAt(vx + F.n[0] * 0.4, vy + F.n[1] * 0.4, vz + F.n[2] * 0.4) : 0;
-            buf.vert(vx, vy, vz, r, g, b, FACE_UV[k][0], FACE_UV[k][1], pat + tile * 64, F.shade * AO_LEVEL[lvl], sky, lamp);
+            /* soft light: average the sky exposure of the open cells around this corner */
+            let sv = sky, sn = 1;
+            const av = F.aov[k];
+            for (let q = 0; q < 3; q++) {
+              if (IS_OPAQUE[pad[p + ao[q]]]) continue;
+              sv += skyAt(x + 1 + av[q][0], z + 1 + av[q][2], y + av[q][1]); sn++;
+            }
+            buf.vert(vx, vy, vz, r, g, b, FACE_UV[k][0], FACE_UV[k][1], pat + tile * 64, F.shade * AO_LEVEL[lvl], sv / sn, lamp);
           }
           buf.quad(a0 + a2 < a1 + a3);
         }

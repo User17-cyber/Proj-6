@@ -136,7 +136,7 @@ class UI {
     if (p.targetE) {
       const e = p.targetE;
       key = 'e' + e.type + Math.ceil(e.hp);
-      html = esc(e.def.name) + (e.def.kind === 'villager' ? '<i>Right-click to talk</i>' : '<i>' + Math.max(0, Math.ceil(e.hp)) + ' / ' + e.def.hp + '</i>');
+      html = esc(e.def.kind === 'villager' ? e.job.name : e.def.name) + (e.def.kind === 'villager' ? '<i>Right-click to trade</i>' : '<i>' + Math.max(0, Math.ceil(e.hp)) + ' / ' + e.def.hp + '</i>');
     } else if (p.target) {
       const d = BLOCKS[p.target.id], pr = Math.floor(p.mineP * 14);
       const hint = p.mine ? p.harvestHint(d) : (p.target.id === B.MAKER_TABLE ? 'Right-click to craft' : p.target.id === B.CHEST ? 'Right-click to open' : p.target.id === B.BED ? 'Right-click to sleep' : '');
@@ -197,9 +197,9 @@ class UI {
     return n <= 0;
   }
 
-  openScreen(kind, chest) {
+  openScreen(kind, chest, trader) {
     const g = this.g;
-    this.kind = kind; this.chest = chest || null; this.ghost = null; this.lastFill = null;
+    this.kind = kind; this.chest = chest || null; this.trader = trader || null; this.ghost = null; this.lastFill = null;
     g.setState('ui');
     this.show('screen', true);
     this.renderScreen();
@@ -211,7 +211,7 @@ class UI {
     for (let i = 0; i < 9; i++) if (this.grid[i]) { if (p.give(this.grid[i].id, this.grid[i].n) > 0) lost = true; this.grid[i] = null; }
     if (this.cursor) { if (p.give(this.cursor.id, this.cursor.n) > 0) lost = true; this.cursor = null; }
     if (lost) this.toast('Your pack was full. Some items were left behind');
-    this.kind = null; this.chest = null;
+    this.kind = null; this.chest = null; this.trader = null;
     this.show('screen', false); this.show('cursorStack', false); this.show('tooltip', false);
     this.hudDirty = true;
   }
@@ -273,6 +273,14 @@ class UI {
     const c = el.dataset.c, i = Number(el.dataset.i), p = this.g.player;
     if (c === 'guide') { this.autoFill(RECIPES[i]); this.renderScreen(); return; }
     if (c === 'out') { this.craft(ev.shiftKey); this.renderScreen(); return; }
+    if (c === 'trade') {
+      const o = this.trader.job.trades[i];
+      if (p.count(o[0]) < o[1]) this.toast('You need ' + o[1] + ' ' + itemName(o[0]));
+      else if (!this.canFit(p.inv, o[2], o[3])) this.toast('Your pack is full');
+      else { p.take(o[0], o[1]); p.give(o[2], o[3]); this.g.audio.play('craft'); }
+      this.renderScreen();
+      return;
+    }
     const arr = this.arr(c);
     if (!arr) return;
     const s = arr[i], cur = this.cursor;
@@ -317,6 +325,7 @@ class UI {
         for (const opts of recipeLayout(r)) if (opts) { const n = itemName(opts[0]) + (opts.length > 1 ? ' (any kind)' : ''); need[n] = (need[n] || 0) + 1; }
         extra = '<u>Makes ' + r.n + '</u><span>' + Object.keys(need).map((n) => need[n] + ' × ' + esc(n)).join('<br>') + '</span>';
       } else if (c === 'out') { const r = matchRecipe(this.gridIds()); if (r) id = r.out; }
+      else if (c === 'trade') { const o = this.trader.job.trades[i]; id = o[2]; extra = '<u>Costs ' + o[1] + ' × ' + esc(itemName(o[0])) + '</u><span>You have ' + this.g.player.count(o[0]) + '</span>'; }
       else { const a = this.arr(c); if (a && a[i]) id = a[i].id; }
       if (id) {
         const it = ITEMS[id];
@@ -343,7 +352,7 @@ class UI {
       ar += '</div>';
       h = '<div><h2>Your pack</h2><div class="invTop">' + ar + '<div class="statBox"><b>Health</b> ' + Math.ceil(p.hp) / 2 + ' / ' + p.maxHp / 2 +
         '<br><b>Armour</b> ' + p.armorPoints() + ' <span style="color:var(--dim)">(blocks ' + Math.round(Math.min(0.8, p.armorPoints() * 0.036) * 100) + '% of damage)</span>' +
-        '<br><br><span class="note">Nothing can be crafted by hand. Place a <b>Maker Table</b> and right-click it to use its 3 × 3 grid.<br><br>Shift-click moves a stack. Right-click splits it.</span></div></div>' + pack + '</div>';
+        '<br><br><span class="note">Nothing can be crafted by hand. Set four logs in a 2 × 2 square to form a <b>Maker Table</b>, then right-click it to use its 3 × 3 grid.<br><br>Shift-click moves a stack. Right-click splits it.</span></div></div>' + pack + '</div>';
     } else if (this.kind === 'maker') {
       const r = matchRecipe(this.gridIds());
       let gl = '';
@@ -363,6 +372,15 @@ class UI {
       h = '<div id="guide"><h2>Recipes</h2><div id="guideList">' + gl + '</div></div><div><h2>Maker Table</h2><div class="makerTop">' + gh +
         '<div class="arrow"><i></i><u></u><s></s></div><div class="out">' + slotHTML('out', 0, r ? { id: r.out, n: r.n } : null) + '</div>' +
         '<div class="note">' + (r ? '<b>' + esc(itemName(r.out)) + '</b><br>Click to take. Shift-click makes as many as you can.' : 'Arrange materials on the grid, or click a recipe to lay it out. Outlined recipes are ones you can make now.') + '</div></div>' + pack + '</div>';
+    } else if (this.kind === 'trade') {
+      const j = this.trader.job;
+      let rows = '';
+      j.trades.forEach((o, i) => {
+        const can = p.count(o[0]) >= o[1];
+        rows += '<div class="trade' + (can ? ' can' : '') + '"><div class="slot">' + stackHTML({ id: o[0], n: o[1] }) + '</div><div class="arrow"><i></i><u></u><s></s></div>' +
+          slotHTML('trade', i, { id: o[2], n: o[3] }, can ? 'can' : '') + '<span>' + o[1] + ' ' + esc(itemName(o[0])) + '<br><b>' + o[3] + ' ' + esc(itemName(o[2])) + '</b></span></div>';
+      });
+      h = '<div><h2>' + j.name + '</h2><p class="note wide">“' + esc(this.tradeLine || j.line) + '”</p><h4>Offers: click what you want</h4><div class="trades">' + rows + '</div>' + pack + '</div>';
     } else if (this.kind === 'chest') {
       h = '<div><h2>Chest</h2>' + grid('chest', 0, 27, 9, this.chest) + pack + '</div>';
     }

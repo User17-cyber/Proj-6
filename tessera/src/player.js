@@ -2,7 +2,7 @@
 /* The player: movement, inventory, mining, placing, farming and fighting. */
 
 const VILLAGER_LINES = [
-  'Everything worth having is made on a Maker Table. Lay your materials on its nine squares.',
+  'Everything worth having is made on a Maker Table. Four logs set in a square will join into one.',
   'Till soil with a Tiller, then press seeds into it. Crops ripen faster than you would think.',
   'A Spade makes short work of dirt and sand. A Pick is what you want for stone.',
   'Iron ore needs a stone pick. Prism ore, deep down, needs an iron one.',
@@ -248,7 +248,7 @@ class Player {
   use(sneak, edge) {
     const g = this.g, w = g.world;
     if (this.targetE && this.targetE.type === 'villager') {
-      if (edge) this.talk(this.targetE);
+      if (edge) { g.ui.tradeLine = this.talk(this.targetE); g.ui.openScreen('trade', null, this.targetE); g.audio.play('pop'); }
       return edge;
     }
     let t = this.target;
@@ -319,11 +319,26 @@ class Player {
           if (px + 1 > e.x - e.hw && px < e.x + e.hw && pz + 1 > e.z - e.hw && pz < e.z + e.hw && py + 1 > e.y && py < e.y + e.h) return false;
         }
       }
-      w.setBlock(px, py, pz, s.id);
+      const placed = s.id;
+      w.setBlock(px, py, pz, placed);
       this.useHeld(); g.audio.play('place'); this.startSwing();
+      if (LOG_BLOCKS.indexOf(placed) >= 0) this.joinLogs(px, py, pz);
       return true;
     }
     return false;
+  }
+
+  /* Four logs in a flat 2 x 2 square become a Maker Table: the one thing made without a table. */
+  joinLogs(x, y, z) {
+    const g = this.g, w = g.world;
+    for (const ox of [0, -1]) for (const oz of [0, -1]) {
+      const cells = [[x + ox, z + oz], [x + ox + 1, z + oz], [x + ox, z + oz + 1], [x + ox + 1, z + oz + 1]];
+      if (!cells.every(([cx, cz]) => LOG_BLOCKS.indexOf(w.getBlock(cx, y, cz)) >= 0)) continue;
+      for (const [cx, cz] of cells) { w.setBlock(cx, y, cz, cx === x && cz === z ? B.MAKER_TABLE : B.AIR); g.render.burst(cx + 0.5, y + 0.5, cz + 0.5, BLOCKS[B.PLANKS].color, 10, 4, 0.13); }
+      g.audio.play('craft');
+      g.ui.banner('Maker Table', 'Four logs joined. Right-click it to craft.');
+      return;
+    }
   }
 
   sleep(t) {
@@ -345,8 +360,7 @@ class Player {
         line = 'There is a ' + near.s.name.toLowerCase() + ' about ' + Math.round(near.dist / 10) * 10 + ' blocks to the ' + names[((Math.round(b / (Math.PI / 4)) % 8) + 8) % 8] + '. Go armed.';
       }
     }
-    if (!line) line = VILLAGER_LINES[Math.floor(Math.random() * VILLAGER_LINES.length)];
-    g.ui.say('Townsfolk', line);
-    g.audio.play('pop');
+    if (!line) line = Math.random() < 0.5 ? e.job.line : VILLAGER_LINES[Math.floor(Math.random() * VILLAGER_LINES.length)];
+    return line;
   }
 }

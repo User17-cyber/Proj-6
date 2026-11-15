@@ -1,6 +1,6 @@
 # Tessera Wilds
 
-An endless voxel sandbox: dig, farm, build and fight across nine biomes. Everything on screen is a rectangle or a square, drawn with smooth colour, soft shading, fog and a gradient sky rather than chunky 8-bit textures. The one deliberate exception is what you hold: every tool, weapon, armour piece and item is a 16 × 16 pixel sprite, extruded into pixel-sized boxes in your hand.
+An endless voxel sandbox: dig, farm, build and fight across nine biomes. Everything on screen is a rectangle or a square, drawn with smooth colour, sunlight that moves with the time of day, soft shadows, water that mirrors the sky, swaying plants, fog and a glowing gradient sky rather than chunky 8-bit textures. The one deliberate exception is what you hold: every tool, weapon, armour piece and item is a 16 × 16 pixel sprite, extruded into pixel-sized boxes in your hand.
 
 ## Play
 
@@ -23,7 +23,9 @@ The game saves to the browser automatically; **Continue** on the title screen pi
 
 **A different start every time.** Each new game gets a fresh seed and wakes you in a biome different from your last one: Meadow, Deepwood, Blossom Grove, Dune Sea, Amber Steppe, Frost Fields, Mire, Highlands or Redrock Canyons. Open sea and shores lie between them.
 
-**The Maker Table.** Nothing can be crafted by hand. You start with one Maker Table and a set of seeds; place the table and right-click it to use its 3 × 3 grid. The recipe list beside the grid lays a recipe out for you when clicked, and outlines the ones you can afford.
+**You start with nothing.** No tools, no table, no seeds. Punch a tree for logs, then set four logs in a 2 × 2 square on the ground: they join into a Maker Table. Seeds come from tall grass and wild crops, or from trading.
+
+**The Maker Table.** Nothing can be crafted by hand. Right-click the table to use its 3 × 3 grid. The recipe list beside the grid lays a recipe out for you when clicked, and outlines the ones you can afford.
 
 **Tools, weapons and armour**, each in wood, stone, iron and prism:
 
@@ -38,11 +40,13 @@ The game saves to the browser automatically; **Continue** on the title screen pi
 
 **Creatures.** Woolbacks, Bristle Boars, Ruffhens, Glade Deer, Dune Striders and Snow Hares live in the biomes that suit them. At night Gloomers, Mire Blobs and Emberlings come out and fade again at sunrise. Sleep in a bed to skip the night.
 
+**Townsfolk.** Each has a trade and wears it: Farmer, Smith, Mason, Hunter and Trader. Right-click one to barter (wheat for seeds, ore for ingots and iron tools, rough stone for bricks and glass, hides and feathers for a bow and arrows, rare goods for prism gear). Farmers reap and re-sow the town plots, everyone runs from monsters, and they go home at dusk.
+
 **Places.** Three kinds of structure are scattered through the world. The more a place helps you, the rarer it is:
 
 | Place | At most one per | What it offers |
 | --- | --- | --- |
-| Town | 144 chunks | Houses with beds and stocked chests, farms, a Maker Table, friendly townsfolk |
+| Town | 144 chunks | Houses with beds and stocked chests, farms, a Maker Table, townsfolk who trade |
 | Fortress | 324 chunks | Iron arms and armour, guarded by Iron Husks and Husk Archers |
 | Castle | 784 chunks | Prism gear in the vault, guarded by the Castle Warden |
 

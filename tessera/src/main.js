@@ -135,8 +135,6 @@ class Game {
       spawnBiome = s.biome;
       pl.x = s.x + 0.5; pl.z = s.z + 0.5; pl.yaw = Math.random() * 6.28;
       this.time = 0.04;
-      pl.give(B.MAKER_TABLE, 1);
-      pl.give(I.SEEDS_WHEAT, 6); pl.give(I.SEEDS_CARROT, 4); pl.give(I.SEEDS_BEET, 4); pl.give(I.SEEDS_PUMPKIN, 2);
       try { localStorage.setItem(LAST_BIOME_KEY, String(spawnBiome)); } catch (e) { /* storage blocked */ }
     }
     const title = save ? 'Returning' : 'Shaping the ' + BIOME_INFO[spawnBiome].name;
@@ -164,9 +162,12 @@ class Game {
     this.last = performance.now();
     this.spawnBiome = spawnBiome;
     if (this.nolock) this.resume();
-    else this.pause(save ? 'Welcome back' : BIOME_INFO[spawnBiome].name, save ? 'Your world is as you left it.' : 'You wake somewhere new. ' + BIOME_INFO[spawnBiome].blurb);
+    else this.pause(save ? 'Welcome back' : BIOME_INFO[spawnBiome].name, save ? 'Your world is as you left it.' : 'You wake somewhere new with empty hands. ' + BIOME_INFO[spawnBiome].blurb);
     document.getElementById('btnResume').textContent = 'Enter world';
-    if (!save) ui.banner(BIOME_INFO[spawnBiome].name, BIOME_INFO[spawnBiome].blurb);
+    if (!save) {
+      ui.banner(BIOME_INFO[spawnBiome].name, BIOME_INFO[spawnBiome].blurb);
+      ui.say('Empty hands', 'You have nothing. Punch a tree for logs, then set four logs in a 2 × 2 square on the ground: they join into your first Maker Table.');
+    }
   }
 
   /* ---------- chunk streaming ---------- */

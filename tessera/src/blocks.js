@@ -110,7 +110,7 @@ defBlock('GOLD_BLOCK', 'Gold Block', 0xf2c94c, { pat: PAT.METAL, hard: 3.0, tool
 defBlock('IRON_BLOCK', 'Iron Block', 0xd5dbe4, { pat: PAT.METAL, hard: 4.0, tool: 'pick', tier: 2 });
 defBlock('PRISM_BLOCK', 'Prism Block', 0x6fe6d5, { pat: PAT.METAL, hard: 4.5, tool: 'pick', tier: 3, light: 0.5 });
 defBlock('MOSSY_STONE', 'Mossy Bricks', 0x86997f, { pat: PAT.BRICK, hard: 3.6, tool: 'pick', tier: 1 });
-defBlock('PATH', 'Path', 0xb59b6b, { pat: PAT.PEBBLE, hard: 0.7, tool: 'spade' });
+defBlock('PATH', 'Path', 0xb3a487, { pat: PAT.PEBBLE, hard: 0.7, tool: 'spade' });
 defBlock('HAY', 'Hay Bale', 0xdbb84a, { pat: PAT.HAY, hard: 0.5 });
 defBlock('DARK_BRICK', 'Dark Bricks', 0x5b5f6b, { pat: PAT.BRICK, hard: 4.0, tool: 'pick', tier: 1 });
 defBlock('ROOF_RED', 'Red Roof Tiles', 0xb5483c, { pat: PAT.SHINGLE, hard: 2.0, tool: 'pick' });

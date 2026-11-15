@@ -140,3 +140,14 @@ input[type=range] { accent-color: var(--accent); }
 #cursorStack .slot { background: transparent; border-color: transparent; }
 #tooltip { position: fixed; z-index: 50; pointer-events: none; background: #0b0e15; border: 2px solid var(--line); padding: 7px 10px; font-size: 13px; max-width: 250px; }
 #tooltip b { display: block; } #tooltip span { color: var(--dim); display: block; } #tooltip u { color: var(--warm); text-decoration: none; display: block; }
+
+/* trading */
+.note.wide { max-width: 440px; margin-bottom: 4px; font-style: italic; }
+.trades { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-bottom: 4px; }
+.trade { display: flex; align-items: center; gap: 8px; opacity: 0.5; }
+.trade.can { opacity: 1; }
+.trade span { font-size: 12px; color: var(--dim); line-height: 1.3; }
+.trade span b { color: var(--text); }
+.trade .slot.can { border-color: var(--accent); cursor: pointer; }
+.trade .arrow i { width: 16px; height: 4px; } .trade .arrow u, .trade .arrow s { display: none; }
+#vignette { position: fixed; inset: 0; pointer-events: none; box-shadow: inset 0 0 220px rgba(4, 8, 20, 0.42); z-index: 5; }

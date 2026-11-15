@@ -4,10 +4,19 @@
 const TERRAIN_VS = `
 attribute vec3 aColor;
 attribute vec4 aData;
+uniform float uTime;
 varying vec3 vColor; varying vec2 vUv; varying vec4 vData; varying float vDist; varying vec3 vWorld;
 void main() {
   vColor = aColor; vUv = uv; vData = aData;
-  vec4 wp = modelMatrix * vec4(position, 1.0);
+  float sway = floor(aData.x / 16384.0);
+  vData.x = aData.x - sway * 16384.0;
+  vec3 pos = position;
+  if (sway > 0.5) {
+    float wgt = fract(pos.y);
+    float ph = uTime * 1.5 + (pos.x + modelMatrix[3].x) * 0.9 + (pos.z + modelMatrix[3].z) * 1.3;
+    pos.x += sin(ph) * 0.07 * wgt; pos.z += cos(ph * 0.8) * 0.05 * wgt;
+  }
+  vec4 wp = modelMatrix * vec4(pos, 1.0);
   vWorld = wp.xyz;
   vec4 mv = viewMatrix * wp;
   vDist = length(mv.xyz);
@@ -17,6 +26,7 @@ void main() {
 /* Every surface detail is made of axis-aligned rectangles computed from the face uv. */
 const TERRAIN_FS = `
 precision highp float;
+uniform vec3 uSunDir; uniform float uSunAmt; uniform vec3 uCam; uniform vec3 uZen;
 uniform vec3 uSky; uniform vec3 uFogColor; uniform float uFogNear; uniform float uFogFar; uniform float uTime;
 varying vec3 vColor; varying vec2 vUv; varying vec4 vData; varying float vDist; varying vec3 vWorld;
 float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
@@ -30,6 +40,9 @@ void main() {
   float a = 1.0, m = 1.0;
   bool lit = true;
   float detail = 1.0 - smoothstep(34.0, 80.0, vDist);
+  vec3 nrm = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+  float diff = max(dot(nrm, uSunDir), 0.0);
+  float spec = 0.0;
   float e = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
   float bevel = e < 0.045 ? 0.94 : 1.0;
   float dap = 1.0 + (hash(floor(uv * 4.0) + tile * 1.7) - 0.5) * 0.07;
@@ -81,13 +94,20 @@ void main() {
     a = e < 0.08 ? 0.9 : 0.2;
     if (inRect(uv, 0.2, 0.55, 0.3, 0.82) || inRect(uv, 0.36, 0.7, 0.42, 0.82)) { a = 0.55; c = vec3(1.0); }
   } else if (pat == 15) {
-    a = 0.74;
+    /* water: square ripples tilt the surface, which mirrors the sky at shallow angles */
     vec2 cell = floor(vWorld.xz * 2.0);
-    float hc = hash(cell);
-    float ph = uTime * 0.45 + hc * 7.0;
-    float glint = hash(cell + floor(ph)) > 0.93 ? sin(fract(ph) * 3.14159) : 0.0;
-    m = 1.0 + 0.04 * sin(uTime * 1.1 + vWorld.x * 0.7 + vWorld.z * 1.1) + glint * 0.3 * detail;
-    a += glint * 0.15 * detail;
+    float ph = uTime * 0.5 + hash(cell) * 7.0;
+    float k = fract(ph);
+    vec2 tilt = mix(vec2(hash(cell + floor(ph)), hash(cell + floor(ph) + 9.1)), vec2(hash(cell + floor(ph) + 1.0), hash(cell + floor(ph) + 10.1)), k * k * (3.0 - 2.0 * k)) - 0.5;
+    vec3 V = normalize(uCam - vWorld);
+    if (nrm.y > 0.5) {
+      vec3 wn = normalize(vec3(tilt.x * 0.16, 1.0, tilt.y * 0.16));
+      float fres = pow(1.0 - max(dot(V, wn), 0.0), 3.0);
+      c = mix(vColor * 0.82, mix(uFogColor, uZen, clamp(V.y * 1.5, 0.0, 1.0)), 0.25 + fres * 0.65);
+      spec = pow(max(dot(normalize(V + uSunDir), wn), 0.0), 140.0) * uSunAmt * 1.6;
+      a = mix(0.66, 0.94, fres);
+      m = 1.0 + tilt.x * 0.1 * detail;
+    } else { a = 0.72; c = vColor * 0.86; }
   } else if (pat == 17) {
     if (uv.y > 0.66) { c = vec3(0.96, 0.95, 0.92); m = inRect(uv, 0.1, 0.72, 0.9, 0.94) ? 1.0 : 0.88; }
     else m = uv.y > 0.58 ? 0.8 : (e < 0.05 ? 0.9 : 1.0);
@@ -125,17 +145,27 @@ void main() {
   }
   c *= mix(1.0, m, max(detail, 0.25));
   if (lit) {
-    vec3 light = max(uSky * vData.z, vec3(1.0, 0.84, 0.6) * vData.w);
+    /* sun side warm and bright, shaded side cool: the direction follows the time of day */
+    float sun = diff * uSunAmt * smoothstep(0.5, 0.95, vData.z);
+    vec3 dayl = uSky * vData.z * (0.74 + 0.5 * sun) * mix(vec3(0.89, 0.94, 1.06), vec3(1.05, 1.01, 0.93), clamp(sun * 1.4, 0.0, 1.0));
+    vec3 light = max(dayl, vec3(1.0, 0.82, 0.56) * vData.w * 1.05);
     light = max(light, vec3(0.045, 0.05, 0.065));
     c *= light * vData.y;
+    c += vec3(1.0, 0.95, 0.8) * spec * vData.z;
+    float lum = dot(c, vec3(0.3, 0.59, 0.11));
+    c = mix(vec3(lum), c, 1.12);
   }
   c = mix(c, uFogColor, smoothstep(uFogNear, uFogFar, vDist));
   gl_FragColor = vec4(c, a);
 }`;
 
 const SKY_VS = `varying vec3 vDir; void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const SKY_FS = `precision highp float; uniform vec3 uZenith; uniform vec3 uHorizon; varying vec3 vDir;
-void main() { float h = normalize(vDir).y; vec3 c = mix(uHorizon, uZenith, pow(clamp(h, 0.0, 1.0), 0.5)); gl_FragColor = vec4(c, 1.0); }`;
+const SKY_FS = `precision highp float; uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uGlow; varying vec3 vDir;
+void main() { vec3 d = normalize(vDir); float h = d.y; vec3 c = mix(uHorizon, uZenith, pow(clamp(h, 0.0, 1.0), 0.45));
+  c = mix(c, uHorizon * 1.06, (1.0 - smoothstep(0.0, 0.12, abs(h))) * 0.5);
+  float s = max(dot(d, uSunDir), 0.0);
+  c += uGlow * (pow(s, 6.0) * 0.28 + pow(s, 48.0) * 0.5);
+  gl_FragColor = vec4(c, 1.0); }`;
 
 class Renderer {
   constructor(canvas) {
@@ -148,6 +178,7 @@ class Renderer {
     this.uniforms = {
       uSky: { value: new THREE.Vector3(1, 1, 1) }, uFogColor: { value: new THREE.Vector3(0.7, 0.85, 1) },
       uFogNear: { value: 60 }, uFogFar: { value: 110 }, uTime: { value: 0 },
+      uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunAmt: { value: 1 }, uCam: { value: new THREE.Vector3() }, uZen: { value: new THREE.Vector3() },
     };
     this.matO = new THREE.ShaderMaterial({ vertexShader: TERRAIN_VS, fragmentShader: TERRAIN_FS, uniforms: this.uniforms });
     this.matT = new THREE.ShaderMaterial({ vertexShader: TERRAIN_VS, fragmentShader: TERRAIN_FS, uniforms: this.uniforms, transparent: true, depthWrite: false, side: THREE.DoubleSide });
@@ -205,7 +236,7 @@ class Renderer {
 
   /* ---------- sky ---------- */
   buildSky() {
-    this.skyU = { uZenith: { value: new THREE.Vector3() }, uHorizon: { value: new THREE.Vector3() } };
+    this.skyU = { uZenith: { value: new THREE.Vector3() }, uHorizon: { value: new THREE.Vector3() }, uSunDir: this.uniforms.uSunDir, uGlow: { value: new THREE.Vector3() } };
     this.sky = new THREE.Mesh(new THREE.BoxGeometry(600, 600, 600), new THREE.ShaderMaterial({ vertexShader: SKY_VS, fragmentShader: SKY_FS, uniforms: this.skyU, side: THREE.BackSide, depthWrite: false, depthTest: false }));
     this.sky.renderOrder = -10; this.sky.frustumCulled = false;
     this.scene.add(this.sky);
@@ -255,6 +286,13 @@ class Renderer {
     light = mix3(light, [1, 0.82, 0.66], glow * 0.5 * day);
     let near = viewDist * 0.55, far = viewDist * 0.97;
     if (underwater) { hor = [0.1 * (0.3 + day * 0.7), 0.32 * (0.3 + day * 0.7), 0.55 * (0.3 + day * 0.7)]; zen = hor; near = 1; far = 26; }
+    const sd = this.uniforms.uSunDir.value.set(c, s, 0.18).normalize();
+    if (s < -0.05) sd.multiplyScalar(-1);
+    this.uniforms.uSunAmt.value = s >= -0.05 ? smoothstep(-0.05, 0.2, s) : smoothstep(0.05, 0.3, -s) * 0.22;
+    this.uniforms.uCam.value.copy(camPos);
+    this.uniforms.uZen.value.set(zen[0], zen[1], zen[2]);
+    const gk = underwater ? 0 : (s >= -0.05 ? 0.35 + glow * 0.9 : 0.12);
+    this.skyU.uGlow.value.set(gk, gk * lerp(0.85, 0.55, glow), gk * lerp(0.6, 0.25, glow));
     this.skyU.uZenith.value.set(zen[0], zen[1], zen[2]);
     this.skyU.uHorizon.value.set(hor[0], hor[1], hor[2]);
     this.uniforms.uSky.value.set(light[0], light[1], light[2]);
@@ -383,12 +421,13 @@ class Renderer {
     const h = d.shape === 'cube' || d.shape === 'box' ? Math.max(d.height, d.id === B.CHEST ? 0.9 : d.height) : 0.9;
     this.sel.visible = true;
     this.sel.position.set(hit.x + 0.5, hit.y + h / 2, hit.z + 0.5);
-    this.sel.scale.set(1, h, 1);
+    const sw = d.shape === 'plant' || d.shape === 'crop' ? 0.66 : 1;
+    this.sel.scale.set(sw, h, sw);
     this.crack.visible = progress > 0;
     if (progress > 0) {
       const k = 1 - Math.floor(progress * 5) / 5 * 0.0;
       this.crack.position.copy(this.sel.position);
-      this.crack.scale.set(k, h * k, k);
+      this.crack.scale.set(k * sw, h * k, k * sw);
       this.crack.material.opacity = 0.12 + Math.floor(progress * 6) / 6 * 0.5;
     }
   }

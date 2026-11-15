@@ -72,7 +72,19 @@ function buildBiped(s, mats) {
   return { group: g, legs, arms, head };
 }
 
-const SHIRTS = [0x4a7fd6, 0xb5483c, 0x58a65a, 0xd9a83a, 0x8a5fb0, 0xd6d0c2];
+/* Townsfolk trades: [what they want, how many, what they give, how many]. */
+const JOBS = [
+  { key: 'farmer', name: 'Farmer', shirt: 0x58a65a, hat: 0xdbb84a, brim: 0.64, line: 'I keep the plots. Bring me a harvest and I will swap you seed for it.',
+    trades: [[I.WHEAT, 4, I.SEEDS_CARROT, 3], [I.WHEAT, 4, I.SEEDS_BEET, 3], [I.CARROT, 4, I.SEEDS_PUMPKIN, 2], [B.TALL_GRASS, 6, I.SEEDS_WHEAT, 4], [I.WHEAT, 5, I.BREAD, 2], [I.PUMPKIN, 2, I.TILLER_S, 1]] },
+  { key: 'smith', name: 'Smith', shirt: 0x4a4f5c, hat: 0x2c303b, brim: 0, line: 'Ore and coal in, tools out. I will not ask where you dug it.',
+    trades: [[I.RAW_IRON, 2, I.IRON_INGOT, 2], [I.COAL, 6, I.IRON_INGOT, 1], [I.IRON_INGOT, 4, I.PICK_I, 1], [I.IRON_INGOT, 3, I.SWORD_I, 1], [I.IRON_INGOT, 6, I.CHEST_I, 1], [I.PRISM, 1, I.IRON_INGOT, 5]] },
+  { key: 'mason', name: 'Mason', shirt: 0xd9a83a, hat: 0xf0c244, brim: 0.5, line: 'Bring me rough stone or sand and I will hand back something fit to build with.',
+    trades: [[B.STONE, 12, B.STONE_BRICK, 12], [B.SAND, 8, B.GLASS, 6], [B.CLAY, 8, B.BRICKS, 8], [B.LOG, 6, B.PLANKS, 30], [B.STONE_BRICK, 8, B.ROOF_RED, 8], [I.COAL, 2, B.LANTERN, 3]] },
+  { key: 'hunter', name: 'Hunter', shirt: 0x6b5a45, hat: 0x4a5a3c, brim: 0, line: 'Hides and feathers are worth more to me than to you. Take arrows for them.',
+    trades: [[I.FEATHER, 3, I.ARROW, 12], [I.HIDE, 3, I.BOW, 1], [I.MEAT, 3, I.ROAST, 3], [I.HIDE, 4, I.BOOTS_H, 1], [I.HIDE, 6, I.CHEST_H, 1], [I.FIBER, 6, B.WOOL, 2]] },
+  { key: 'trader', name: 'Trader', shirt: 0x8a5fb0, hat: 0x5e3f80, brim: 0.56, tall: true, line: 'I carry what the others cannot make. Rare things for rare things.',
+    trades: [[I.APPLE, 5, B.BED, 1], [I.BREAD, 6, I.IRON_INGOT, 2], [B.GOLD_BLOCK, 1, I.PRISM, 2], [I.PRISM, 2, I.PICK_P, 1], [B.FLOWER_RED, 6, B.PAINT_RED, 12], [I.ROAST, 4, I.COAL, 8]] },
+];
 
 const MOBS = {
   sheep: { name: 'Woolback', kind: 'animal', hp: 8, speed: 1.5, hw: 0.4, h: 1.1,
@@ -102,8 +114,14 @@ const MOBS = {
       extra: (g, head, mats) => { head.add(part(mats, 0.07, 0.26, 0.05, 0xf4f6fa, -0.07, 0.24, 0.06)); head.add(part(mats, 0.07, 0.26, 0.05, 0xf4f6fa, 0.07, 0.24, 0.06)); g.add(part(mats, 0.12, 0.12, 0.08, 0xffffff, 0, 0.3, -0.26)); } }, m) },
 
   villager: { name: 'Townsfolk', kind: 'villager', hp: 20, speed: 1.3, hw: 0.3, h: 1.9, drops: [],
-    build: (m, e) => buildBiped({ skin: 0xe0ac7e, shirt: SHIRTS[Math.floor(e.rand() * SHIRTS.length)], pants: 0x5e4630, arm: 0xe0ac7e, eye: 0x2a2520,
-      extra: (g, head, mats) => { head.add(part(mats, 0.62, 0.07, 0.62, 0xdbb84a, 0, 0.26, 0)); head.add(part(mats, 0.36, 0.16, 0.36, 0xdbb84a, 0, 0.36, 0)); } }, m) },
+    build: (m, e) => buildBiped({ skin: 0xe0ac7e, shirt: e.job.shirt, pants: 0x5e4630, arm: 0xe0ac7e, eye: 0x2a2520,
+      extra: (g, head, mats) => {
+        const j = e.job;
+        if (j.brim) head.add(part(mats, j.brim, 0.07, j.brim, j.hat, 0, 0.26, 0));
+        head.add(part(mats, j.brim ? 0.36 : 0.5, j.tall ? 0.34 : 0.16, j.brim ? 0.36 : 0.5, j.hat, 0, j.tall ? 0.44 : 0.3, 0));
+        if (j.key === 'smith') g.add(part(mats, 0.4, 0.62, 0.05, 0x7a5230, 0, 1.02, 0.16));
+        if (j.key === 'hunter') g.add(part(mats, 0.16, 0.6, 0.12, 0x8a6238, 0.14, 1.2, -0.2));
+      } }, m) },
 
   gloomer: { name: 'Gloomer', kind: 'monster', hp: 16, dmg: 3, speed: 3.2, hw: 0.3, h: 1.98, aggro: 18, reach: 1.7, night: true,
     drops: [['COAL', 0, 2], ['FIBER', 0, 2]],
@@ -158,8 +176,10 @@ const BIOME_MONSTERS = {
 const SPAWN_KIND = { knight: 'husk', archer: 'archer', warden: 'warden', villager: 'villager' };
 
 class Entity {
-  constructor(type, x, y, z, seed) {
+  constructor(type, x, y, z, seed, opt) {
     const d = MOBS[type];
+    this.job = (opt && opt.job) || JOBS[0];
+    this.task = null; this.threat = null; this.scanT = Math.random() * 2; this.workT = 0;
     this.type = type; this.def = d;
     this.x = x; this.y = y; this.z = z; this.vx = 0; this.vy = 0; this.vz = 0;
     this.hw = d.hw; this.h = d.h;
@@ -190,8 +210,15 @@ class EntityManager {
     for (const s of this.shots) this.game.render.scene.remove(s.mesh);
     this.list.length = 0; this.shots.length = 0; this.slots.clear();
   }
-  spawn(type, x, y, z) {
-    const e = new Entity(type, x, y, z);
+  spawn(type, x, y, z, opt) {
+    const e = new Entity(type, x, y, z, undefined, opt);
+    if (!MOBS[type].fly && !MOBS[type].hop) {
+      /* a flat square of shade under every walker */
+      const sh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.26, depthWrite: false }));
+      const sc = (MOBS[type].hw * 2.5) / (e.group.scale.x || 1);
+      sh.rotation.x = -Math.PI / 2; sh.position.y = 0.03; sh.scale.set(sc, sc * 1.25, 1);
+      e.group.add(sh);
+    }
     e.yaw = e.faceYaw = Math.random() * 6.28;
     e.group.position.set(x, y, z);
     this.game.render.scene.add(e.group);
@@ -267,11 +294,48 @@ class EntityManager {
           if (Math.hypot(sp.x - p.x, sp.z - p.z) < 9 && Math.abs(sp.y - p.y) < 4) return;
           let y = sp.y;
           while (y < WORLD_H - 3 && IS_SOLID[w.getBlock(fx, y, fz)]) y++;
-          const e = this.spawn(SPAWN_KIND[sp.kind], sp.x, y, sp.z);
+          const e = this.spawn(SPAWN_KIND[sp.kind], sp.x, y, sp.z, { job: JOBS[i % JOBS.length] });
           e.home = { x: sp.x, y, z: sp.z, key: s.id + ':' + i }; e.slot = slot; slot.entity = e;
         });
       }
     }
+  }
+
+  /* Townsfolk have work: farmers reap and re-sow ripe crops, everyone runs from monsters,
+     stands still to trade and goes home at dusk. Returns a speed, or -1 to wander. */
+  villager(e, dt) {
+    const g = this.game, w = g.world;
+    if (g.ui.trader === e) return 0;
+    const walkTo = (x, z, sp) => { const d = Math.hypot(x - e.x, z - e.z) || 1; e.mx = (x - e.x) / d; e.mz = (z - e.z) / d; return sp; };
+    e.scanT -= dt;
+    if (e.scanT <= 0) {
+      e.scanT = 1.6;
+      e.threat = null;
+      for (const o of this.list) if (o.def.kind === 'monster' && Math.hypot(o.x - e.x, o.z - e.z) < 9) { e.threat = o; break; }
+      if (e.job.key === 'farmer' && !e.task && e.home) {
+        const bx = Math.floor(e.x), by = Math.floor(e.home.y), bz = Math.floor(e.z);
+        let best = 1e9;
+        for (let dx = -12; dx <= 12; dx++) for (let dz = -12; dz <= 12; dz++) for (let dy = -1; dy <= 1; dy++) {
+          const id = w.getBlock(bx + dx, by + dy, bz + dz);
+          if (id >= B.WHEAT_0 && id <= B.PUMPKIN_3 && BLOCKS[id].stage === 3 && dx * dx + dz * dz < best) { best = dx * dx + dz * dz; e.task = { x: bx + dx, y: by + dy, z: bz + dz }; }
+        }
+      }
+    }
+    if (e.threat && !e.threat.dead) return walkTo(e.x * 2 - e.threat.x, e.z * 2 - e.threat.z, e.def.speed * 2.4);
+    if (g.render.sunHeight < -0.05 && e.home) {
+      return Math.hypot(e.home.x - e.x, e.home.z - e.z) > 2.5 ? walkTo(e.home.x, e.home.z, e.def.speed * 1.4) : 0;
+    }
+    if (e.workT > 0) { e.workT -= dt; return 0; }
+    if (e.task) {
+      const t = e.task, id = w.getBlock(t.x, t.y, t.z);
+      if (!isCropBlock(id) || BLOCKS[id].stage !== 3) { e.task = null; return -1; }
+      if (Math.hypot(t.x + 0.5 - e.x, t.z + 0.5 - e.z) > 1.7) return walkTo(t.x + 0.5, t.z + 0.5, e.def.speed * 1.2);
+      w.setBlock(t.x, t.y, t.z, id - 3);
+      g.render.burst(t.x + 0.5, t.y + 0.5, t.z + 0.5, BLOCKS[id].color, 8, 3, 0.1);
+      e.swing = 1; e.workT = 1.2; e.task = null;
+      return 0;
+    }
+    return -1;
   }
 
   /* ---------- combat ---------- */
@@ -377,7 +441,7 @@ class EntityManager {
         if (e.dayT > 4 + (e.rand() * 6)) { g.render.burst(e.x, e.y + e.h / 2, e.z, [0.3, 0.28, 0.4], 12, 3, 0.14); this.remove(e); this.list.splice(i, 1); continue; }
       }
 
-      let speed = 0, face = null;
+      let speed = 0, face = null, vspeed = -1;
       e.cool -= dt;
       if (e.alert > 0) e.alert -= dt;
       const aggro = d.kind === 'monster' && !p.dead && (dist < d.aggro || e.alert > 0) && Math.abs(dy) < 14 && dist < 40;
@@ -410,6 +474,9 @@ class EntityManager {
         e.flee -= dt;
         if (dist > 0.01) { e.mx = -dx / dist; e.mz = -dz / dist; }
         speed = d.speed * 2.3;
+      } else if (d.kind === 'villager' && (vspeed = this.villager(e, dt)) >= 0) {
+        speed = vspeed;
+        if (g.ui.trader === e) face = Math.atan2(dx, dz);
       } else {
         e.wanderT -= dt;
         if (e.wanderT <= 0) {

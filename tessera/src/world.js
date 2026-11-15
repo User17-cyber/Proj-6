@@ -108,7 +108,8 @@ class World {
     let nx = 0, ny = 0, nz = 0, t = 0;
     for (let i = 0; i < 256; i++) {
       const id = this.getBlock(x, y, z);
-      if (id !== B.AIR && id !== B.WATER) return { x, y, z, nx, ny, nz, id, dist: t };
+      /* a plant you are standing in does not block your aim */
+      if (id !== B.AIR && id !== B.WATER && !(i === 0 && !IS_SOLID[id])) return { x, y, z, nx, ny, nz, id, dist: t };
       if (tx < ty && tx < tz) { t = tx; tx += tdx; x += sx; nx = -sx; ny = 0; nz = 0; }
       else if (ty < tz) { t = ty; ty += tdy; y += sy; nx = 0; ny = -sy; nz = 0; }
       else { t = tz; tz += tdz; z += sz; nx = 0; ny = 0; nz = -sz; }
