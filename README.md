@@ -38,3 +38,7 @@ Typos are forgiven (edit-distance matching), plurals and alternate names work ("
 - `drillion/js/data/*.js`: countries, capitals, sea life, space, elements, myth, gems and coins
 - `drillion/tools/test-engine.js`: engine checks (`node drillion/tools/test-engine.js`)
 - `drillion/tools/build.js`: bundles everything into one file, `drillion/dist/drillion.html`
+
+## Also in this repository
+
+- [`erg-and-iron/`](erg-and-iron/README.md): Erg & Iron, a concurrent training dashboard and workout planner for rowers who lift (React, Tailwind CSS).
