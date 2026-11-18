@@ -105,7 +105,7 @@ export class GameView {
 
   private drawable(k: KnightState, a: KnightAnimator): KnightDrawable {
     const ranged = CLASSES[k.cls].ranged;
-    return { bones: a.bones, weapon: ranged && !a.daggerOut ? null : a.weapon, offhand: a.offhand, daggerOut: a.daggerOut, bowBend: a.bowBend, nock: a.nock, arrowNocked: a.arrowNocked, aimYaw: k.yaw, aimPitch: k.pitch };
+    return { bones: a.bones, weapon: ranged && !a.daggerOut ? null : a.weapon, offhand: a.offhand, daggerOut: a.daggerOut, offDagger: a.offDagger, bowBend: a.bowBend, nock: a.nock, arrowNocked: a.arrowNocked, aimYaw: k.yaw, aimPitch: k.pitch };
   }
 
   /** Head position of a knight (first-person camera). */
@@ -246,6 +246,16 @@ export class GameView {
             A.play('whooshHeavy', { pos: k, vol: 0.6 });
           } else if (id === 'halfsword') {
             A.play('clang', { pos: k, vol: 0.35, rate: 1.3 });
+          } else if (id === 'disarm') {
+            A.play('clang', { pos: k, vol: 0.45, rate: 1.15 });
+          } else if (id === 'throw' || id === 'pushofpike') {
+            A.play('grunt', { pos: k, bus: 'voice', vol: 0.75, rate: 0.9 });
+            if (id === 'pushofpike') A.play('whooshHeavy', { pos: k, vol: 0.5, delay: 0.2 });
+          } else if (id === 'misericorde') {
+            A.play('whoosh', { pos: k, vol: 0.45, rate: 1.8, delay: 0.15 });
+          } else if (id === 'hamstring') {
+            A.play('whoosh', { pos: k, vol: 0.55, rate: 1.3, delay: 0.15 });
+            this.particles.dust(k.x, k.y, k.z, 0.3);
           } else if (id === 'bodkin' && e.k === localId) {
             this.hud?.combatText('Bodkin nocked', 'block');
           }

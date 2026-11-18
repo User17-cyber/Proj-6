@@ -151,6 +151,9 @@ const W: Record<string, PieceDef[]> = {
     { key: 'waxWood', geo: () => A.warAxe().wood!, mat: 'wood', mount: 'weapon' },
     { key: 'waxSteel', geo: () => A.warAxe().steel!, mat: 'steel', mount: 'weapon' },
     { key: 'waxGrip', geo: () => A.warAxe().grip!, mat: 'grip', mount: 'weapon' },
+    // the misericorde, sheathed at the hip until it is wanted
+    { key: 'daggerSteel', geo: () => A.dagger().steel!, mat: 'steelBright', mount: 'dagger' },
+    { key: 'daggerGrip', geo: () => A.dagger().grip!, mat: 'grip', mount: 'dagger' },
     { key: 'daggerBelt', geo: () => A.xf(new THREE.CylinderGeometry(0.014, 0.01, 0.3, 6), -0.18, -0.12, 0.1, 0.2, 0, -0.15), mat: 'leatherDark', mount: B.pelvis, detail: true },
   ],
   pike: [

@@ -27,6 +27,8 @@ export interface KnightDrawable {
   weapon: THREE.Matrix4 | null;
   offhand: THREE.Matrix4;
   daggerOut: boolean;
+  /** a dagger drawn in the left hand (otherwise it rides in its sheath) */
+  offDagger?: THREE.Matrix4 | null;
   bowBend: number;
   nock: THREE.Vector3;
   arrowNocked: boolean;
@@ -657,6 +659,7 @@ function writePose(D: Float32Array, o0: number, d: KnightDrawable) {
   writeRows(D, o0 + SLOT_WEAPON * 12, d.weapon ?? HIDDEN);
   writeRows(D, o0 + SLOT_OFFHAND * 12, d.offhand);
   if (d.daggerOut && d.weapon) writeRows(D, o0 + SLOT_DAGGER * 12, d.weapon);
+  else if (d.offDagger) writeRows(D, o0 + SLOT_DAGGER * 12, d.offDagger);
   else writeRows(D, o0 + SLOT_DAGGER * 12, _m.multiplyMatrices(d.bones[B.pelvis], SHEATH));
 }
 

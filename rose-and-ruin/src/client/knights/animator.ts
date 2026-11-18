@@ -19,6 +19,8 @@ export interface AnimSource {
   cls: ClassId;
   /** the shield has splintered: the left hand is empty */
   shieldBroken?: boolean;
+  /** lasting effects of the renowned orders' abilities (see buffBits), when known */
+  buffs?: number;
 }
 
 export type GroundFn = (x: number, z: number, y: number) => number;
@@ -39,6 +41,11 @@ export class KnightAnimator {
   arrowNocked = false;
   bowBend = 0;
   daggerOut = false;
+  /** a dagger drawn in the left hand (the Brigand's misericorde); null when sheathed */
+  offDagger: THREE.Matrix4 | null = null;
+  private offDaggerM = new THREE.Matrix4();
+  private lhTarget = new THREE.Vector3();
+  private lhW = 0;
   hasFirstFrame = false;
 
   private phase = Math.random() * 10;
@@ -180,6 +187,16 @@ export class KnightAnimator {
     if (ability === 'sweep') crouch = 0.18 * Math.sin(abU * Math.PI);
     if (ability === 'earthshaker') crouch = abU > 0.65 ? 0.22 * (1 - smoothstep(0.75, 1, abU)) : abU < 0.18 ? 0.12 * abU / 0.18 : 0;
     if (ability === 'bulwark' || k.bulwarkT > 0) crouch = Math.max(crouch, 0.08);
+    // the body language of the other abilities: each is unmistakable, if brief
+    const hump = Math.sin(abU * Math.PI);
+    if (ability === 'throw') crouch = 0.16 * hump;
+    if (ability === 'misericorde') crouch = 0.3 * smoothstep(0.15, 0.5, abU) * (1 - smoothstep(0.8, 1, abU));
+    if (ability === 'bindwounds') crouch = 0.34 * smoothstep(0, 0.25, abU) * (1 - smoothstep(0.82, 1, abU));
+    if (ability === 'brace') crouch = 0.24 * smoothstep(0, 0.12, abU) * (1 - smoothstep(0.92, 1, abU));
+    if (ability === 'hamstring') crouch = 0.22 * hump;
+    if (ability === 'pushofpike') crouch = 0.1 * hump;
+    if (ability === 'holdline' || ability === 'juggernaut' || ability === 'warcry') crouch = 0.08 * hump;
+    if (ability === 'shield_bash') crouch = 0.07 * hump;
     if (k.stunT > 0) crouch = 0.08 + Math.sin(time * 5) * 0.02;
     let pelvisY = k.y + BODY.hipY + bob - crouch - this.airT * 0.05;
     // keep both legs within reach on slopes
@@ -203,7 +220,12 @@ export class KnightAnimator {
     let twist = p.twist, lean = p.lean + this.strikeS * 0.11 + run * 0.14 + sprint * 0.12 + gait * 0.04 + (Math.min(1, stanceSum) - 0.5) * 0.04 * run;
     if (ability === 'charge') lean += 0.28;
     if (ability === 'dash') lean += 0.15;
+    if (ability === 'shield_bash') lean += 0.3 * Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI);
+    if (ability === 'throw') { lean += 0.45 * hump; }
+    if (ability === 'juggernaut' || ability === 'warcry') lean -= 0.18 * hump;
+    if (ability === 'bindwounds') lean += 0.35 * smoothstep(0, 0.3, abU) * (1 - smoothstep(0.82, 1, abU));
     if (k.act === Act.Kick) lean -= 0.12 * Math.sin(Math.PI * clamp(k.actT / 0.62, 0, 1));
+    if (ability === 'throw') twist += 1.1 * Math.sin(clamp((abU - 0.25) / 0.6, 0, 1) * Math.PI);
     const hipTwist = Math.sin(this.phase) * (0.12 + run * 0.06) * gait;
     twist -= hipTwist * (0.7 + run * 0.4);
     // flinch / stagger / stun
@@ -246,6 +268,9 @@ export class KnightAnimator {
     if (k.act === Act.Loose || k.act === Act.Draw) headPitch = clamp(k.pitch, -0.8, 0.8);
     headYaw = -twist * 0.75;
     if (ability === 'rally') headPitch = 0.5 * Math.sin(abU * Math.PI);
+    if (ability === 'warcry' || ability === 'juggernaut') headPitch = 0.55 * Math.sin(abU * Math.PI);
+    if (ability === 'holdline' || ability === 'benediction') headPitch = 0.3 * Math.sin(abU * Math.PI);
+    if (ability === 'bindwounds' || ability === 'misericorde') headPitch = -0.55 * Math.sin(abU * Math.PI);
     if (k.stunT > 0) headPitch -= 0.3;
     this.headYawS = lerp(this.headYawS, headYaw, 1 - Math.exp(-dt * 12));
     this.headPitchS = lerp(this.headPitchS, headPitch, 1 - Math.exp(-dt * 12));
@@ -293,8 +318,24 @@ export class KnightAnimator {
         const blockA = k.act === Act.Block ? smoothstep(0, 0.08, k.actT) : 0;
         toWorld(lerp(-0.3, -0.1, blockA), lerp(1.02, 1.36, blockA), -lerp(0.18, 0.5, blockA), leftTarget);
       }
-      // right hand: wrist slightly behind the fist toward the shoulder
+      // half-sword: the left hand slides down onto the blade and stays there while it lasts
+      const half = ((k.buffs ?? 0) & 2) !== 0 || (ability === 'halfsword' && abU > 0.3);
+      if (half && weapon.offhand !== null) { offhandGrip.copy(grip).addScaledVector(bladeDir, 0.55); leftTarget.copy(offhandGrip); }
+      // abilities that use the free hand
+      const L = (x: number, y: number, z: number, w: number) => { toWorld(x, y, z, this.lhTarget); this.lhW = clamp(w, 0, 1); };
+      this.lhW = 0;
+      if (ability === 'throw') L(-0.12, 1.32, 0.55, Math.sin(clamp(abU / 0.8, 0, 1) * Math.PI));
+      else if (ability === 'disarm') L(0.0, 1.3, 0.62, Math.sin(clamp(abU / 0.75, 0, 1) * Math.PI));
+      else if (ability === 'benediction') L(-0.22, 1.82, 0.32, Math.sin(abU * Math.PI) * 1.4);
+      else if (ability === 'bindwounds') L(0.05, 1.05, 0.24, smoothstep(0.1, 0.3, abU) * (1 - smoothstep(0.8, 1, abU)));
+      else if (ability === 'misericorde') {
+        // the thin dagger is drawn and driven down two-handed... or rather, left-handed, point first
+        const t = abU;
+        if (t < 0.35) L(-0.15, lerp(1.0, 1.55, smoothstep(0.1, 0.35, t)), 0.25, smoothstep(0, 0.2, t));
+        else L(-0.05, lerp(1.55, 0.62, smoothstep(0.35, 0.6, t)), lerp(0.25, 0.6, smoothstep(0.35, 0.6, t)), 1 - smoothstep(0.85, 1, t));
+      }
     }
+    this.offDagger = null;
     // wrists sit 8 cm behind the fist, along the forearm
     _a.subVectors(J.shoulderR, grip).normalize();
     J.wristR.copy(grip).addScaledVector(_a, 0.085);
@@ -306,9 +347,17 @@ export class KnightAnimator {
       const swingA = -Math.sin(this.phase) * (0.35 + run * 0.5) * gait;
       leftTarget.copy(J.shoulderL).addScaledVector(UP, -0.5 + run * 0.2 + Math.max(0, swingA) * run * 0.15).addScaledVector(chestFwd, 0.12 + swingA * 0.4).addScaledVector(chestRight, -0.08);
     }
+    if (!def.ranged && this.lhW > 0) leftTarget.lerp(this.lhTarget, this.lhW);
     _a.subVectors(J.shoulderL, leftTarget).normalize();
     J.wristL.copy(leftTarget).addScaledVector(_a, 0.08);
     solveTwoBone(J.shoulderL, J.wristL, BODY.upperArm, BODY.forearm, leftPole, J.elbowL);
+    if (ability === 'misericorde' && abU > 0.08 && abU < 0.95) {
+      // the dagger in the left fist, point down (an ice-pick grip)
+      _c.subVectors(J.wristL, J.elbowL).normalize();
+      _d.copy(J.wristL).addScaledVector(_c, 0.06);
+      setBasis(this.offDaggerM, _d, _e.copy(UP).negate().addScaledVector(fwd, 0.35).normalize(), fwd);
+      this.offDagger = this.offDaggerM;
+    }
 
     // legs
     const kneePole = _kp.copy(fwd).addScaledVector(UP, 0.1);
@@ -345,6 +394,12 @@ export class KnightAnimator {
       this.edge.addScaledVector(bladeDir, -this.edge.dot(bladeDir)).normalize();
       if (this.edge.lengthSq() < 0.5) this.edge.copy(chestRight);
       setBasis(this.weapon, grip, bladeDir, this.edge);
+      // Murder Stroke: the sword is held by its blade, cross and pommel outward, until the blow lands
+      const mord = ((k.buffs ?? 0) & 32) !== 0 || (ability === 'murderstroke' && abU > 0.45);
+      if (mord) {
+        _c.copy(grip).addScaledVector(bladeDir, Math.max(0.6, weapon.hitEnd * 0.72));
+        setBasis(this.weapon, _c, _d.copy(bladeDir).negate(), this.edge);
+      }
     }
     if (shieldK === 'heater' || shieldK === 'pavise') {
       // the shield is strapped to the forearm and faces out from the body
@@ -437,11 +492,37 @@ export class KnightAnimator {
         key[2] += 0.15 * Math.sin(u * Math.PI);
         return blend(rest, key, Math.sin(u * Math.PI));
       }
+      // three-phase motions: rest -> a -> b -> rest at the given fractions
+      case 'billhook': return this.phases(rest, [0.1, 1.45, 0.66, 0, 12, 0, 16], [0.26, 1.15, -0.02, 0, 38, -22, -6], u, 0.35, 0.6, p);
+      case 'holdline': return blend(rest, [0.22, 1.25, 0.28, 0, 88, 0, -4], Math.min(1, Math.sin(u * Math.PI) * 1.5));
+      case 'halfsword': return blend(rest, [0.12, 1.3, 0.12, 0, 6, 12, 8], Math.min(1, Math.sin(u * Math.PI) * 1.4));
+      case 'warcry': return blend(rest, [0.3, 1.92, 0.22, 0, 72, 0, -10], Math.min(1, Math.sin(u * Math.PI) * 1.5));
+      case 'execute':
+      case 'shieldbreaker': return blend(rest, [0.12, 1.95, -0.12, 0, 155, -8, -12], Math.min(1, Math.sin(u * Math.PI) * 1.6));
+      case 'juggernaut': return blend(rest, [0.46, 1.32, 0.12, -62, 28, -10, -14], Math.min(1, Math.sin(u * Math.PI) * 1.5));
+      case 'murderstroke': return this.phases(rest, [0.2, 1.5, 0.25, 0, 70, 0, 0], [0.2, 1.4, 0.2, 0, -60, 0, 4], u, 0.4, 0.75, p);
+      case 'disarm': return this.phases(rest, [0.05, 1.36, 0.52, 28, 18, 16, 12], [0.38, 1.22, 0.22, -72, 8, -32, 2], u, 0.38, 0.7, p);
+      case 'throw': return blend(rest, [0.46, 0.98, -0.1, -80, -28, -40, 20], Math.sin(u * Math.PI));
+      case 'misericorde': return blend(rest, [0.42, 0.95, -0.05, -60, -40, -10, 20], Math.sin(u * Math.PI));
+      case 'bindwounds': return blend(rest, [0.42, 0.85, 0.08, -30, -62, 0, 28], smoothstep(0, 0.25, u) * (1 - smoothstep(0.82, 1, u)));
+      case 'benediction': return blend(rest, [0.26, 1.82, 0.2, 0, 82, 0, -4], Math.min(1, Math.sin(u * Math.PI) * 1.5));
+      case 'brace': return blend(rest, [0.16, 0.92, 0.1, 0, 22, 8, 22], smoothstep(0, 0.12, u) * (1 - smoothstep(0.92, 1, u)));
+      case 'pushofpike': return this.phases(rest, [0.2, 1.3, -0.22, 0, 4, 0, -8], [0.1, 1.36, 0.9, 0, 0, 0, 24], u, 0.3, 0.52, p);
+      case 'hamstring': return this.phases(rest, [0.46, 1.0, 0.0, -100, 10, -40, 20], [-0.2, 0.55, 0.42, 90, -25, 40, 34], u, 0.35, 0.6, p);
       case 'shield_bash':
       case 'dash':
       default:
         return keyToPose(rest, p);
     }
+  }
+
+  /** rest -> a by fraction t1, a -> b by t2, then back to rest */
+  private phases(rest: readonly number[], a: readonly number[], b: readonly number[], u: number, t1: number, t2: number, p: WeaponPose): WeaponPose {
+    const k = this.tmp7;
+    if (u < t1) { const w = smoothstep(0, t1, u); for (let i = 0; i < 7; i++) k[i] = lerp(rest[i], a[i], w); }
+    else if (u < t2) { const w = smoothstep(t1, t2, u); for (let i = 0; i < 7; i++) k[i] = lerp(a[i], b[i], w); }
+    else { const w = smoothstep(t2, 1, u); for (let i = 0; i < 7; i++) k[i] = lerp(b[i], rest[i], w); }
+    return keyToPose(k, p);
   }
 
   private bowPose(k: AnimSource, J: Joints, chestFwd: THREE.Vector3, chestRight: THREE.Vector3, torsoUp: THREE.Vector3, headFwd: THREE.Vector3, time: number,
@@ -488,6 +569,13 @@ export class KnightAnimator {
       grip.set(k.x + p.gx * c + p.gz * s, k.y + p.gy, k.z - p.gx * s + p.gz * c);
       bladeDir.set(p.dx * c + p.dz * s, p.dy, -p.dx * s + p.dz * c).normalize();
       this.nock.copy(nockRest);
+    } else if (ability === 'bodkin') {
+      // reach down to the quiver for the long armour-piercing head, and nock it
+      this.nock.copy(nockRest);
+      const quiver = _e.copy(J.pelvis).addScaledVector(chestRight, 0.22).addScaledVector(chestFwd, -0.12).addScaledVector(torsoUp, 0.05);
+      const w = Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI);
+      if (abU < 0.6) grip.lerpVectors(_f.copy(J.shoulderR).addScaledVector(torsoUp, -0.5), quiver, w);
+      else { grip.lerpVectors(quiver, nockRest, smoothstep(0.6, 1, abU)); this.arrowNocked = true; }
     } else {
       this.nock.copy(nockRest);
       // relaxed right arm swinging slightly
