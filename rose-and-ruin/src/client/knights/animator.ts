@@ -45,6 +45,10 @@ export class KnightAnimator {
   offDagger: THREE.Matrix4 | null = null;
   private offDaggerM = new THREE.Matrix4();
   private lhTarget = new THREE.Vector3();
+  /** a brief gesture cued by an instant ability (the bodkin is nocked without an action lock) */
+  private cueT = 0;
+  private static readonly CUE = 0.45;
+  cue() { this.cueT = KnightAnimator.CUE; }
   private lhW = 0;
   hasFirstFrame = false;
 
@@ -86,6 +90,7 @@ export class KnightAnimator {
     const ability: AbilityId | null = k.act === Act.Ability ? def.abilities[k.abilitySlot] : null;
     const abT = k.act === Act.Ability ? k.actT : 0, abDur = k.act === Act.Ability ? Math.max(0.01, k.actDur) : 1;
     const abU = clamp(abT / abDur, 0, 1);
+    this.cueT = Math.max(0, this.cueT - dt);
 
     // ---------------- locomotion parameters
     const sp = Math.hypot(k.vx, k.vz);
@@ -527,6 +532,7 @@ export class KnightAnimator {
 
   private bowPose(k: AnimSource, J: Joints, chestFwd: THREE.Vector3, chestRight: THREE.Vector3, torsoUp: THREE.Vector3, headFwd: THREE.Vector3, time: number,
     grip: THREE.Vector3, bladeDir: THREE.Vector3, leftTarget: THREE.Vector3, leftPole: THREE.Vector3, rightPole: THREE.Vector3, ability: AbilityId | null, abU: number) {
+    void ability;
     // aim direction from yaw/pitch
     let aimPitch = k.pitch;
     if (ability === 'volley') aimPitch = 0.75;
@@ -569,8 +575,9 @@ export class KnightAnimator {
       grip.set(k.x + p.gx * c + p.gz * s, k.y + p.gy, k.z - p.gx * s + p.gz * c);
       bladeDir.set(p.dx * c + p.dz * s, p.dy, -p.dx * s + p.dz * c).normalize();
       this.nock.copy(nockRest);
-    } else if (ability === 'bodkin') {
-      // reach down to the quiver for the long armour-piercing head, and nock it
+    } else if (this.cueT > 0 && k.act === Act.Idle) {
+      // Bodkin Point: reach down to the quiver for the long armour-piercing head, and nock it
+      abU = 1 - this.cueT / KnightAnimator.CUE;
       this.nock.copy(nockRest);
       const quiver = _e.copy(J.pelvis).addScaledVector(chestRight, 0.22).addScaledVector(chestFwd, -0.12).addScaledVector(torsoUp, 0.05);
       const w = Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI);

@@ -256,8 +256,9 @@ export class GameView {
           } else if (id === 'hamstring') {
             A.play('whoosh', { pos: k, vol: 0.55, rate: 1.3, delay: 0.15 });
             this.particles.dust(k.x, k.y, k.z, 0.3);
-          } else if (id === 'bodkin' && e.k === localId) {
-            this.hud?.combatText('Bodkin nocked', 'block');
+          } else if (id === 'bodkin') {
+            this.views[e.k]?.anim.cue();
+            if (e.k === localId) this.hud?.combatText('Bodkin nocked', 'block');
           }
           break;
         }

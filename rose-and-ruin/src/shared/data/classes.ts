@@ -81,7 +81,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     description: 'For 6 seconds take half damage and cannot be staggered, stunned or thrown down.' },
   volley: { id: 'volley', name: 'Arrow Storm', icon: 'volley', cooldown: 20, duration: 0.8, stamina: 0,
     description: 'Signal the archers: a storm of arrows falls on the place you aim at.' },
-  bodkin: { id: 'bodkin', name: 'Bodkin Point', icon: 'bodkin', cooldown: 9, duration: 0.45, stamina: 0,
+  bodkin: { id: 'bodkin', name: 'Bodkin Point', icon: 'bodkin', cooldown: 9, duration: 0.2, stamina: 0,
     description: 'Nock a needle-pointed bodkin. Your next arrow ignores armour and shields and passes through its first victim.' },
   dash: { id: 'dash', name: 'Sidestep', icon: 'dash', cooldown: 5, duration: 0.3, stamina: 15,
     description: 'A lightning sidestep in the direction you are moving. Blows that land mid-step miss.' },
