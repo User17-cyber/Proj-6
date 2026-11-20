@@ -337,7 +337,7 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>+<kbd>1</kbd>–<kbd>6</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
+      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>+<kbd>1</kbd>–<kbd>0</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
     this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c) || classLocked(c)) return; this.setLoadout(c); this.host.selectClass(c); });
@@ -591,7 +591,7 @@ export class Hud implements HudSink {
     if (me.bodkin) b.push('<span class="buff">Bodkin nocked</span>');
     if (me.buffs & 1) b.push('<span class="buff">Holding the line</span>');
     if (me.buffs & 2) b.push('<span class="buff">Half-sword</span>');
-    if (me.buffs & 4) b.push('<span class="buff">War cry</span>');
+    if (me.buffs & 4) b.push('<span class="buff">Hastened</span>');
     if (me.buffs & 8) b.push('<span class="buff">Executioner</span>');
     if (me.buffs & 16) b.push('<span class="buff">Juggernaut</span>');
     if (me.buffs & 32) b.push('<span class="buff">Murder stroke</span>');
@@ -599,6 +599,8 @@ export class Hud implements HudSink {
     if (me.debuffs & 4) b.push('<span class="buff">Blessed</span>');
     if (me.debuffs & 1) b.push('<span class="buff bad">Disarmed</span>');
     if (me.debuffs & 2) b.push('<span class="buff bad">Lamed</span>');
+    if (me.debuffs & 8) b.push('<span class="buff">Under the standard</span>');
+    if (me.debuffs & 16) b.push('<span class="buff">Helm-ringer</span>');
     if (me.shieldBroken && hasShield) b.push('<span class="buff bad">Shield broken</span>');
     if (me.bleedStacks > 0) b.push(`<span class="buff bad">Bleeding${me.bleedStacks > 1 ? ' ×' + me.bleedStacks : ''}</span>`);
     const bh = b.join('');

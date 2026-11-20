@@ -1,8 +1,8 @@
 import type { WeaponId } from './weapons';
 
-export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion';
-/** at most 16: snapshots pack the class index into 4 bits */
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion'];
+export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer';
+/** at most 128: snapshots pack the class index into 7 bits */
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion', 'bearer', 'sapper', 'kern', 'hammerer'];
 /** the orders won by renown, in the order they are unlocked */
 export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'champion'];
 
@@ -42,7 +42,11 @@ export type AbilityId =
   | 'throw' | 'misericorde'
   | 'bindwounds' | 'benediction'
   | 'brace' | 'pushofpike'
-  | 'hamstring' | 'shieldbreaker';
+  | 'hamstring' | 'shieldbreaker'
+  | 'standard' | 'callarms'
+  | 'caltrops' | 'firepot'
+  | 'javelin' | 'skirmish'
+  | 'hookguard' | 'ringhelm';
 
 export const ABILITY_IDS: readonly AbilityId[] = [
   'shield_bash', 'rally', 'whirlwind', 'charge', 'lunge', 'sweep',
@@ -117,6 +121,22 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     description: 'A low cut behind the knee: the foe before you bleeds and is lamed, moving 40% slower for 6 seconds.' },
   shieldbreaker: { id: 'shieldbreaker', name: 'Shield-Breaker', icon: 'shatter', cooldown: 15, duration: 0.5, stamina: 6,
     description: 'Your next blow within 6 seconds against a raised guard smashes through it: it breaks the guard outright and does four times the harm to a shield.' },
+  standard: { id: 'standard', name: 'Plant the Standard', icon: 'standard', cooldown: 30, duration: 0.8, stamina: 0,
+    description: 'Drive the banner into the ground. For 12 seconds every comrade within 9 metres of it takes 15% less harm and gets his wind back faster.' },
+  callarms: { id: 'callarms', name: 'Call to Arms', icon: 'callarms', cooldown: 20, duration: 0.6, stamina: 0,
+    description: 'Wave the banner forward: you and every comrade within 15 metres move a fifth faster for 5 seconds.' },
+  caltrops: { id: 'caltrops', name: 'Caltrops', icon: 'caltrops', cooldown: 18, duration: 0.6, stamina: 6,
+    description: 'Scatter iron caltrops across the ground before you. For 15 seconds any foe who treads on them is lamed for 4 seconds and bleeds.' },
+  firepot: { id: 'firepot', name: 'Fire Pot', icon: 'firepot', cooldown: 22, duration: 0.7, stamina: 8,
+    description: 'Hurl a clay pot of burning pitch up to 14 metres. It bursts into a fire that burns any foe in it for 6 seconds.' },
+  javelin: { id: 'javelin', name: 'Throw Javelin', icon: 'javelin', cooldown: 6, duration: 0.55, stamina: 10,
+    description: 'Cast a javelin where you aim. It strikes hard enough to stagger a man, though a shield will catch it.' },
+  skirmish: { id: 'skirmish', name: 'Skirmish', icon: 'skirmish', cooldown: 10, duration: 0.35, stamina: 14,
+    description: 'Spring back out of reach, then run light-footed: a fifth faster for 4 seconds.' },
+  hookguard: { id: 'hookguard', name: 'Hook the Guard', icon: 'hookguard', cooldown: 12, duration: 0.6, stamina: 10,
+    description: 'Catch the foe\'s shield or blade with the beak and wrench it aside: his guard is broken and he reels. One who was not guarding is tripped instead.' },
+  ringhelm: { id: 'ringhelm', name: 'Ring the Helm', icon: 'ringhelm', cooldown: 16, duration: 0.5, stamina: 6,
+    description: 'Your next blow within 6 seconds lands with the hammer face: the foe is stunned for a second and a half and dazed, slowed for 3 seconds after.' },
   bloodletting: { id: 'bloodletting', name: 'Bloodletting', icon: 'bleed', cooldown: 18, duration: 0.5, stamina: 0,
     description: 'For 8 seconds every cut opens a wound that bleeds the victim (stacks three times).' },
 };
@@ -282,6 +302,46 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     ratings: { attack: 5, defence: 3, speed: 3, reach: 4, difficulty: 2 },
     armourDesc: 'Conical bascinet, a long mail hauberk to the knees',
     botWeight: 8,
+  },
+  bearer: {
+    id: 'bearer', name: 'Standard-Bearer', title: 'Banner Pole',
+    description: 'He carries the house banner, and men fight hardest where they can see it. Plant the Standard steadies everyone around it; Call to Arms sends the line forward at a run.',
+    hp: 138, stamina: 115, speed: 4.8, sprint: 7.0, mass: 1.05, size: { height: 1.02, girth: 1.02 },
+    armor: [0.34, 0.13, 0.3], weapon: 'standard', shield: null, ranged: false,
+    abilities: ['standard', 'callarms'], hyperArmor: false, attackSpeed: 1.0,
+    ratings: { attack: 2, defence: 3, speed: 3, reach: 4, difficulty: 2 },
+    armourDesc: 'Sallet and bevor, a brigandine under the house colours',
+    botWeight: 6,
+  },
+  sapper: {
+    id: 'sapper', name: 'Sapper', title: 'Maul',
+    description: 'A miner and engineer of the siege train, who knows how to make ground deadly. Caltrops lame whoever crosses them; the Fire Pot sets the ground itself alight.',
+    hp: 120, stamina: 110, speed: 4.6, sprint: 6.8, mass: 1.1, size: { height: 0.98, girth: 1.1 },
+    armor: [0.26, 0.12, 0.24], weapon: 'maul', shield: null, ranged: false,
+    abilities: ['caltrops', 'firepot'], hyperArmor: false, attackSpeed: 1.06,
+    ratings: { attack: 3, defence: 2, speed: 2, reach: 2, difficulty: 3 },
+    armourDesc: 'Kettle hat, a leather jack and stout boots',
+    botWeight: 6,
+  },
+  kern: {
+    id: 'kern', name: 'Kern', title: 'Casting Spear & Buckler',
+    description: 'A lightly armed Irish skirmisher, the kind brought over for the Yorkist cause at Stoke. He wears little and moves fast: Throw Javelin strikes from afar; Skirmish springs him clear of a counterstroke.',
+    hp: 116, stamina: 125, speed: 5.4, sprint: 7.8, mass: 0.9, size: { height: 0.96, girth: 0.92 },
+    armor: [0.14, 0.07, 0.12], weapon: 'javelin', shield: 'buckler', ranged: false,
+    abilities: ['javelin', 'skirmish'], hyperArmor: false, attackSpeed: 0.86,
+    ratings: { attack: 3, defence: 1, speed: 5, reach: 3, difficulty: 4 },
+    armourDesc: 'Bare-headed, a saffron shirt and a quilted coat',
+    botWeight: 7,
+  },
+  hammerer: {
+    id: 'hammerer', name: 'Hammerer', title: 'Bec de Corbin',
+    description: 'A knight in full harness who trusts a hammer over an edge against men in plate. Hook the Guard tears a defence open; Ring the Helm leaves the next foe he strikes reeling.',
+    hp: 150, stamina: 100, speed: 4.4, sprint: 6.5, mass: 1.25, size: { height: 1.04, girth: 1.08 },
+    armor: [0.46, 0.18, 0.42], weapon: 'beccorbin', shield: null, ranged: false,
+    abilities: ['hookguard', 'ringhelm'], hyperArmor: false, attackSpeed: 1.06,
+    ratings: { attack: 4, defence: 4, speed: 2, reach: 3, difficulty: 3 },
+    armourDesc: 'Great bascinet and full white harness',
+    botWeight: 7,
   },
   yeoman: {
     id: 'yeoman', name: 'Yeoman of the Guard', title: 'English Bill',

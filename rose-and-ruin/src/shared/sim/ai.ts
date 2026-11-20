@@ -653,6 +653,39 @@ function tryBotAbility(m: Match, k: Knight, b: BotBrain, t: Knight, dist: number
       case 'pushofpike': use = dist > 1.4 && dist < 3.4 && (countEnemies(m, k, 3.6) >= 2 || b.rng.chance(0.25)); break;
       case 'hamstring': use = dist < 2.5 && t.slowT <= 0 && b.rng.chance(0.4); break;
       case 'shieldbreaker': use = dist < 4 && (!!t.shield || t.act === Act.Block); break;
+      case 'standard': {
+        let near = 0;
+        m.hash.query(k.x, k.z, 9, (a) => { if (a !== k && a.alive && a.team === k.team) near++; });
+        // planted among comrades, or for his own sake when hard pressed
+        use = (near >= 2 && countEnemies(m, k, 12) >= 2) || (dist < 5 && k.hp < k.def.hp * 0.85);
+        break;
+      }
+      case 'callarms': {
+        let near = 0;
+        m.hash.query(k.x, k.z, 15, (a) => { if (a !== k && a.alive && a.team === k.team) near++; });
+        use = near >= 2 && dist > 6 && dist < 25;
+        break;
+      }
+      case 'caltrops': use = dist > 2.5 && dist < 6 && Math.hypot(t.vx, t.vz) > 1 && Math.abs(angleDiff(k.yaw, yawTo(k.x, k.z, t.x, t.z))) < 0.4; break;
+      case 'firepot': {
+        let cluster = 0, friends = 0;
+        m.hash.query(t.x, t.z, 3.5, (e) => { if (e.alive) { if (e.team !== k.team) cluster++; else friends++; } });
+        use = dist > 5 && dist < 14 && friends === 0 && (cluster >= 2 || b.rng.chance(0.3)) && m.nav.los(k.x, k.z, t.x, t.z);
+        if (use) { k.input.aimX = t.x + t.vx * 0.5; k.input.aimY = t.y; k.input.aimZ = t.z + t.vz * 0.5; }
+        break;
+      }
+      case 'javelin': {
+        use = dist > 6 && dist < 24 && m.world.los(k.x, k.y + 1.6, k.z, t.x, t.y + 1.2, t.z) && Math.abs(angleDiff(k.yaw, yawTo(k.x, k.z, t.x, t.z))) < 0.2;
+        if (use) {
+          // lead the target, with an error that shrinks with skill
+          const tf = dist / 30, err = (0.5 + dist * 0.04) * b.skill.aim;
+          k.input.aimX = t.x + t.vx * tf + b.rng.gauss() * err; k.input.aimY = t.y + 1.2; k.input.aimZ = t.z + t.vz * tf + b.rng.gauss() * err;
+        }
+        break;
+      }
+      case 'skirmish': use = dist < 2.4 && (k.hp < k.def.hp * 0.6 || countEnemies(m, k, 4) >= 2 || t.act === Act.Windup); break;
+      case 'hookguard': use = dist < 2.7 && (t.act === Act.Block || (!!t.shield && b.rng.chance(0.3)) || b.rng.chance(0.12)); break;
+      case 'ringhelm': use = dist < 3.4; break;
       case 'juggernaut': use = countEnemies(m, k, 8) >= 3 || (t.def.ranged && dist > 3 && dist < 22) || (dist > 3 && dist < 9 && b.rng.chance(0.15)); break;
       default: break;
     }

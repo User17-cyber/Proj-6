@@ -11,7 +11,7 @@ import type { Match } from '../sim/match';
 import type { Knight } from '../sim/knight';
 import { wrapAngle } from '../math';
 
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 export const SNAP_EVERY = 3; // ticks between snapshots (60 / 3 = 20 Hz)
 export const MSG_SNAPSHOT = 1;
 export const MSG_INPUT = 2;
@@ -114,7 +114,7 @@ export class SnapshotWriter {
       this.u8(k.id);
       const flags = (k.alive ? 1 : 0) | (k.onGround ? 2 : 0) | (k.sprinting ? 4 : 0) | (k.heavy ? 8 : 0) | (k.shieldBroken ? 16 : 0);
       this.u8(flags);
-      this.u8(CLASS_IDS.indexOf(k.cls) | (k.team << 4));
+      this.u8(CLASS_IDS.indexOf(k.cls) | (k.team << 7));
       if (!k.alive) continue;
       this.u8(k.act);
       this.i16(q(k.x, 50, -32767, 32767)); this.i16(q(k.y, 50, -32767, 32767)); this.i16(q(k.z, 50, -32767, 32767));
@@ -191,7 +191,7 @@ export function decodeSnapshot(buf: ArrayBuffer): Snapshot {
     const id = u8(), flags = u8(), ct = u8();
     const k: SnapKnight = {
       id, alive: (flags & 1) !== 0, onGround: (flags & 2) !== 0, sprinting: (flags & 4) !== 0, heavy: (flags & 8) !== 0, shieldBroken: (flags & 16) !== 0,
-      cls: ct & 15, team: (ct >> 4) & 1, act: 15,
+      cls: ct & 127, team: (ct >> 7) & 1, act: 15,
       x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, actT: 0, actDur: 0, atk: 0, charge: 0, draw: 0, abilitySlot: 0, knockT: 0, stunT: 0, bulwarkT: 0, hp: 0, bleedStacks: 0,
     };
     if (k.alive) {
@@ -256,5 +256,5 @@ export function buffBits(k: Knight): number {
 }
 /** Afflictions as bits (see SnapYou.debuffs). */
 export function debuffBits(k: Knight): number {
-  return (k.disarmT > 0 ? 1 : 0) | (k.slowT > 0 ? 2 : 0) | (k.steadyT > 0 ? 4 : 0);
+  return (k.disarmT > 0 ? 1 : 0) | (k.slowT > 0 ? 2 : 0) | (k.steadyT > 0 ? 4 : 0) | (k.bannerT > 0 ? 8 : 0) | (k.ringT > 0 ? 16 : 0);
 }

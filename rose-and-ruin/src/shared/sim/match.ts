@@ -3,7 +3,7 @@
 
 import { Act, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone } from '../types';
 import { Knight, KNIGHT_RADIUS } from './knight';
-import { knockdown } from './combat';
+import { knockdown , stepHazards, type Hazard } from './combat';
 import { CLASSES, CLASS_IDS, SHIELDS, type ClassId } from '../data/classes';
 import { knightName } from '../data/names';
 import { Rng } from '../rng';
@@ -43,6 +43,8 @@ export class Match {
   objectives: ObjectiveState[] = [];
   arrows: Arrow[] = [];
   volleys: Volley[] = [];
+  /** ground effects: caltrops, burning pitch and planted standards */
+  hazards: Hazard[] = [];
   nextArrowId = 1;
   events: SimEvent[] = [];
   brains = new Map<number, BotBrain>();
@@ -279,6 +281,7 @@ export class Match {
     k.bulwarkT = k.rallyT = k.bloodletT = k.bleedT = k.hotT = 0;
     k.holdT = k.halfT = k.hasteT = k.execT = k.juggerT = 0;
     k.mordT = k.sbT = k.disarmT = k.slowT = k.steadyT = 0;
+    k.ringT = k.bannerT = 0;
     k.bleedStacks = 0; k.bodkin = false; k.draw = 0;
     k.shieldHp = k.def.shield ? SHIELDS[k.def.shield].hp : 0;
     k.cds[0] = 0; k.cds[1] = 0;
@@ -301,6 +304,7 @@ export class Match {
     if (!victim.alive || victim.spawnProt > 0) return false;
     if (victim.bulwarkT > 0) amount *= 0.5;
     if (victim.holdT > 0) amount *= 0.7;
+    if (victim.bannerT > 0) amount *= 0.85;
     if (attacker && attacker.rallyT > 0) amount *= 1.15;
     amount = Math.max(1, Math.round(amount));
     // Executioner: a blow that leaves the foe below a third of his vigour finishes him
@@ -444,6 +448,7 @@ export class Match {
     resolveCombat(this);
     stepArrows(this, DT);
     stepVolleys(this, DT);
+    stepHazards(this, DT);
     this.updateMode();
   }
 

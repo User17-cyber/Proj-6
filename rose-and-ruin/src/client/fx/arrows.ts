@@ -7,7 +7,7 @@ import { arrowGeo } from '../knights/armorGeo';
 import { pbr, prepare } from '../render/materials';
 import type { TextureBaker } from '../render/textures';
 
-interface Flying { id: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number }
+interface Flying { id: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; s: number }
 interface Stuck { m: THREE.Matrix4; age: number }
 export interface BodyArrow { bone: number; local: THREE.Matrix4 }
 
@@ -31,8 +31,9 @@ export class Arrows {
     }
   }
 
-  launch(id: number, x: number, y: number, z: number, vx: number, vy: number, vz: number) {
-    this.flying.set(id, { id, x, y, z, vx, vy, vz, life: 6 });
+  /** scale > 1 draws a javelin: longer and thicker */
+  launch(id: number, x: number, y: number, z: number, vx: number, vy: number, vz: number, scale = 1) {
+    this.flying.set(id, { id, x, y, z, vx, vy, vz, life: 6, s: scale });
   }
 
   /** Arrow struck something; returns the flight direction (for effects). */
@@ -43,8 +44,8 @@ export class Arrows {
     const dir = new THREE.Vector3(f.vx, f.vy, f.vz).normalize();
     if (stickWorld) {
       // embed a third of the shaft
-      const tip = new THREE.Vector3(x, y, z).addScaledVector(dir, 0.22);
-      this.stuck.push({ m: arrowMatrix(tip, dir, new THREE.Matrix4()), age: 0 });
+      const tip = new THREE.Vector3(x, y, z).addScaledVector(dir, 0.22 * f.s);
+      this.stuck.push({ m: arrowMatrix(tip, dir, new THREE.Matrix4(), f.s), age: 0 });
       if (this.stuck.length > 300) this.stuck.shift();
     }
     return dir;
@@ -65,7 +66,7 @@ export class Arrows {
       f.life -= dt;
       if (f.life <= 0) { this.flying.delete(f.id); continue; }
       _d.set(f.vx, f.vy, f.vz).normalize();
-      arrowMatrix(_p.set(f.x, f.y, f.z), _d, this.m);
+      arrowMatrix(_p.set(f.x, f.y, f.z), _d, this.m, f.s);
       this.put(this.m);
     }
     for (const s of this.stuck) this.put(s.m);
@@ -82,10 +83,10 @@ export class Arrows {
 }
 
 /** Arrow geometry runs along +Y from the nock (0) to the tip (0.78). */
-function arrowMatrix(tip: THREE.Vector3, dir: THREE.Vector3, out: THREE.Matrix4) {
+function arrowMatrix(tip: THREE.Vector3, dir: THREE.Vector3, out: THREE.Matrix4, s = 1) {
   _q.setFromUnitVectors(_y.set(0, 1, 0), dir);
-  const nock = _n.copy(tip).addScaledVector(dir, -0.78);
-  return out.compose(nock, _q, _s.set(1, 1, 1));
+  const nock = _n.copy(tip).addScaledVector(dir, -0.78 * s);
+  return out.compose(nock, _q, _s.set(s * 1.6 - 0.6, s, s * 1.6 - 0.6));
 }
 
 const _d = new THREE.Vector3(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _y = new THREE.Vector3(), _n = new THREE.Vector3(), _s = new THREE.Vector3();

@@ -104,9 +104,11 @@ export type SimEvent =
   | { t: 'spawn'; k: number; yaw: number }
   /** Bind & Disarm: k's weapon is wrenched aside by `by` */
   | { t: 'disarm'; k: number; by: number }
+  /** a ground effect begins: kind 0 caltrops, 1 burning pitch, 2 planted standard */
+  | { t: 'hazard'; kind: number; team: number; x: number; z: number; r: number; dur: number }
   | { t: 'ability'; k: number; ab: number; x: number; y: number; z: number }
   | { t: 'kick'; a: number; v: number; hit: boolean; broke: boolean }
-  | { t: 'arrow'; id: number; k: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; bodkin: boolean }
+  | { t: 'arrow'; id: number; k: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; bodkin: boolean; jav?: boolean }
   | { t: 'arrowHit'; id: number; v: number; x: number; y: number; z: number; nx: number; ny: number; nz: number; stuck: boolean; shield: boolean }
   | { t: 'volley'; k: number; team: Team; x: number; y: number; z: number; delay: number }
   | { t: 'capture'; obj: number; team: number }

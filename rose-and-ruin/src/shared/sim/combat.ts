@@ -14,7 +14,11 @@ export interface Arrow {
   x: number; y: number; z: number;
   vx: number; vy: number; vz: number;
   dmg: number; bodkin: boolean; life: number; pierced: number; volley: boolean;
+  /** a thrown javelin: heavier, staggers, wears a shield hard */
+  jav?: boolean;
 }
+/** kind 0 caltrops, 1 burning pitch, 2 planted standard */
+export interface Hazard { kind: number; owner: number; team: Team; x: number; z: number; r: number; t: number; hit: number[]; pulse: number }
 export interface Volley { owner: number; team: Team; x: number; z: number; delay: number; left: number; timer: number; dirx: number; dirz: number }
 
 /** Damage multipliers by zone (head, torso, legs) and type (cut, blunt, pierce). */
@@ -216,6 +220,8 @@ function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px
     if (k.bloodletT > 0 && a.dtype === 0) applyBleed(v, k);
     if (zone === 0 && a.dtype === 1 && k.heavy && v.bulwarkT <= 0) stun(m, v, 0.7);
     if (mord) stun(m, v, 1.0);
+    // Ring the Helm: the hammer face rings him senseless
+    if (k.ringT > 0) { k.ringT = 0; stun(m, v, 1.5); v.slowT = Math.max(v.slowT, 3); m.emit({ t: 'stun', k: v.id }); }
     v.pushX += (sdx / l) * 1.2; v.pushZ += (sdz / l) * 1.2;
   }
   if (k.hitList.length >= a.maxTargets) {
@@ -361,14 +367,15 @@ export function stepArrows(m: Match, dt: number) {
         spend(v, 5);
         m.emit({ t: 'arrowHit', id: a.id, v: v.id, x: hx, y: hy, z: hz, nx: -ndx, ny: -ndy, nz: -ndz, stuck: true, shield: true });
         m.emit({ t: 'block', a: a.owner, v: v.id, x: hx, y: hy, z: hz, parry: false, shield: true, broke: false });
-        wearShield(m, v, a.owner, a.dmg * 0.6, hx, hy, hz);
+        wearShield(m, v, a.owner, a.dmg * (a.jav ? 1.4 : 0.6), hx, hy, hz);
         arrows.splice(i, 1);
         continue;
       }
-      let dmg = a.dmg * ZONE_MULT[hitZone][2] * (a.bodkin ? 1 : 1 - v.def.armor[2]);
+      let dmg = a.dmg * ZONE_MULT[hitZone][2] * (a.bodkin ? 1 : 1 - v.def.armor[2] * (a.jav ? 0.7 : 1));
       if (a.volley) dmg = a.dmg * (hitZone === 0 ? 1.3 : 1) * (1 - v.def.armor[2] * 0.6);
       const owner = m.knights[a.owner] ?? null;
       m.damage(v, owner, dmg, { zone: hitZone, dtype: 2, kind: a.volley ? 5 : 1, x: hx, y: hy, z: hz, dx: ndx, dy: ndy, dz: ndz, noStagger: a.volley });
+      if (a.jav && v.alive) { v.pushX += ndx * 1.5; v.pushZ += ndz * 1.5; }
       m.emit({ t: 'arrowHit', id: a.id, v: v.id, x: hx, y: hy, z: hz, nx: -ndx, ny: -ndy, nz: -ndz, stuck: true, shield: false });
       if (a.bodkin && a.pierced < 0) { a.pierced = v.id; a.dmg *= 0.7; continue; }
       arrows.splice(i, 1);
@@ -381,6 +388,70 @@ export function stepArrows(m: Match, dt: number) {
       continue;
     }
     if (a.life <= 0 || a.y < -40) arrows.splice(i, 1);
+  }
+}
+
+/** Cast a javelin along the knight's aim (the crosshair point when given). */
+export function throwJavelin(m: Match, k: Knight) {
+  const speed = 30;
+  const rx = Math.cos(k.yaw), rz = -Math.sin(k.yaw);
+  const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
+  const ox = k.x + rx * 0.2 + fx * 0.5, oy = k.y + 1.65 * k.def.size.height, oz = k.z + rz * 0.2 + fz * 0.5;
+  let dx: number, dy: number, dz: number;
+  const inp = k.input;
+  if (inp.aimX !== undefined && inp.aimY !== undefined && inp.aimZ !== undefined) {
+    const tx = inp.aimX - ox, ty = inp.aimY - oy, tz = inp.aimZ - oz;
+    const dist = Math.hypot(tx, tz), tf = dist / speed, drop = 0.5 * ARROW.gravity * tf * tf;
+    const l = Math.hypot(tx, ty + drop, tz) || 1;
+    dx = tx / l; dy = (ty + drop) / l; dz = tz / l;
+    if (dx * fx + dz * fz < 0.2) { const cp = Math.cos(k.pitch); dx = fx * cp; dy = Math.sin(k.pitch); dz = fz * cp; }
+  } else {
+    // a melee knight aims with his view: lift the throw a little for the drop
+    const p = k.pitch + 0.05, cp = Math.cos(p);
+    dx = fx * cp; dy = Math.sin(p); dz = fz * cp;
+  }
+  const spread = 0.012 + Math.min(0.03, k.moveSpeed * 0.005);
+  dx += m.rng.gauss() * spread; dy += m.rng.gauss() * spread * 0.7; dz += m.rng.gauss() * spread;
+  const l = Math.hypot(dx, dy, dz) || 1;
+  dx /= l; dy /= l; dz /= l;
+  const a: Arrow = { id: m.nextArrowId++, owner: k.id, team: k.team, x: ox, y: oy, z: oz, vx: dx * speed, vy: dy * speed, vz: dz * speed, dmg: 60, bodkin: false, life: 4, pierced: -1, volley: false, jav: true };
+  m.arrows.push(a);
+  m.emit({ t: 'arrow', id: a.id, k: k.id, x: ox, y: oy, z: oz, vx: a.vx, vy: a.vy, vz: a.vz, bodkin: false, jav: true });
+}
+
+/** Lay a ground effect and tell the clients. */
+export function addHazard(m: Match, k: Knight, kind: number, x: number, z: number, r: number, dur: number) {
+  m.hazards.push({ kind, owner: k.id, team: k.team, x, z, r, t: dur, hit: [], pulse: 0 });
+  m.emit({ t: 'hazard', kind, team: k.team, x, z, r, dur });
+}
+
+export function stepHazards(m: Match, dt: number) {
+  for (let i = m.hazards.length - 1; i >= 0; i--) {
+    const h = m.hazards[i];
+    h.t -= dt;
+    if (h.t <= 0) { m.hazards.splice(i, 1); continue; }
+    const owner = m.knights[h.owner] ?? null;
+    // the fire bites in pulses (a hit is never less than a whole point)
+    h.pulse -= dt;
+    const burn = h.kind === 1 && h.pulse <= 0;
+    if (burn) h.pulse = 0.5;
+    m.hash.query(h.x, h.z, h.r + 0.5, (k) => {
+      if (!k.alive || (k.x - h.x) ** 2 + (k.z - h.z) ** 2 > h.r * h.r) return;
+      const ally = k.team === h.team;
+      if (h.kind === 2) { if (ally) k.bannerT = 0.25; return; }
+      if (ally || k.y > m.world.terrain.height(k.x, k.z) + 0.6) return;
+      if (h.kind === 0) {
+        // caltrops: a man who treads on one is lamed and bleeds; once per caltrop field
+        if (k.moveSpeed < 0.4 || h.hit.includes(k.id)) return;
+        h.hit.push(k.id);
+        k.slowT = Math.max(k.slowT, 4);
+        if (owner) applyBleed(k, owner);
+        m.damage(k, owner, 6, { zone: 2, dtype: 2, kind: 2, x: k.x, y: k.y + 0.1, z: k.z, dx: 0, dy: 1, dz: 0, noStagger: true });
+      } else if (burn) {
+        // burning pitch: about 13 a second to anyone who stands in it
+        m.damage(k, owner, 6.5, { zone: 2, dtype: 0, kind: 4, x: k.x, y: k.y + 0.4, z: k.z, dx: 0, dy: 1, dz: 0, noStagger: true });
+      }
+    });
   }
 }
 

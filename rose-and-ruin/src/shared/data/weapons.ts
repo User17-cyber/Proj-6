@@ -16,7 +16,7 @@ export const DMG_CUT = 0, DMG_BLUNT = 1, DMG_PIERCE = 2;
 export const DMG_NAMES = ['cut', 'blunt', 'pierce'] as const;
 
 type BaseWeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
-export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth';
+export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth' | 'standard' | 'maul' | 'javelin' | 'beccorbin';
 
 export interface AttackDef {
   name: string;
@@ -348,6 +348,27 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     id: 'sparth', name: 'Sparth Axe', visual: 'greataxe', time: 0.95, dmg: 1.1, dtype: 0,
     blurb: 'The long broad axe of the Irish gallowglass, swung two-handed in blows that shear through mail.',
     hitStart: 1.0, hitEnd: 1.5,
+  }),
+  // the standard-bearer's pole: the banner staff, steel-shod and spear-pointed for its own defence
+  standard: derive(BASE.spear, {
+    id: 'standard', name: 'Banner Pole', visual: 'spear', time: 1.0, dmg: 1.0,
+    blurb: 'The house banner on a spear-pointed staff. Where it stands, the line stands.',
+  }),
+  // the sapper's maul: a heavy leaden mallet for driving stakes, and skulls
+  maul: derive(BASE.mace, {
+    id: 'maul', name: 'Maul', visual: 'mace', time: 1.08, dmg: 1.08,
+    blurb: 'A long-handled leaden mallet made for driving stakes. It drives other things too.',
+  }),
+  // the kern's casting spear: short, light and quick, with a sheaf of darts on his back
+  javelin: derive(BASE.spear, {
+    id: 'javelin', name: 'Casting Spear', visual: 'spear', time: 0.8, dmg: 0.95,
+    blurb: 'A short light spear, quick in the hand, with javelins to throw before the lines meet.',
+    hitEnd: 2.0, blockArc: 110, parryWindow: 0.2,
+  }),
+  // the bec de corbin: a war hammer on a staff, with a raven's-beak spike to pierce plate
+  beccorbin: derive(BASE.poleaxe, {
+    id: 'beccorbin', name: 'Bec de Corbin', visual: 'poleaxe', time: 0.92, dmg: 1.0, dtype: 1,
+    blurb: 'A hammer on a staff with a raven\'s-beak spike behind: the hammer rings a helm, the beak finds the joints.',
   }),
 };
 

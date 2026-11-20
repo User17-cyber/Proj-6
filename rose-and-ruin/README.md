@@ -72,7 +72,7 @@ In bot-versus-bot tests with the same reflexes and accuracy, Legend tactics won 
 | Scoreboard | Tab |
 | Chat (multiplayer) | Enter |
 | Menu, pause and leave the battle (any time) | Esc or P |
-| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–6 |
+| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0 |
 | Spectator: director / follow / free camera | 1 / 2 / 3 |
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
@@ -118,8 +118,12 @@ Keys can be rebound in Settings, where you can also hide the crosshair (hit mark
 | Battle Chaplain | Flanged mace and mail | Bind Wounds (heal yourself and the most hurt ally close by), Benediction (allies near you regain wind and cannot be staggered for a while) |
 | Pikeman | Pike | Brace for the Charge (set the butt: anyone who rushes or charges onto the point is impaled), Push of Pike (a long shove that drives a foe back and staggers him) |
 | Gallowglass | Sparth axe and mail | Hamstring (a low cut that lames a foe and bleeds him), Shield-Breaker (blows smash shields and guards apart) |
+| Standard-Bearer | Banner pole | Plant the Standard (the house banner driven into the ground: for 12 seconds comrades within 9 metres take 15% less harm and recover their wind faster), Call to Arms (you and comrades within 15 metres move a fifth faster for 5 seconds) |
+| Sapper | Maul | Caltrops (iron caltrops scattered ahead: any foe who treads on them is lamed for 4 seconds and bleeds; they lie for 15 seconds), Fire Pot (a pot of burning pitch hurled up to 14 metres; the fire burns foes in it for 6 seconds) |
+| Kern | Casting spear, javelins and buckler | Throw Javelin (cast where you aim; hits hard and staggers, though a shield catches it), Skirmish (spring back out of reach, then run a fifth faster for 4 seconds) |
+| Hammerer | Bec de corbin and full harness | Hook the Guard (the beak wrenches a raised shield or blade aside and breaks the guard; a foe not guarding is tripped), Ring the Helm (your next blow stuns for a second and a half and leaves him slowed) |
 
-The last five are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders.
+The last nine are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders. Of the newest four, the Sapper and the Hammerer win 56–57% of bot duels. The Standard-Bearer (47%) and the Kern (43%) are made for the wider battle, where the planted standard, the call to arms and the javelins count for most.
 
 **Renowned orders.** Three more orders are won with renown, one after another:
 
@@ -152,10 +156,10 @@ Any order you have won can be chosen at the start and again every time you fall 
 
 ### Manners of battle
 
-- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (thirteen at first, sixteen with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
+- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (seventeen at first, twenty with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–6). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
+- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 

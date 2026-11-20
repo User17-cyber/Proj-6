@@ -5,7 +5,7 @@ import { Act } from '../types';
 import { ABILITY_IDS, type AbilityId } from '../data/classes';
 import type { Knight } from './knight';
 import type { Match } from './match';
-import { frontal, radial, stun, knockdown, isBlocking, applyBleed, wearShield } from './combat';
+import { frontal, radial, stun, knockdown, isBlocking, applyBleed, wearShield, throwJavelin, addHazard } from './combat';
 import { spend } from './actions';
 
 const crossed = (t0: number, t1: number, at: number) => t0 < at && t1 >= at;
@@ -37,6 +37,11 @@ export function abilityMoveMult(k: Knight): number {
     case 'misericorde': return 0.4;
     case 'disarm': return 0.4;
     case 'hamstring': return 0.5;
+    case 'javelin': return 0.55;
+    case 'firepot': case 'caltrops': return 0.5;
+    case 'standard': return 0.2;
+    case 'callarms': return 0.8;
+    case 'hookguard': return 0.4;
     case 'volley': return 0.3;
     case 'sweep': return 0.25;
     case 'earthshaker': return 0.2;
@@ -383,6 +388,64 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
           if (v.alive) { v.pushX += fx * 5; v.pushZ += fz * 5; v.act = Act.Stagger; v.actT = 0; v.actDur = 0.5; v.heavy = false; }
         });
       }
+      break;
+    case 'standard':
+      // the banner is driven into the ground where he stands
+      if (crossed(t0, t1, 0.55)) addHazard(m, k, 2, k.x + fx * 0.6, k.z + fz * 0.6, 9, 12);
+      break;
+    case 'callarms':
+      if (crossed(t0, t1, 0.35)) {
+        for (const a of m.knights) if (a.alive && a.team === k.team && (a.x - k.x) ** 2 + (a.z - k.z) ** 2 <= 225) a.hasteT = Math.max(a.hasteT, 5);
+      }
+      break;
+    case 'caltrops':
+      if (crossed(t0, t1, 0.4)) addHazard(m, k, 0, k.x + fx * 3.2, k.z + fz * 3.2, 2.7, 15);
+      break;
+    case 'firepot':
+      if (crossed(t0, t1, 0.45)) {
+        // where he aims, or along his view, no further than he can throw
+        const inp = k.input;
+        let tx: number, tz: number;
+        if (inp.aimX !== undefined && inp.aimZ !== undefined && Math.hypot(inp.aimX - k.x, inp.aimZ - k.z) <= 14) { tx = inp.aimX; tz = inp.aimZ; }
+        else { const d = Math.max(4, Math.min(14, 8 + k.pitch * 16)); tx = k.x + fx * d; tz = k.z + fz * d; }
+        // the pot lands on the nearest open ground short of a wall
+        for (let i = 0; i < 6 && !m.nav.isWalkable(tx, tz); i++) { tx = (tx + k.x) / 2; tz = (tz + k.z) / 2; }
+        addHazard(m, k, 1, tx, tz, 2.6, 6);
+      }
+      break;
+    case 'javelin':
+      if (crossed(t0, t1, 0.45)) throwJavelin(m, k);
+      break;
+    case 'skirmish':
+      // a spring backwards, then light feet
+      k.ovActive = t1 < 0.3;
+      k.ovx = -fx * 9; k.ovz = -fz * 9;
+      if (crossed(t0, t1, 0.05)) k.invulnT = Math.max(k.invulnT, 0.15);
+      if (crossed(t0, t1, 0.3)) k.hasteT = Math.max(k.hasteT, 4);
+      break;
+    case 'hookguard':
+      if (crossed(t0, t1, 0.35)) {
+        let target: Knight | null = null, best = 9;
+        frontal(m, k, 2.9, 30, (v, d) => { if (d < best) { best = d; target = v; } });
+        const v = target as Knight | null;
+        if (v) {
+          if (v.act === Act.Block || isBlocking(v, k.x, k.z)) {
+            // the beak catches the shield rim or the blade and tears the guard open
+            spend(v, 25);
+            if (v.shield) wearShield(m, v, k.id, 30, v.x, v.y + 1.2, v.z);
+            m.emit({ t: 'block', a: k.id, v: v.id, x: v.x, y: v.y + 1.2, z: v.z, parry: false, shield: !!v.shield, broke: true });
+            v.act = Act.Stagger; v.actT = 0; v.actDur = 1.0; v.heavy = false; v.charge = 0;
+          } else if (v.def.mass > k.def.mass * 1.2) {
+            v.act = Act.Stagger; v.actT = 0; v.actDur = 0.6; v.heavy = false;
+          } else {
+            knockdown(m, v, k, 0.9);
+          }
+          m.damage(v, k, 8, { zone: 2, dtype: 2, kind: 2, x: v.x, y: v.y + 0.5, z: v.z, dx: fx, dy: 0, dz: fz, noStagger: true });
+        }
+      }
+      break;
+    case 'ringhelm':
+      if (crossed(t0, t1, 0.3)) k.ringT = 6;
       break;
     case 'hamstring':
       if (crossed(t0, t1, 0.3)) {

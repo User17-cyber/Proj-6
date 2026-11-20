@@ -47,6 +47,7 @@ function timers(m: Match, k: Knight, dt: number) {
   k.execT = Math.max(0, k.execT - dt); k.juggerT = Math.max(0, k.juggerT - dt);
   k.mordT = Math.max(0, k.mordT - dt); k.sbT = Math.max(0, k.sbT - dt); k.disarmT = Math.max(0, k.disarmT - dt);
   k.slowT = Math.max(0, k.slowT - dt); k.steadyT = Math.max(0, k.steadyT - dt);
+  k.ringT = Math.max(0, k.ringT - dt); k.bannerT = Math.max(0, k.bannerT - dt);
   k.bufferT = Math.max(0, k.bufferT - dt);
   if (k.bufferT <= 0) k.bufferedAttack = 0;
   if (k.act === Act.Idle) {
@@ -71,7 +72,7 @@ function timers(m: Match, k: Knight, dt: number) {
     m.heal(k, k.hotRate * a);
   }
   if (k.staminaDelay > 0) k.staminaDelay -= dt;
-  else if (!k.sprinting) k.stamina = Math.min(k.def.stamina, k.stamina + (k.act === Act.Block ? 10 : 21) * dt);
+  else if (!k.sprinting) k.stamina = Math.min(k.def.stamina, k.stamina + (k.act === Act.Block ? 10 : 21) * (k.bannerT > 0 ? 1.4 : 1) * dt);
   if (k.sprinting) { k.stamina = Math.max(0, k.stamina - 9 * dt); k.staminaDelay = 0.5; }
 }
 

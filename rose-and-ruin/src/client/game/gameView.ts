@@ -12,6 +12,7 @@ import { B } from '../knights/skeleton';
 import { Particles } from '../fx/particles';
 import { Decals } from '../fx/decals';
 import { Arrows, type BodyArrow } from '../fx/arrows';
+import { Hazards } from '../fx/hazards';
 import type { AudioEngine } from '../audio/audio';
 import type { SimEvent } from '../../shared/types';
 import { Act } from '../../shared/types';
@@ -48,6 +49,7 @@ export class GameView {
   readonly particles: Particles;
   readonly decals: Decals;
   readonly arrows: Arrows;
+  readonly hazards: Hazards;
   private views: KView[] = [];
   private corpses: Corpse[] = [];
   private time = 0;
@@ -81,6 +83,8 @@ export class GameView {
     const W = world.map.world;
     this.ground = (x, z, y) => W.groundAt(x, z, y);
     this.ground2 = (x, z) => W.groundAt(x, z, 999);
+    this.hazards = new Hazards(this.particles, this.ground2);
+    world.root.add(this.hazards.group);
     this.particles.ambient = Math.min(1, 0.35 + world.sky.envIntensity * 0.5);
   }
 
@@ -92,6 +96,7 @@ export class GameView {
     this.corpses = [];
     this.kr.clearStatic();
     this.arrows.clear();
+    this.hazards.clear();
     this.decals.clear();
     this.particles.clear();
     this.combatNear = 0;
@@ -256,6 +261,18 @@ export class GameView {
           } else if (id === 'hamstring') {
             A.play('whoosh', { pos: k, vol: 0.55, rate: 1.3, delay: 0.15 });
             this.particles.dust(k.x, k.y, k.z, 0.3);
+          } else if (id === 'standard' || id === 'callarms') {
+            A.play('shout', { pos: k, bus: 'voice', vol: 0.9 });
+            if (id === 'callarms') A.play('hornShort', { pos: k, vol: 0.55, rateVar: 0.02 });
+          } else if (id === 'caltrops') {
+            A.play('clang', { pos: k, vol: 0.3, rate: 1.6, delay: 0.25 });
+          } else if (id === 'firepot' || id === 'javelin' || id === 'hookguard') {
+            A.play('grunt', { pos: k, bus: 'voice', vol: 0.65 });
+          } else if (id === 'skirmish') {
+            A.play('whoosh', { pos: k, vol: 0.5, rate: 1.3 });
+            this.particles.dust(k.x, k.y, k.z, 0.4);
+          } else if (id === 'ringhelm') {
+            A.play('clang', { pos: k, vol: 0.3, rate: 0.75 });
           } else if (id === 'bodkin') {
             this.views[e.k]?.anim.cue();
             if (e.k === localId) this.hud?.combatText('Bodkin nocked', 'block');
@@ -271,9 +288,10 @@ export class GameView {
           break;
         }
         case 'arrow': {
-          this.arrows.launch(e.id, e.x, e.y, e.z, e.vx, e.vy, e.vz);
+          this.arrows.launch(e.id, e.x, e.y, e.z, e.vx, e.vy, e.vz, e.jav ? 2.1 : 1);
           const k = K[e.k];
-          if (k && Math.hypot(e.vx, e.vz) > Math.abs(e.vy) * 0.6) A.play('bow', { pos: k, vol: 0.65 });
+          if (k && e.jav) A.play('whooshHeavy', { pos: k, vol: 0.6, rate: 1.2 });
+          else if (k && Math.hypot(e.vx, e.vz) > Math.abs(e.vy) * 0.6) A.play('bow', { pos: k, vol: 0.65 });
           break;
         }
         case 'arrowHit': {
@@ -306,6 +324,12 @@ export class GameView {
             this.hud?.notify(`${mine ? 'You take' : `${won.name} takes`} the round · ${e.score0}–${e.score1}`, e.winner, true);
           }
           this.hud?.notify(`Round ${e.n}`, -1, true);
+          break;
+        }
+        case 'hazard': {
+          this.hazards.add(e.kind, e.team, e.x, e.z, e.r, e.dur);
+          if (e.kind === 1) { A.play('thunk', { pos: { x: e.x, y: this.ground2(e.x, e.z), z: e.z }, vol: 0.6 }); this.particles.dust(e.x, this.ground2(e.x, e.z), e.z, 0.6); }
+          if (e.kind === 2) A.play('plate', { pos: { x: e.x, y: this.ground2(e.x, e.z), z: e.z }, vol: 0.5, rate: 0.8 });
           break;
         }
         case 'disarm': {
@@ -568,6 +592,7 @@ export class GameView {
       const d2 = (f.x - camPos.x) ** 2 + (f.z - camPos.z) ** 2;
       if (d2 < 90 * 90) this.particles.fire(f.x, f.y - 0.15, f.z, f.intensity > 12 ? 1.6 : 1, dt);
     }
+    this.hazards.update(dt, this.time);
     this.particles.update(dt, cam, this.ground2);
     this.decals.update(dt);
   }
