@@ -142,8 +142,10 @@ export function ground(b: MapBuilder, kind: GroundKind, x: number, z: number, r 
       const a = rng.range(0, Math.PI * 2), d = rng.range(0.55, 0.9) * r;
       b.prop(rng.pick(['stakes', 'mantlet', 'stakes'] as const), x + Math.cos(a) * d, z + Math.sin(a) * d, a + Math.PI / 2, 1);
     }
-    b.prop('cart', x + rng.range(-6, 6), z + rng.range(-6, 6), rng.range(0, 6), 1);
-    b.prop('banner', x + rng.range(-4, 4), z + rng.range(-4, 4), 0, 1.2);
+    // the wreck and the banner stand off to the side, leaving the middle open (it is the duelling ground)
+    const ca = rng.range(0, Math.PI * 2), cd = rng.range(7, 10), ba = ca + rng.range(1.5, 4.5), bd = rng.range(5, 7);
+    b.prop('cart', x + Math.cos(ca) * cd, z + Math.sin(ca) * cd, rng.range(0, 6), 1);
+    b.prop('banner', x + Math.cos(ba) * bd, z + Math.sin(ba) * bd, 0, 1.2);
     b.scatterProps({ kind: 'circle', x, z, r }, 'rock', 6, [0.5, 1.1]);
     b.avoid({ kind: 'circle', x, z, r: r + 4 });
   }

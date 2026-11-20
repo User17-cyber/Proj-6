@@ -43,6 +43,7 @@ export function abilityMoveMult(k: Knight): number {
     case 'callarms': return 0.8;
     case 'hookguard': return 0.4;
     case 'cleave': return 0.3;
+    case 'flurry': return 0.6;
     case 'shieldslam': return 0.35;
     case 'realm': case 'inspire': case 'command': return 0.5;
     case 'volley': return 0.3;
@@ -449,6 +450,17 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
       break;
     case 'ringhelm':
       if (crossed(t0, t1, 0.3)) k.ringT = 6;
+      break;
+    case 'flurry':
+      for (const at of [0.12, 0.33, 0.54]) {
+        if (!crossed(t0, t1, at)) continue;
+        let target: Knight | null = null, best = 9;
+        frontal(m, k, 2.1, 32, (v, d) => { if (d < best) { best = d; target = v; } });
+        const v = target as Knight | null;
+        if (!v) continue;
+        if (isBlocking(v, k.x, k.z)) { spend(v, 6); m.emit({ t: 'block', a: k.id, v: v.id, x: v.x, y: v.y + 1.2, z: v.z, parry: false, shield: !!v.shield, broke: false }); continue; }
+        m.damage(v, k, 14 * (1 - v.def.armor[2] * 0.3), { zone: 1, dtype: 2, kind: 2, x: v.x, y: v.y + 1.2, z: v.z, dx: fx, dy: 0, dz: fz, noStagger: true });
+      }
       break;
     case 'counterstroke':
       if (crossed(t0, t1, 0.2)) k.counterT = 4;

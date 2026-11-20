@@ -1,8 +1,8 @@
 import type { WeaponId } from './weapons';
 
-export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer' | 'garter' | 'warlord' | 'colossus';
+export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer' | 'garter' | 'warlord' | 'colossus' | 'cutthroat';
 /** at most 128: snapshots pack the class index into 7 bits */
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion', 'bearer', 'sapper', 'kern', 'hammerer', 'garter', 'warlord', 'colossus'];
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion', 'bearer', 'sapper', 'kern', 'hammerer', 'garter', 'warlord', 'colossus', 'cutthroat'];
 /** the orders won by renown, in the order they are unlocked */
 export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'garter', 'champion', 'warlord', 'colossus'];
 
@@ -50,7 +50,8 @@ export type AbilityId =
   | 'hookguard' | 'ringhelm'
   | 'counterstroke' | 'inspire'
   | 'command' | 'cleave'
-  | 'realm' | 'shieldslam';
+  | 'realm' | 'shieldslam'
+  | 'flurry';
 
 export const ABILITY_IDS: readonly AbilityId[] = [
   'shield_bash', 'rally', 'whirlwind', 'charge', 'lunge', 'sweep',
@@ -153,6 +154,8 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     description: 'Plant the great shield and draw your comrades behind it: you and every comrade within 7 metres take 30% less harm for 6 seconds.' },
   shieldslam: { id: 'shieldslam', name: 'Shield Slam', icon: 'slam2', cooldown: 12, duration: 0.7, stamina: 16,
     description: 'Drive the great shield into the press before you: every foe within 3.5 metres is battered back and stunned for a second.' },
+  flurry: { id: 'flurry', name: 'Flurry', icon: 'flurry', cooldown: 6, duration: 0.7, stamina: 12,
+    description: 'Three quick stabs at the man before you, each finding the gaps in his harness.' },
   bloodletting: { id: 'bloodletting', name: 'Bloodletting', icon: 'bleed', cooldown: 18, duration: 0.5, stamina: 0,
     description: 'For 8 seconds every cut opens a wound that bleeds the victim (stacks three times).' },
 };
@@ -420,6 +423,16 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     ratings: { attack: 5, defence: 5, speed: 1, reach: 5, difficulty: 5 },
     armourDesc: 'A great helm, a giant\'s full harness, and a tower shield of oak and iron',
     botWeight: 3, unlock: 12000,
+  },
+  cutthroat: {
+    id: 'cutthroat', name: 'Cutthroat', title: 'Long Rondel Dagger',
+    description: 'A quick, unarmoured knife-fighter from the back streets, faster on his feet and with his hands than any man on the field. Each stab does little, but Flurry puts in three at once and Sidestep takes him out of reach of the answer.',
+    hp: 96, stamina: 130, speed: 6.2, sprint: 8.8, mass: 0.82, size: { height: 0.95, girth: 0.88 },
+    armor: [0.03, 0.02, 0.03], weapon: 'rondel', shield: null, ranged: false,
+    abilities: ['flurry', 'dash'], hyperArmor: false, attackSpeed: 1.15,
+    ratings: { attack: 1, defence: 1, speed: 5, reach: 3, difficulty: 4 },
+    armourDesc: 'A hood and a leather jerkin: no harness at all',
+    botWeight: 6,
   },
 };
 

@@ -92,6 +92,7 @@ const BODY_SURF: Record<ClassId, [string, string, string, string, string]> = {
   garter: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
   warlord: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
   colossus: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
+  cutthroat: ['doublet', 'skin', 'hose', 'skin', 'skin'],
 };
 
 const SKIN_TONES = [0xe3b49b, 0xd9a080, 0xc98e6c, 0xb57b5a].map((c) => new THREE.Color(c));

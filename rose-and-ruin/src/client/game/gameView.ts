@@ -270,6 +270,8 @@ export class GameView {
           } else if (id === 'realm') {
             A.play('plate', { pos: k, vol: 0.8, rate: 0.6 });
             for (let i = 0; i < 30; i++) this.particles.spawn(5, k.x + (Math.random() - 0.5) * 3, k.y + Math.random() * 2.2, k.z + (Math.random() - 0.5) * 3, 0, 0.8 + Math.random(), 0, 0.9 + Math.random() * 0.5, 0.05, AURA_COL[1]);
+          } else if (id === 'flurry') {
+            for (let i = 0; i < 3; i++) A.play('whoosh', { pos: k, vol: 0.4, rate: 1.7, delay: 0.08 + i * 0.15 });
           } else if (id === 'counterstroke') {
             A.play('clang', { pos: k, vol: 0.35, rate: 1.2 });
           } else if (id === 'cleave' || id === 'shieldslam') {

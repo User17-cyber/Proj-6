@@ -188,6 +188,11 @@ const W: Record<string, PieceDef[]> = {
     { key: 'javSheaf', geo: () => A.merge([0, 1, 2].map((i) => A.xf(new THREE.CylinderGeometry(0.009, 0.009, 1.25, 6), 0.06 * i - 0.06, 0.12, -0.2 - 0.015 * i, 0.12, 0, 0.55))), mat: 'wood', mount: B.chest, detail: true },
     { key: 'javHeads', geo: () => A.merge([0, 1, 2].map((i) => A.xf(new THREE.ConeGeometry(0.016, 0.12, 6), 0.06 * i - 0.06 - 0.33, 0.12 + 0.56, -0.2 - 0.015 * i + 0.07, 0.12, 0, 0.55))), mat: 'steel', mount: B.chest, detail: true },
   ],
+  // the long rondel dagger: the archer's dagger drawn out longer and stiffer
+  rondel: [
+    { key: 'rondelSteel', geo: () => A.xf(A.dagger().steel!, 0, 0.1, 0, 0, 0, 0, 1.25, 1.9, 1.25), mat: 'steelBright', mount: 'weapon' },
+    { key: 'rondelGrip', geo: () => A.dagger().grip!, mat: 'grip', mount: 'weapon' },
+  ],
   bow: [
     { key: 'bowStave', geo: () => A.longbow().wood!, mat: 'wood', mount: 'bow' },
     { key: 'bowGrip', geo: () => A.longbow().grip!, mat: 'grip', mount: 'bow' },
@@ -584,5 +589,16 @@ export const KITS: Record<ClassId, PieceDef[]> = {
     ...fullLegs('steelDark', 0.07),
     ...W.spear,
     ...towerShield(),
+  ],
+  cutthroat: [
+    ...base(),
+    { key: 'coif', geo: () => A.coif(), mat: 'quilt', mount: B.head, head: true },
+    { key: 'jerkinC', geo: () => A.tabardTop(0.26), mat: 'leatherDark', mount: B.chest },
+    { key: 'scarfG', geo: () => cylUV(A.xf(A.tabardTop(0.16), 0, 0, 0, 0, 0, 0, 1.03, 1, 1.04), -0.16, 0.215), mat: 'tabard', mount: B.chest, team: true },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    { key: 'bracer', geo: () => A.armTube(-0.08, -FA + 0.03, 0.05, 0.042), mat: 'leather', mount: B.forearmL },
+    { key: 'glove', geo: () => A.gauntlet(true), mat: 'leather', mount: B.handR },
+    ...lightLegs(false),
+    ...W.rondel,
   ],
 };

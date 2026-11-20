@@ -10,8 +10,13 @@ import { kenilworth } from './kenilworth';
 import { ludlow } from './ludlow';
 import { middleham } from './middleham';
 import { raglan } from './raglan';
+import { alnwick } from './alnwick';
+import { dunstanburgh } from './dunstanburgh';
+import { pembroke } from './pembroke';
+import { caister } from './caister';
+import { pontefract } from './pontefract';
 
-export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan];
+export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan, alnwick, dunstanburgh, pembroke, caister, pontefract];
 
 export function getMap(id: string): MapDef {
   return MAPS.find((m) => m.id === id) ?? MAPS[0];

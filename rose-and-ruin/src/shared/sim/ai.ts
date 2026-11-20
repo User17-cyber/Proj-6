@@ -694,6 +694,7 @@ function tryBotAbility(m: Match, k: Knight, b: BotBrain, t: Knight, dist: number
         use = (near >= 2 && countEnemies(m, k, 10) >= 1) || (dist < 4 && (id === 'command' ? k.hp < k.def.hp * 0.7 : b.rng.chance(0.25)));
         break;
       }
+      case 'flurry': use = dist < 2.2 && t.act !== Act.Block && Math.abs(angleDiff(k.yaw, yawTo(k.x, k.z, t.x, t.z))) < 0.4; break;
       case 'cleave': use = countEnemies(m, k, 3.1, true) >= 2 || (dist < 2.8 && b.rng.chance(0.25)); break;
       case 'realm': {
         let near = 0;

@@ -1,6 +1,6 @@
 # Rose & Ruin
 
-A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 100 knights each at ten real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
+A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 100 knights each at fifteen real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
 
 ## Run it
 
@@ -72,7 +72,7 @@ In bot-versus-bot tests with the same reflexes and accuracy, Legend tactics won 
 | Scoreboard | Tab |
 | Chat (multiplayer) | Enter |
 | Menu, pause and leave the battle (any time) | Esc or P |
-| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0, then Alt+1–3 |
+| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0, then Alt+1–4 |
 | Spectator: director / follow / free camera | 1 / 2 / 3 |
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
@@ -122,8 +122,9 @@ Keys can be rebound in Settings, where you can also hide the crosshair (hit mark
 | Sapper | Maul | Caltrops (iron caltrops scattered ahead: any foe who treads on them is lamed for 4 seconds and bleeds; they lie for 15 seconds), Fire Pot (a pot of burning pitch hurled up to 14 metres; the fire burns foes in it for 6 seconds) |
 | Kern | Casting spear, javelins and buckler | Throw Javelin (cast where you aim; hits hard and staggers, though a shield catches it), Skirmish (spring back out of reach, then run a fifth faster for 4 seconds) |
 | Hammerer | Bec de corbin and full harness | Hook the Guard (the beak wrenches a raised shield or blade aside and breaks the guard; a foe not guarding is tripped), Ring the Helm (your next blow stuns for a second and a half and leaves him slowed) |
+| Cutthroat | Long rondel dagger, no armour | Flurry (three quick stabs that find the gaps), Sidestep. The fastest on his feet and with his hands, with medium reach, but the least harm per blow and next to no protection |
 
-The last nine are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders. Of the newest four, the Sapper and the Hammerer win 56–57% of bot duels. The Standard-Bearer (47%) and the Kern (43%) are made for the wider battle, where the planted standard, the call to arms and the javelins count for most.
+The last ten are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders. Of the newest four, the Sapper and the Hammerer win 56–57% of bot duels. The Standard-Bearer (47%) and the Kern (43%) are made for the wider battle, where the planted standard, the call to arms and the javelins count for most.
 
 **Renowned orders.** Six more orders are won with renown, one after another:
 
@@ -167,10 +168,10 @@ Any order you have won can be chosen at the start and again every time you fall 
 
 ### Manners of battle
 
-- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (seventeen at first, twenty-three with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
+- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (eighteen at first, twenty-four with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–3). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
+- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–4). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 
@@ -189,6 +190,11 @@ Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with o
 - **Ludlow Castle**, Shropshire, 1459: the Duke of York's seat on its cliff above the Teme, with the round chapel and Norman great tower in the inner bailey. Come over Ludford Bridge to a fresh breach, or force the gate from the town.
 - **Middleham Castle**, Wensleydale, 1469: Warwick's stronghold, where a vast Norman keep leaves only a narrow ward to fight round. The old ringwork of William's Hill stands to the south-west.
 - **Raglan Castle**, Monmouthshire, 1468: Herbert's palace-fortress, with many-sided towers round the Pitched Stone and Fountain courts. The hexagonal Yellow Tower stands on its own moat, reached by a single bridge.
+- **Alnwick Castle**, Northumberland, 1462: the Percy stronghold above the Aln, two baileys round a shell keep of half-round towers, the barbican facing the town.
+- **Dunstanburgh Castle**, Northumberland, 1464: a vast ward on a whinstone headland above the North Sea, with the great keep-gatehouse and the Lilburn Tower. The south curtain is broken by the guns.
+- **Pembroke Castle**, Pembrokeshire, 1461: Jasper Tudor's fortress on a ridge between two rivers, its great round keep in the inner ward, the gatehouse facing the town.
+- **Caister Castle**, Norfolk, 1469: the Pastons' moated brick castle under Norfolk's siege, with a slender great tower, a bridged moat and a moated base court.
+- **Pontefract Castle**, Yorkshire, 1483: the key to the north, an oval curtain of seven towers on its rock, and a round keep of clustered drum towers on the old motte.
 
 ## How it works
 

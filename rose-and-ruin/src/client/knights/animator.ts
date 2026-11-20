@@ -539,6 +539,11 @@ export class KnightAnimator {
       case 'benediction': return blend(rest, [0.26, 1.82, 0.2, 0, 82, 0, -4], Math.min(1, Math.sin(u * Math.PI) * 1.5));
       case 'brace': return blend(rest, [0.16, 0.92, 0.1, 0, 22, 8, 22], smoothstep(0, 0.12, u) * (1 - smoothstep(0.92, 1, u)));
       case 'pushofpike': return this.phases(rest, [0.2, 1.3, -0.22, 0, 4, 0, -8], [0.1, 1.36, 0.9, 0, 0, 0, 24], u, 0.3, 0.52, p);
+      case 'flurry': {
+        // three quick stabs: out and back, out and back, out and back
+        const ph = (u * 3) % 1, w = Math.sin(ph * Math.PI);
+        return blend(rest, A[3].end as unknown as number[], Math.min(1, w * 1.4));
+      }
       case 'counterstroke': return blend(rest, weapon.block as unknown as number[], Math.min(1, Math.sin(u * Math.PI) * 1.6));
       case 'inspire': return blend(rest, [0.24, 1.96, 0.1, 0, 88, 0, -8], Math.min(1, Math.sin(u * Math.PI) * 1.5));
       case 'command': return this.phases(rest, [0.22, 2.0, 0.0, 0, 95, 0, -8], [0.2, 1.6, 0.55, 0, 30, 0, 12], u, 0.45, 0.75, p);
