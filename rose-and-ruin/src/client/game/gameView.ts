@@ -197,6 +197,8 @@ export class GameView {
             this.hud?.killBanner(v, e.head, killer ? killer.kills : 0);
             A.play('killSting', { bus: 'ui', vol: 0.55, rateVar: 0 });
           }
+          // a share in the kill: the assist is worth renown, and should be seen to be
+          if (e.assist === localId && localId >= 0 && e.killer !== localId) { this.hud?.combatText('Assist · +50 renown', 'block'); A.play('killSting', { bus: 'ui', vol: 0.3, rateVar: 0, rate: 1.25 }); }
           if (e.victim === localId) this.hud?.localDied(e.killer >= 0 ? K[e.killer] : null);
           break;
         }
@@ -261,6 +263,19 @@ export class GameView {
           } else if (id === 'hamstring') {
             A.play('whoosh', { pos: k, vol: 0.55, rate: 1.3, delay: 0.15 });
             this.particles.dust(k.x, k.y, k.z, 0.3);
+          } else if (id === 'inspire' || id === 'command') {
+            A.play('shout', { pos: k, bus: 'voice', vol: 1 });
+            A.play('hornShort', { pos: k, vol: 0.6, rateVar: 0.02, rate: id === 'command' ? 0.8 : 1 });
+            for (let i = 0; i < 30; i++) this.particles.spawn(5, k.x + (Math.random() - 0.5) * 2.4, k.y + Math.random() * 2.2, k.z + (Math.random() - 0.5) * 2.4, 0, 1 + Math.random(), 0, 0.9 + Math.random() * 0.5, 0.05, AURA_COL[0]);
+          } else if (id === 'realm') {
+            A.play('plate', { pos: k, vol: 0.8, rate: 0.6 });
+            for (let i = 0; i < 30; i++) this.particles.spawn(5, k.x + (Math.random() - 0.5) * 3, k.y + Math.random() * 2.2, k.z + (Math.random() - 0.5) * 3, 0, 0.8 + Math.random(), 0, 0.9 + Math.random() * 0.5, 0.05, AURA_COL[1]);
+          } else if (id === 'counterstroke') {
+            A.play('clang', { pos: k, vol: 0.35, rate: 1.2 });
+          } else if (id === 'cleave' || id === 'shieldslam') {
+            A.play('grunt', { pos: k, bus: 'voice', vol: 0.8, rate: 0.85 });
+            A.play('whooshHeavy', { pos: k, vol: 0.7, delay: 0.3, rate: 0.85 });
+            if (id === 'shieldslam') A.play('plate', { pos: k, vol: 0.8, rate: 0.7, delay: 0.3 });
           } else if (id === 'standard' || id === 'callarms') {
             A.play('shout', { pos: k, bus: 'voice', vol: 0.9 });
             if (id === 'callarms') A.play('hornShort', { pos: k, vol: 0.55, rateVar: 0.02 });
@@ -544,6 +559,17 @@ export class GameView {
       this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId ? 2 : false, k.id * 7 + k.team, d < (U ? 140 : 70));
       for (const a of v.arrows) this.arrows.body(v.anim.bones[a.bone], a);
       if (d < 12 && (k.act === Act.Release || k.act === Act.Block)) near++;
+      // a comrade's blessing hangs about him in the air: motes circling up around his body
+      if (k.aura > 0 && d < 70 && !(this.firstPerson && k.id === localId && Math.random() < 0.6)) {
+        const col = AURA_COL[k.aura - 1];
+        const size = CLASSES[k.cls].size, rate = d < 25 ? 22 : 10;
+        let n = rate * dt + Math.random();
+        while (n-- >= 1) {
+          const a = this.time * 2.2 + Math.random() * Math.PI * 2, r = 0.55 * size.girth + Math.random() * 0.15;
+          const y = k.y + Math.random() * 1.9 * size.height;
+          this.particles.spawn(5, k.x + Math.cos(a) * r, y, k.z + Math.sin(a) * r, -Math.sin(a) * 0.5 + k.vx * 0.8, 0.55 + Math.random() * 0.4, Math.cos(a) * 0.5 + k.vz * 0.8, 0.7 + Math.random() * 0.4, 0.035 + Math.random() * 0.02, col);
+        }
+      }
       // footsteps
       const sp = Math.hypot(k.vx, k.vz);
       if (d < 22 && sp > 1.2 && k.onGround) {
@@ -602,6 +628,8 @@ export class GameView {
   }
 }
 
+/** aura motes: strength (gold), shelter (silver-blue), swiftness (pale green) */
+const AURA_COL: [number, number, number, number][] = [[2.6, 1.9, 0.55, 0.75], [1.3, 1.75, 2.7, 0.7], [1.5, 2.6, 1.3, 0.65]];
 const _n = { x: 0, y: 1, z: 0 };
 const _one = new THREE.Vector3(1, 1, 1), _hm = new THREE.Matrix4(), _hq = new THREE.Quaternion(), _hv = new THREE.Vector3();
 const _p = new THREE.Vector3(), _q = new THREE.Vector3(), _d = new THREE.Vector3(), _tmp = new THREE.Vector3();

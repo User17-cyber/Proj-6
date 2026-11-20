@@ -282,6 +282,7 @@ export class Match {
     k.holdT = k.halfT = k.hasteT = k.execT = k.juggerT = 0;
     k.mordT = k.sbT = k.disarmT = k.slowT = k.steadyT = 0;
     k.ringT = k.bannerT = 0;
+    k.inspireT = k.realmT = k.allyHasteT = k.counterT = 0;
     k.bleedStacks = 0; k.bodkin = false; k.draw = 0;
     k.shieldHp = k.def.shield ? SHIELDS[k.def.shield].hp : 0;
     k.cds[0] = 0; k.cds[1] = 0;
@@ -306,6 +307,8 @@ export class Match {
     if (victim.holdT > 0) amount *= 0.7;
     if (victim.bannerT > 0) amount *= 0.85;
     if (attacker && attacker.rallyT > 0) amount *= 1.15;
+    if (attacker && attacker.inspireT > 0) amount *= 1.15;
+    if (victim.realmT > 0) amount *= 0.7;
     amount = Math.max(1, Math.round(amount));
     // Executioner: a blow that leaves the foe below a third of his vigour finishes him
     if (attacker && attacker.execT > 0 && attacker !== victim && victim.hp - amount > 0 && victim.hp - amount < victim.def.hp / 3) amount = victim.hp;
@@ -351,7 +354,7 @@ export class Match {
     const team = this.teams[victim.team];
     if (this.settings.mode !== 'laststand' && this.settings.mode !== 'duel') team.tickets = Math.max(0, team.tickets - 1);
     // assist: the biggest other contributor in the last 12 seconds
-    let assist = -1, best = 24;
+    let assist = -1, best = 15;
     for (const [id, rec] of victim.dmgBy) {
       if (killer && id === killer.id) continue;
       if (this.time - rec.time > 12) continue;

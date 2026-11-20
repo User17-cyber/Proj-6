@@ -42,6 +42,9 @@ export function abilityMoveMult(k: Knight): number {
     case 'standard': return 0.2;
     case 'callarms': return 0.8;
     case 'hookguard': return 0.4;
+    case 'cleave': return 0.3;
+    case 'shieldslam': return 0.35;
+    case 'realm': case 'inspire': case 'command': return 0.5;
     case 'volley': return 0.3;
     case 'sweep': return 0.25;
     case 'earthshaker': return 0.2;
@@ -265,7 +268,7 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
         for (const a of m.knights) {
           if (!a.alive) continue;
           const d2 = (a.x - k.x) ** 2 + (a.z - k.z) ** 2;
-          if (a.team === k.team) { if (d2 <= 100) a.hasteT = 6; continue; }
+          if (a.team === k.team) { if (d2 <= 100) { a.hasteT = 6; a.allyHasteT = 6; } continue; }
           if (d2 > 49 || a.bulwarkT > 0 || a.juggerT > 0 || a.knockT > 0) continue;
           // the foe reels: his guard and his blow are both broken off
           a.act = Act.Stagger; a.actT = 0; a.actDur = 0.7; a.heavy = false; a.charge = 0; a.draw = 0;
@@ -395,7 +398,7 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
       break;
     case 'callarms':
       if (crossed(t0, t1, 0.35)) {
-        for (const a of m.knights) if (a.alive && a.team === k.team && (a.x - k.x) ** 2 + (a.z - k.z) ** 2 <= 225) a.hasteT = Math.max(a.hasteT, 5);
+        for (const a of m.knights) if (a.alive && a.team === k.team && (a.x - k.x) ** 2 + (a.z - k.z) ** 2 <= 225) { a.hasteT = Math.max(a.hasteT, 5); a.allyHasteT = Math.max(a.allyHasteT, 5); }
       }
       break;
     case 'caltrops':
@@ -446,6 +449,44 @@ export function abilityTick(m: Match, k: Knight, id: AbilityId, t0: number, t1: 
       break;
     case 'ringhelm':
       if (crossed(t0, t1, 0.3)) k.ringT = 6;
+      break;
+    case 'counterstroke':
+      if (crossed(t0, t1, 0.2)) k.counterT = 4;
+      break;
+    case 'inspire':
+      if (crossed(t0, t1, 0.4)) for (const a of m.knights) if (a.alive && a.team === k.team && (a.x - k.x) ** 2 + (a.z - k.z) ** 2 <= 144) { a.inspireT = 8; if (a !== k) k.score += 5; }
+      break;
+    case 'command':
+      if (crossed(t0, t1, 0.45)) {
+        for (const a of m.knights) {
+          if (!a.alive || a.team !== k.team || (a.x - k.x) ** 2 + (a.z - k.z) ** 2 > 225) continue;
+          a.hotT = 3; a.hotRate = 25 / 3;
+          a.hasteT = Math.max(a.hasteT, 6); a.allyHasteT = Math.max(a.allyHasteT, 6); a.inspireT = Math.max(a.inspireT, 6);
+          m.emit({ t: 'heal', k: a.id, amt: 25 });
+          if (a !== k) k.score += 8;
+        }
+      }
+      break;
+    case 'cleave':
+      if (crossed(t0, t1, 0.5)) {
+        frontal(m, k, 3.1, 75, (v) => {
+          if (k.abilityHits.includes(v.id)) return;
+          k.abilityHits.push(v.id);
+          m.damage(v, k, 46 * (1 - v.def.armor[0] * 0.7), { zone: 1, dtype: 0, kind: 2, x: v.x, y: v.y + 1.2, z: v.z, dx: fx, dy: 0, dz: fz });
+          if (v.alive && v.act !== Act.Knockdown) { v.act = Act.Stagger; v.actT = 0; v.actDur = 0.6; v.heavy = false; }
+        });
+      }
+      break;
+    case 'realm':
+      if (crossed(t0, t1, 0.45)) for (const a of m.knights) if (a.alive && a.team === k.team && (a.x - k.x) ** 2 + (a.z - k.z) ** 2 <= 49) { a.realmT = 6; if (a !== k) k.score += 5; }
+      break;
+    case 'shieldslam':
+      if (crossed(t0, t1, 0.45)) {
+        frontal(m, k, 3.5, 50, (v) => {
+          m.damage(v, k, 26 * (1 - v.def.armor[1]), { zone: 1, dtype: 1, kind: 2, x: v.x, y: v.y + 1.2, z: v.z, dx: fx, dy: 0, dz: fz, noStagger: true });
+          if (v.alive) { v.pushX += fx * 6; v.pushZ += fz * 6; stun(m, v, 1.0); }
+        });
+      }
       break;
     case 'hamstring':
       if (crossed(t0, t1, 0.3)) {

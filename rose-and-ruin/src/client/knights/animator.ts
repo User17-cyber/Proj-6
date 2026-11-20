@@ -85,7 +85,8 @@ export class KnightAnimator {
     const J = this.joints;
     if (this.hasFirstFrame) for (const key in J) (this.prevJoints as unknown as Record<string, THREE.Vector3>)[key].copy((J as unknown as Record<string, THREE.Vector3>)[key]);
     const def = CLASSES[k.cls];
-    const shieldK = k.shieldBroken ? null : def.shield;
+    // the tower shield is carried and raised like a pavise
+    const shieldK = k.shieldBroken ? null : def.shield === 'tower' ? 'pavise' : def.shield;
     const weapon = WEAPONS[def.weapon];
     const ability: AbilityId | null = k.act === Act.Ability ? def.abilities[k.abilitySlot] : null;
     const abT = k.act === Act.Ability ? k.actT : 0, abDur = k.act === Act.Ability ? Math.max(0.01, k.actDur) : 1;
@@ -205,6 +206,9 @@ export class KnightAnimator {
     if (ability === 'standard') crouch = 0.12 * smoothstep(0.45, 0.62, abU) * (1 - smoothstep(0.8, 1, abU));
     if (ability === 'caltrops') crouch = 0.16 * hump;
     if (ability === 'skirmish') crouch = 0.1 * hump;
+    if (ability === 'realm' || ability === 'counterstroke') crouch = 0.1 * Math.min(1, hump * 1.6);
+    if (ability === 'cleave') crouch = 0.12 * hump;
+    if (ability === 'shieldslam') crouch = 0.08 * hump;
     if (k.stunT > 0) crouch = 0.08 + Math.sin(time * 5) * 0.02;
     let pelvisY = k.y + BODY.hipY + bob - crouch - this.airT * 0.05;
     // keep both legs within reach on slopes
@@ -232,6 +236,8 @@ export class KnightAnimator {
     if (ability === 'throw') { lean += 0.45 * hump; }
     if (ability === 'juggernaut' || ability === 'warcry') lean -= 0.18 * hump;
     if (ability === 'skirmish') lean -= 0.25 * hump;
+    if (ability === 'shieldslam') lean += 0.4 * Math.sin(clamp(abU / 0.7, 0, 1) * Math.PI);
+    if (ability === 'inspire' || ability === 'command') lean -= 0.15 * hump;
     if (ability === 'caltrops') lean += 0.3 * hump;
     if (ability === 'javelin' || ability === 'firepot') lean += (abU < 0.42 ? -0.15 * smoothstep(0, 0.42, abU) : 0.3 * Math.sin(clamp((abU - 0.42) / 0.5, 0, 1) * Math.PI));
     if (ability === 'bindwounds') lean += 0.35 * smoothstep(0, 0.3, abU) * (1 - smoothstep(0.82, 1, abU));
@@ -239,6 +245,7 @@ export class KnightAnimator {
     // a throw winds the shoulders back, then unwinds through the cast
     if (ability === 'javelin') twist += abU < 0.42 ? -0.7 * smoothstep(0, 0.42, abU) : -0.7 + 1.2 * smoothstep(0.42, 0.62, abU) * (1 - smoothstep(0.75, 1, abU) * 0.4);
     if (ability === 'firepot') twist += abU < 0.42 ? 0.7 * smoothstep(0, 0.42, abU) : 0.7 - 1.2 * smoothstep(0.42, 0.62, abU);
+    if (ability === 'cleave') twist += abU < 0.4 ? 0.9 * smoothstep(0, 0.4, abU) : 0.9 - 1.9 * smoothstep(0.4, 0.62, abU) * (1 - smoothstep(0.8, 1, abU) * 0.5);
     if (ability === 'throw') twist += 1.1 * Math.sin(clamp((abU - 0.25) / 0.6, 0, 1) * Math.PI);
     const hipTwist = Math.sin(this.phase) * (0.12 + run * 0.06) * gait;
     twist -= hipTwist * (0.7 + run * 0.4);
@@ -283,6 +290,7 @@ export class KnightAnimator {
     headYaw = -twist * 0.75;
     if (ability === 'rally') headPitch = 0.5 * Math.sin(abU * Math.PI);
     if (ability === 'warcry' || ability === 'juggernaut') headPitch = 0.55 * Math.sin(abU * Math.PI);
+    if (ability === 'inspire' || ability === 'command') headPitch = 0.5 * Math.sin(abU * Math.PI);
     if (ability === 'callarms' || ability === 'standard') headPitch = 0.4 * Math.sin(abU * Math.PI);
     if (ability === 'holdline' || ability === 'benediction') headPitch = 0.3 * Math.sin(abU * Math.PI);
     if (ability === 'bindwounds' || ability === 'misericorde') headPitch = -0.55 * Math.sin(abU * Math.PI);
@@ -323,7 +331,7 @@ export class KnightAnimator {
       } else if (shieldK === 'heater' || shieldK === 'pavise') {
         const pav = shieldK === 'pavise';
         const blockA = k.act === Act.Block ? smoothstep(0, pav ? 0.14 : 0.1, k.actT) : 0;
-        const bash = ability === 'shield_bash' ? Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI) : 0;
+        const bash = ability === 'shield_bash' || ability === 'shieldslam' ? Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI) : ability === 'realm' || ability === 'counterstroke' ? Math.min(1, Math.sin(abU * Math.PI) * 1.6) : 0;
         const raise = Math.max(blockA, bash);
         // the pavise is carried before the body and raised to cover from brow to knee
         if (pav) toWorld(lerp(-0.24, -0.04, raise), lerp(1.08, 1.3, raise), -lerp(0.3, 0.46 + bash * 0.22, raise), leftTarget);
@@ -531,6 +539,12 @@ export class KnightAnimator {
       case 'benediction': return blend(rest, [0.26, 1.82, 0.2, 0, 82, 0, -4], Math.min(1, Math.sin(u * Math.PI) * 1.5));
       case 'brace': return blend(rest, [0.16, 0.92, 0.1, 0, 22, 8, 22], smoothstep(0, 0.12, u) * (1 - smoothstep(0.92, 1, u)));
       case 'pushofpike': return this.phases(rest, [0.2, 1.3, -0.22, 0, 4, 0, -8], [0.1, 1.36, 0.9, 0, 0, 0, 24], u, 0.3, 0.52, p);
+      case 'counterstroke': return blend(rest, weapon.block as unknown as number[], Math.min(1, Math.sin(u * Math.PI) * 1.6));
+      case 'inspire': return blend(rest, [0.24, 1.96, 0.1, 0, 88, 0, -8], Math.min(1, Math.sin(u * Math.PI) * 1.5));
+      case 'command': return this.phases(rest, [0.22, 2.0, 0.0, 0, 95, 0, -8], [0.2, 1.6, 0.55, 0, 30, 0, 12], u, 0.45, 0.75, p);
+      case 'cleave': return this.phases(rest, [0.42, 1.45, -0.1, -125, 30, -50, 0], [-0.32, 1.1, 0.25, 110, -10, 55, 14], u, 0.4, 0.62, p);
+      case 'realm':
+      case 'shieldslam': return blend(rest, [0.32, 1.25, 0.05, -20, 60, 0, 6], Math.sin(u * Math.PI));
       case 'standard': return this.phases(rest, [0.16, 1.92, 0.18, 0, 88, 0, -4], [0.16, 0.98, 0.34, 0, 86, 0, 16], u, 0.42, 0.62, p);
       case 'callarms': return this.phases(rest, [0.22, 1.98, 0.0, 0, 96, 0, -8], [0.22, 1.72, 0.52, 0, 42, 0, 14], u, 0.35, 0.7, p);
       case 'caltrops': return blend(rest, [0.42, 0.98, -0.05, -40, -20, 0, 14], Math.sin(u * Math.PI));

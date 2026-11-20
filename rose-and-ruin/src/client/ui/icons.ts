@@ -54,6 +54,9 @@ export const ICONS: Record<string, string> = {
   sapper: mace('rotate(32 32 32) translate(4 -2)') + `<path d="M6 54 l6 -10 l6 10 z M18 58 l5 -8 l5 8 z"/>`,
   kern: spear('rotate(30 32 32) translate(6 0)') + spear('rotate(42 32 32) translate(-6 6) scale(.8)') + `<circle cx="18" cy="46" r="11"/>`,
   hammerer: poleaxe('rotate(-24 32 32)') + `<path d="M8 8 h12 v10 h-12 z"/>`,
+  garter: sword('rotate(38 32 32) translate(5 -1)') + heater('translate(-1 4)') + `<path d="M6 58 h20 v4 h-20 z"/>`,
+  warlord: poleaxe('rotate(28 32 32)') + `<path ${D} d="M6 6 l4 8 l4 -6 l4 6 l4 -8 v10 h-16 z"/>`,
+  colossus: spear('rotate(28 32 32) translate(10 -2)') + `<path ${O} d="M6 8 H34 V50 C34 56 26 60 20 62 C14 60 6 56 6 50 Z"/>`,
   marshal: longSword('rotate(38 32 32)'),
   champion: greatAxeIcon('rotate(28 32 32)') + `<path ${D} d="M8 54 l4 -8 l4 6 l4 -9 l4 9 l4 -6 l4 8 z"/>`,
   errant: falchion('rotate(34 32 32) translate(5 -3)') + `<g ${O}><circle cx="20" cy="44" r="13"/></g><circle ${D} cx="20" cy="44" r="4.6"/><circle fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1.6" cx="20" cy="44" r="10"/>`,
@@ -94,6 +97,12 @@ export const ICONS: Record<string, string> = {
   skirmish: `<circle cx="38" cy="10" r="6"/><path d="M34 18 h8 l-2 16 l10 10 l-4 4 l-12 -10 l-6 12 l-6 -2 l6 -16 z"/><path d="M4 30 H20 M8 40 H22 M2 50 H16" stroke="currentColor" stroke-width="3"/>`,
   hookguard: poleaxe('rotate(-60 32 32)') + `<path ${O} transform="translate(26 26) scale(.5)" d="${shieldPath}"/>`,
   ringhelm: `<path d="M16 34 C16 18 24 10 32 10 C40 10 48 18 48 34 V50 H16 Z"/><path d="M8 20 C4 26 4 34 8 40 M56 20 C60 26 60 34 56 40 M2 14 C-4 26 -4 36 2 46 M62 14 C68 26 68 36 62 46" fill="none" stroke="currentColor" stroke-width="2.8"/>`,
+  counter: `<path ${O} transform="translate(-4 2) scale(.85)" d="${shieldPath}"/><path d="M40 18 C54 22 58 34 52 46 L58 46 L48 58 L42 44 L48 46 C52 36 48 26 38 24 Z"/>`,
+  inspire: `<path d="M28 4 h8 v12 h12 v8 h-12 v36 h-8 v-36 h-12 v-8 h12 z"/><path d="M6 20 l6 4 M58 20 l-6 4 M4 36 h7 M60 36 h-7" stroke="currentColor" stroke-width="3"/>`,
+  command: `<path d="M12 50 L8 18 L22 32 L32 10 L42 32 L56 18 L52 50 Z"/><path ${D} d="M12 54 h40 v6 h-40 z"/>`,
+  cleave: poleaxe('rotate(-70 32 32)') + `<path d="M8 50 C20 34 44 34 56 50" fill="none" stroke="currentColor" stroke-width="3.5"/>`,
+  realm: `<path ${O} d="M14 6 H50 V44 C50 52 40 58 32 62 C24 58 14 52 14 44 Z"/><path d="M4 30 C4 16 8 10 12 8 M60 30 C60 16 56 10 52 8" fill="none" stroke="currentColor" stroke-width="3"/>`,
+  slam2: `<path ${O} d="M8 8 H32 V44 C32 50 24 54 20 56 C16 54 8 50 8 44 Z"/><path d="M38 16 L58 12 L46 24 Z M40 32 L62 32 L44 40 Z M38 48 L56 54 L42 56 Z"/>`,
   bleed: drop(30, 30, 1.45) + drop(50, 46, 0.62) + drop(12, 50, 0.5),
 
   // ---- menu ----

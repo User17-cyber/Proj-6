@@ -337,7 +337,7 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>+<kbd>1</kbd>–<kbd>0</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
+      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>/<kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>0</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
     this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c) || classLocked(c)) return; this.setLoadout(c); this.host.selectClass(c); });
@@ -365,7 +365,7 @@ export class Hud implements HudSink {
   }
 
   /** Keyboard shortcuts on the death screen; returns true if consumed. */
-  deathKey(code: string, shift = false): boolean {
+  deathKey(code: string, shift: boolean | number = false): boolean {
     if (this.death.classList.contains('hidden')) return false;
     const c = classForKey(code, shift);
     if (c) { if (!this.spent.has(c) && !classLocked(c)) { this.setLoadout(c); this.host.selectClass(c); } return true; }
@@ -601,6 +601,9 @@ export class Hud implements HudSink {
     if (me.debuffs & 2) b.push('<span class="buff bad">Lamed</span>');
     if (me.debuffs & 8) b.push('<span class="buff">Under the standard</span>');
     if (me.debuffs & 16) b.push('<span class="buff">Helm-ringer</span>');
+    if (me.debuffs & 32) b.push('<span class="buff">For Saint George!</span>');
+    if (me.debuffs & 64) b.push('<span class="buff">Sheltered</span>');
+    if (me.debuffs & 128) b.push('<span class="buff">Counterstroke ready</span>');
     if (me.shieldBroken && hasShield) b.push('<span class="buff bad">Shield broken</span>');
     if (me.bleedStacks > 0) b.push(`<span class="buff bad">Bleeding${me.bleedStacks > 1 ? ' ×' + me.bleedStacks : ''}</span>`);
     const bh = b.join('');

@@ -81,6 +81,8 @@ export class Knight {
   mordT = 0; sbT = 0; disarmT = 0; slowT = 0; steadyT = 0;
   /** Ring the Helm primed; under a planted standard (refreshed each tick while in its reach) */
   ringT = 0; bannerT = 0;
+  /** ally-given strengths: struck harder, sheltered, hastened by a comrade; a shield set to answer */
+  inspireT = 0; realmT = 0; allyHasteT = 0; counterT = 0;
   /** the attack button has been held without a break since this attack began (a heavy blow) */
   attackHeld = false;
   /** shield durability left (0 when the class has none or it has splintered) */

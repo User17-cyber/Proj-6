@@ -62,12 +62,14 @@ export const classLocked = (c: ClassId) => !isUnlocked(c, renownNow);
 
 /** Keys that pick an order: 1-9 and 0 for the first ten, then Shift+1 to Shift+6. */
 const CLASS_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'];
-export const classKeyLabel = (i: number) => (i < 9 ? String(i + 1) : i === 9 ? '0' : i < 19 ? `⇧${i - 9}` : i === 19 ? '⇧0' : '');
-export const classForKey = (code: string, shift = false): ClassId | null => {
+const digit = (i: number) => (i % 10 === 9 ? '0' : String((i % 10) + 1));
+/** 1–0 for the first ten orders, Shift+1–0 for the next ten, Alt+1–0 for the ten after */
+export const classKeyLabel = (i: number) => (i < 10 ? digit(i) : i < 20 ? `⇧${digit(i)}` : i < 30 ? `Alt ${digit(i)}` : '');
+export const classForKey = (code: string, shift: boolean | number = false): ClassId | null => {
   const i = CLASS_KEYS.indexOf(code);
   if (i < 0) return null;
   // 1–9, 0 pick the first ten orders; Shift+1–9, 0 the next ten
-  const idx = shift ? 10 + i : i;
+  const idx = (typeof shift === 'number' ? shift : shift ? 1 : 0) * 10 + i;
   return idx >= 0 && CLASS_IDS[idx] ? CLASS_IDS[idx] : null;
 };
 export const CLASS_KEY_CODES = CLASS_KEYS;

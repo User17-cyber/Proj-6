@@ -599,7 +599,7 @@ export class App implements HudHost, MenuHost {
     if (s.settings.mode === 'duel' && me && me.alive && (s.phase === 'warmup' || (s.timeLeft > 0 && s.knights.every((k) => k.alive)))) { I.yaw = me.yaw; I.pitch = 0; }
     // the knight menu (death screen, or single combat between rounds): number keys pick an order
     // (1-0, then Shift+1-6), Space or Enter rejoins
-    const shift = I.keys.has('ShiftLeft') || I.keys.has('ShiftRight');
+    const shift = I.keys.has('AltLeft') || I.keys.has('AltRight') ? 2 : I.keys.has('ShiftLeft') || I.keys.has('ShiftRight') ? 1 : 0;
     if (this.hud.deathOpen) for (const code of [...CLASS_KEY_CODES, 'Space', 'Enter']) if (I.consumeKey(code)) { if (this.hud.deathKey(code, shift) && (code === 'Space' || code === 'Enter') && s.settings.mode !== 'duel') { this.input.enabled = true; this.input.requestLock(); } }
     if (s.online && !this.hud.chatting && I.consumeKey(this.prefs.bindings.chat)) { this.hud.openChat(); this.input.enabled = false; }
     if (I.consumeAction('camera', this.prefs.bindings.camera) && me) {

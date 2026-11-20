@@ -686,6 +686,22 @@ function tryBotAbility(m: Match, k: Knight, b: BotBrain, t: Knight, dist: number
       case 'skirmish': use = dist < 2.4 && (k.hp < k.def.hp * 0.6 || countEnemies(m, k, 4) >= 2 || t.act === Act.Windup); break;
       case 'hookguard': use = dist < 2.7 && (t.act === Act.Block || (!!t.shield && b.rng.chance(0.3)) || b.rng.chance(0.12)); break;
       case 'ringhelm': use = dist < 3.4; break;
+      case 'counterstroke': use = dist < 3.2 && (t.act === Act.Windup || t.act === Act.Charge || b.rng.chance(0.15)); if (use) b.holdBlock = 1.2; break;
+      case 'inspire':
+      case 'command': {
+        let near = 0;
+        m.hash.query(k.x, k.z, id === 'command' ? 15 : 12, (a) => { if (a !== k && a.alive && a.team === k.team) near++; });
+        use = (near >= 2 && countEnemies(m, k, 10) >= 1) || (dist < 4 && (id === 'command' ? k.hp < k.def.hp * 0.7 : b.rng.chance(0.25)));
+        break;
+      }
+      case 'cleave': use = countEnemies(m, k, 3.1, true) >= 2 || (dist < 2.8 && b.rng.chance(0.25)); break;
+      case 'realm': {
+        let near = 0;
+        m.hash.query(k.x, k.z, 7, (a) => { if (a !== k && a.alive && a.team === k.team) near++; });
+        use = (near >= 1 && countEnemies(m, k, 8) >= 2) || k.hp < k.def.hp * 0.6;
+        break;
+      }
+      case 'shieldslam': use = countEnemies(m, k, 3.5, true) >= 2 || (dist < 3 && b.rng.chance(0.3)); break;
       case 'juggernaut': use = countEnemies(m, k, 8) >= 3 || (t.def.ranged && dist > 3 && dist < 22) || (dist > 3 && dist < 9 && b.rng.chance(0.15)); break;
       default: break;
     }

@@ -52,6 +52,8 @@ export interface SnapKnight {
   x: number; y: number; z: number; yaw: number; pitch: number; vx: number; vy: number; vz: number;
   actT: number; actDur: number; atk: number; charge: number; draw: number; abilitySlot: number;
   knockT: number; stunT: number; bulwarkT: number; hp: number; bleedStacks: number; shieldBroken: boolean;
+  /** a comrade's blessing upon him (see auraOf) */
+  aura: number;
 }
 export interface SnapYou {
   id: number; stamina: number; cd0: number; cd1: number; rallyT: number; bloodletT: number; spawnProt: number;
@@ -112,7 +114,7 @@ export class SnapshotWriter {
     for (const k of ks) {
       if (k.id > 255) break;
       this.u8(k.id);
-      const flags = (k.alive ? 1 : 0) | (k.onGround ? 2 : 0) | (k.sprinting ? 4 : 0) | (k.heavy ? 8 : 0) | (k.shieldBroken ? 16 : 0);
+      const flags = (k.alive ? 1 : 0) | (k.onGround ? 2 : 0) | (k.sprinting ? 4 : 0) | (k.heavy ? 8 : 0) | (k.shieldBroken ? 16 : 0) | (auraOf(k) << 5);
       this.u8(flags);
       this.u8(CLASS_IDS.indexOf(k.cls) | (k.team << 7));
       if (!k.alive) continue;
@@ -190,7 +192,7 @@ export function decodeSnapshot(buf: ArrayBuffer): Snapshot {
   for (let i = 0; i < n; i++) {
     const id = u8(), flags = u8(), ct = u8();
     const k: SnapKnight = {
-      id, alive: (flags & 1) !== 0, onGround: (flags & 2) !== 0, sprinting: (flags & 4) !== 0, heavy: (flags & 8) !== 0, shieldBroken: (flags & 16) !== 0,
+      id, alive: (flags & 1) !== 0, onGround: (flags & 2) !== 0, sprinting: (flags & 4) !== 0, heavy: (flags & 8) !== 0, shieldBroken: (flags & 16) !== 0, aura: (flags >> 5) & 3,
       cls: ct & 127, team: (ct >> 7) & 1, act: 15,
       x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, actT: 0, actDur: 0, atk: 0, charge: 0, draw: 0, abilitySlot: 0, knockT: 0, stunT: 0, bulwarkT: 0, hp: 0, bleedStacks: 0,
     };
@@ -256,5 +258,16 @@ export function buffBits(k: Knight): number {
 }
 /** Afflictions as bits (see SnapYou.debuffs). */
 export function debuffBits(k: Knight): number {
-  return (k.disarmT > 0 ? 1 : 0) | (k.slowT > 0 ? 2 : 0) | (k.steadyT > 0 ? 4 : 0) | (k.bannerT > 0 ? 8 : 0) | (k.ringT > 0 ? 16 : 0);
+  return (k.disarmT > 0 ? 1 : 0) | (k.slowT > 0 ? 2 : 0) | (k.steadyT > 0 ? 4 : 0) | (k.bannerT > 0 ? 8 : 0) | (k.ringT > 0 ? 16 : 0) | (k.inspireT > 0 ? 32 : 0) | (k.realmT > 0 ? 64 : 0) | (k.counterT > 0 ? 128 : 0);
+}
+/**
+ * The aura a comrade's blessing casts about a knight, for everyone to see: 1 strength (rally,
+ * the Garter's cry, a lord's command), 2 shelter (hold the line, benediction, the standard, the
+ * bulwark of the realm), 3 swiftness (war cry, call to arms). 0 when none.
+ */
+export function auraOf(k: Knight): number {
+  if (k.rallyT > 0 || k.inspireT > 0) return 1;
+  if (k.holdT > 0 || k.steadyT > 0 || k.bannerT > 0 || k.realmT > 0) return 2;
+  if (k.allyHasteT > 0) return 3;
+  return 0;
 }

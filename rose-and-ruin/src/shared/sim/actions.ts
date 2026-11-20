@@ -48,6 +48,7 @@ function timers(m: Match, k: Knight, dt: number) {
   k.mordT = Math.max(0, k.mordT - dt); k.sbT = Math.max(0, k.sbT - dt); k.disarmT = Math.max(0, k.disarmT - dt);
   k.slowT = Math.max(0, k.slowT - dt); k.steadyT = Math.max(0, k.steadyT - dt);
   k.ringT = Math.max(0, k.ringT - dt); k.bannerT = Math.max(0, k.bannerT - dt);
+  k.inspireT = Math.max(0, k.inspireT - dt); k.realmT = Math.max(0, k.realmT - dt); k.allyHasteT = Math.max(0, k.allyHasteT - dt); k.counterT = Math.max(0, k.counterT - dt);
   k.bufferT = Math.max(0, k.bufferT - dt);
   if (k.bufferT <= 0) k.bufferedAttack = 0;
   if (k.act === Act.Idle) {

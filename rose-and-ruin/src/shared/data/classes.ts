@@ -1,12 +1,12 @@
 import type { WeaponId } from './weapons';
 
-export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer';
+export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer' | 'garter' | 'warlord' | 'colossus';
 /** at most 128: snapshots pack the class index into 7 bits */
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion', 'bearer', 'sapper', 'kern', 'hammerer'];
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion', 'bearer', 'sapper', 'kern', 'hammerer', 'garter', 'warlord', 'colossus'];
 /** the orders won by renown, in the order they are unlocked */
-export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'champion'];
+export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'garter', 'champion', 'warlord', 'colossus'];
 
-export type ShieldId = 'heater' | 'buckler' | 'pavise';
+export type ShieldId = 'heater' | 'buckler' | 'pavise' | 'tower';
 
 export interface ShieldDef {
   id: ShieldId;
@@ -26,6 +26,7 @@ export const SHIELDS: Record<ShieldId, ShieldDef> = {
   heater: { id: 'heater', name: 'heater shield', hp: 260, blockArc: 170, blockStamina: 0.55, arrows: true, cover: 0.35 },
   buckler: { id: 'buckler', name: 'buckler', hp: 160, blockArc: 130, blockStamina: 0.7, arrows: false, cover: 0 },
   pavise: { id: 'pavise', name: 'hand pavise', hp: 440, blockArc: 210, blockStamina: 0.4, arrows: true, cover: 0.7 },
+  tower: { id: 'tower', name: 'great tower shield', hp: 950, blockArc: 230, blockStamina: 0.3, arrows: true, cover: 0.85 },
 };
 
 export type AbilityId =
@@ -46,7 +47,10 @@ export type AbilityId =
   | 'standard' | 'callarms'
   | 'caltrops' | 'firepot'
   | 'javelin' | 'skirmish'
-  | 'hookguard' | 'ringhelm';
+  | 'hookguard' | 'ringhelm'
+  | 'counterstroke' | 'inspire'
+  | 'command' | 'cleave'
+  | 'realm' | 'shieldslam';
 
 export const ABILITY_IDS: readonly AbilityId[] = [
   'shield_bash', 'rally', 'whirlwind', 'charge', 'lunge', 'sweep',
@@ -137,6 +141,18 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     description: 'Catch the foe\'s shield or blade with the beak and wrench it aside: his guard is broken and he reels. One who was not guarding is tripped instead.' },
   ringhelm: { id: 'ringhelm', name: 'Ring the Helm', icon: 'ringhelm', cooldown: 16, duration: 0.5, stamina: 6,
     description: 'Your next blow within 6 seconds lands with the hammer face: the foe is stunned for a second and a half and dazed, slowed for 3 seconds after.' },
+  counterstroke: { id: 'counterstroke', name: 'Counterstroke', icon: 'counter', cooldown: 12, duration: 0.4, stamina: 6,
+    description: 'Set yourself to answer: for 4 seconds the next blow you turn on your shield leaves its striker stunned for a second.' },
+  inspire: { id: 'inspire', name: 'For Saint George!', icon: 'inspire', cooldown: 24, duration: 0.8, stamina: 0,
+    description: 'Raise the cry of the Order. You and every comrade within 12 metres strike 15% harder for 8 seconds.' },
+  command: { id: 'command', name: 'Lord\'s Command', icon: 'command', cooldown: 28, duration: 0.9, stamina: 0,
+    description: 'The lord gives the word. You and every comrade within 15 metres recover 25 vigour, move faster and strike harder for 6 seconds.' },
+  cleave: { id: 'cleave', name: 'Cleave', icon: 'cleave', cooldown: 14, duration: 0.85, stamina: 18,
+    description: 'A great sweeping blow across everyone before you: every foe within 3 metres takes heavy harm and reels.' },
+  realm: { id: 'realm', name: 'Bulwark of the Realm', icon: 'realm', cooldown: 26, duration: 0.7, stamina: 0,
+    description: 'Plant the great shield and draw your comrades behind it: you and every comrade within 7 metres take 30% less harm for 6 seconds.' },
+  shieldslam: { id: 'shieldslam', name: 'Shield Slam', icon: 'slam2', cooldown: 12, duration: 0.7, stamina: 16,
+    description: 'Drive the great shield into the press before you: every foe within 3.5 metres is battered back and stunned for a second.' },
   bloodletting: { id: 'bloodletting', name: 'Bloodletting', icon: 'bleed', cooldown: 18, duration: 0.5, stamina: 0,
     description: 'For 8 seconds every cut opens a wound that bleeds the victim (stacks three times).' },
 };
@@ -161,6 +177,8 @@ export interface ClassDef {
   abilities: readonly [AbilityId, AbilityId];
   /** heavy attacks cannot be interrupted by light hits */
   hyperArmor: boolean;
+  /** never knocked off his feet, whatever strikes him */
+  immovable?: boolean;
   /** how fast this order swings: 1 is the norm, higher is quicker (windup, release and recovery are divided by it) */
   attackSpeed: number;
   /** UI ratings 1..5 */
@@ -372,6 +390,36 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     ratings: { attack: 5, defence: 5, speed: 2, reach: 4, difficulty: 3 },
     armourDesc: 'Crested great bascinet and gilded full harness',
     botWeight: 5, unlock: 8000,
+  },
+  garter: {
+    id: 'garter', name: 'Knight of the Garter', title: 'Arming Sword & Heater Shield',
+    description: 'A companion of the most noble Order of the Garter, the finest of the king\'s household knights. Counterstroke makes his shield a trap; For Saint George! lifts every sword around him.',
+    hp: 160, stamina: 125, speed: 4.9, sprint: 7.1, mass: 1.15, size: { height: 1.05, girth: 1.06 },
+    armor: [0.48, 0.2, 0.44], weapon: 'arming_sword', shield: 'heater', ranged: false,
+    abilities: ['counterstroke', 'inspire'], hyperArmor: false, attackSpeed: 1.1,
+    ratings: { attack: 4, defence: 5, speed: 4, reach: 2, difficulty: 3 },
+    armourDesc: 'Visored bascinet, full harness and the blue garter at the knee',
+    botWeight: 5, unlock: 6000,
+  },
+  warlord: {
+    id: 'warlord', name: 'Warlord', title: 'War Poleaxe',
+    description: 'A great lord who leads his own affinity into battle. Lord\'s Command heals, hastens and hardens every man of his host nearby; Cleave sweeps the press before him.',
+    hp: 185, stamina: 125, speed: 4.6, sprint: 6.8, mass: 1.5, size: { height: 1.12, girth: 1.14 },
+    armor: [0.52, 0.22, 0.56], weapon: 'lordaxe', shield: null, ranged: false,
+    abilities: ['command', 'cleave'], hyperArmor: true, attackSpeed: 1.0,
+    ratings: { attack: 5, defence: 5, speed: 2, reach: 4, difficulty: 4 },
+    armourDesc: 'Plumed armet, fluted full harness and his own livery cloak',
+    botWeight: 4, unlock: 10000,
+  },
+  colossus: {
+    id: 'colossus', name: 'Colossus', title: 'Great Spear & Tower Shield',
+    description: 'A giant of a man in a giant\'s harness, behind a shield like a castle door. Nothing knocks him down. Bulwark of the Realm shelters everyone near him; Shield Slam batters a whole rank back. He is slow, and nothing else about him is.',
+    hp: 330, stamina: 200, speed: 3.3, sprint: 4.3, mass: 2.4, size: { height: 1.38, girth: 1.42 },
+    armor: [0.62, 0.3, 0.62], weapon: 'greatspear', shield: 'tower', ranged: false,
+    abilities: ['realm', 'shieldslam'], hyperArmor: true, immovable: true, attackSpeed: 1.15,
+    ratings: { attack: 5, defence: 5, speed: 1, reach: 5, difficulty: 5 },
+    armourDesc: 'A great helm, a giant\'s full harness, and a tower shield of oak and iron',
+    botWeight: 3, unlock: 12000,
   },
 };
 

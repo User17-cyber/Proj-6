@@ -16,7 +16,7 @@ export const DMG_CUT = 0, DMG_BLUNT = 1, DMG_PIERCE = 2;
 export const DMG_NAMES = ['cut', 'blunt', 'pierce'] as const;
 
 type BaseWeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
-export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth' | 'standard' | 'maul' | 'javelin' | 'beccorbin';
+export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth' | 'standard' | 'maul' | 'javelin' | 'beccorbin' | 'lordaxe' | 'greatspear';
 
 export interface AttackDef {
   name: string;
@@ -366,6 +366,17 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     hitEnd: 2.0, blockArc: 110, parryWindow: 0.2,
   }),
   // the bec de corbin: a war hammer on a staff, with a raven's-beak spike to pierce plate
+  // the warlord's poleaxe: a heavier, finer head on a longer haft
+  lordaxe: derive(BASE.poleaxe, {
+    id: 'lordaxe', name: 'War Poleaxe', visual: 'poleaxe', time: 0.97, dmg: 1.14,
+    blurb: 'A lord\'s poleaxe of the finest make, axe, hammer and spike on a long haft.',
+  }),
+  // the colossus's spear: a great ash spear wielded in one hand, as others would a sword
+  greatspear: derive(BASE.spear, {
+    id: 'greatspear', name: 'Great Spear', visual: 'spear', time: 0.95, dmg: 1.5,
+    blurb: 'A spear of ash as thick as a man\'s wrist, swung one-handed from behind the tower shield.',
+    hitEnd: 2.5,
+  }),
   beccorbin: derive(BASE.poleaxe, {
     id: 'beccorbin', name: 'Bec de Corbin', visual: 'poleaxe', time: 0.92, dmg: 1.0, dtype: 1,
     blurb: 'A hammer on a staff with a raven\'s-beak spike behind: the hammer rings a helm, the beak finds the joints.',

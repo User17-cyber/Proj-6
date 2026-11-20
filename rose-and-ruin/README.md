@@ -72,7 +72,7 @@ In bot-versus-bot tests with the same reflexes and accuracy, Legend tactics won 
 | Scoreboard | Tab |
 | Chat (multiplayer) | Enter |
 | Menu, pause and leave the battle (any time) | Esc or P |
-| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0 |
+| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0, then Alt+1–3 |
 | Spectator: director / follow / free camera | 1 / 2 / 3 |
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
@@ -125,17 +125,22 @@ Keys can be rebound in Settings, where you can also hide the crosshair (hit mark
 
 The last nine are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders. Of the newest four, the Sapper and the Hammerer win 56–57% of bot duels. The Standard-Bearer (47%) and the Kern (43%) are made for the wider battle, where the planted standard, the call to arms and the javelins count for most.
 
-**Renowned orders.** Three more orders are won with renown, one after another:
+**Renowned orders.** Six more orders are won with renown, one after another:
 
 | Class | Arms | Abilities | Renown |
 | --- | --- | --- | --- |
 | Yeoman of the Guard | English bill | Bill Hook (drag a foe in and stun him), Hold the Line (30% less damage for the line) | 1,500 |
 | Knight Marshal | Hand-and-a-half sword | Half-Sword (thrusts pierce plate, harder and faster), War Cry (foes reel, allies hasten) | 4,000 |
+| Knight of the Garter | Arming sword and heater shield | Counterstroke (for 4 seconds the next blow turned on your shield stuns its striker), For Saint George! (you and comrades within 12 metres strike 15% harder for 8 seconds) | 6,000 |
 | Champion | Great axe and gilded plate | Executioner (a blow that leaves a foe below a third slays him), Juggernaut (unstoppable, bowls men over) | 8,000 |
+| Warlord | War poleaxe | Lord's Command (you and comrades within 15 metres recover 25 vigour, move faster and strike harder for 6 seconds), Cleave (a sweeping blow that harms and staggers every foe within 3 metres before you) | 10,000 |
+| Colossus | Great spear and tower shield | Bulwark of the Realm (you and comrades within 7 metres take 30% less harm for 6 seconds), Shield Slam (every foe within 3.5 metres before you is battered back and stunned) | 12,000 |
 
-In bot duels at equal skill they win about 68%, 78% and 77% of rounds against the base orders, which win about 60% at best. A good archer in open ground is still the Champion's bane.
+In bot duels at equal skill against the base orders (which win about 60% at best), the Yeoman wins about 68%, the Marshal 78%, the Knight of the Garter 74%, the Champion 77%, the Warlord 77% and the Colossus 86%.
 
-**Renown** is earned in battle: every point of your score (slaying, helping slay, taking banners), plus 150 for seeing a battle through and 500 more for winning it. Renown is banked as you earn it, so if you leave a battle early (or close the page) you keep everything you won in it; only the bounty for seeing it through is forfeit. It is kept in your browser, for that copy of the game: a new download, another folder or browser, or the online page each start afresh. To carry it across, use Settings › Your progress: save it to a file (a `.rrsave` file, which no other program will try to open; older `.json` saves still load) or copy the save code, and load that into the other copy. Loading never lowers your renown; it brings your orders, keys and settings with it. The armoury shows how far you are from the next order, and a herald announces each one you win, which you may take to the field at once.
+The **Colossus** is the last and greatest of them. He stands nearly a third taller than other men and is broad to match. Every rating is at its highest except footspeed, which is the lowest in the game. He carries a tower shield like a castle door (950 durability) and cannot be knocked off his feet by any blow, throw or charge. A good archer in open ground is still the bane of the slow.
+
+**Renown** is earned in battle: every point of your score (slaying, a share in a kill (an assist, worth 50 and announced as it happens), aiding comrades with your abilities, taking banners), plus 150 for seeing a battle through and 500 more for winning it. Renown is banked as you earn it, so if you leave a battle early (or close the page) you keep everything you won in it; only the bounty for seeing it through is forfeit. It is kept in your browser, for that copy of the game: a new download, another folder or browser, or the online page each start afresh. To carry it across, use Settings › Your progress: save it to a file (a `.rrsave` file, which no other program will try to open; older `.json` saves still load) or copy the save code, and load that into the other copy. Loading never lowers your renown; it brings your orders, keys and settings with it. The armoury shows how far you are from the next order, and a herald announces each one you win, which you may take to the field at once.
 
 Each order is built differently, and its hitboxes, reach and footprint in the crowd follow its build. The bigger a knight, the further his weapon reaches and the easier he is to hit:
 
@@ -154,12 +159,18 @@ Attack speed scales the windup, release and recovery of every blow, so a quick o
 
 Any order you have won can be chosen at the start and again every time you fall (keys 1 to 9, 0 and minus). When you fall you may also choose where to return: any of your house's mustering places at that castle (its camps and outposts at the fighting grounds), or nearest the fighting.
 
+
+**Auras.** Abilities that strengthen comrades leave a visible aura of motes drifting up around every knight they touch, for as long as the blessing lasts:
+- **gold** for strength: Rally to the Banner, For Saint George!, Lord's Command;
+- **silver-blue** for shelter: Hold the Line, Benediction, Plant the Standard, Bulwark of the Realm;
+- **pale green** for swiftness: War Cry, Call to Arms.
+
 ### Manners of battle
 
-- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (seventeen at first, twenty with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
+- **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (seventeen at first, twenty-three with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
+- **Single Combat**: you against one knight on open ground outside the castle, to practise guards, parries, feints and timing. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–3). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 

@@ -202,6 +202,8 @@ function contact(m: Match, k: Knight, v: Knight, a: AttackDef, zone: HitZone, px
     } else {
       k.act = Act.Deflect; k.actT = 0; k.actDur = 0.32; k.heavy = false; k.charge = 0;
     }
+    // Counterstroke: the turned blow is answered on the instant
+    if (!broke && shield && v.counterT > 0) { v.counterT = 0; stun(m, k, 1.0); }
     return;
   }
   // at the half-sword the point is guided into the gaps of the harness
@@ -242,7 +244,7 @@ export function stun(m: Match, v: Knight, t: number) {
 }
 
 export function knockdown(m: Match, v: Knight, by: Knight, t: number) {
-  if (!v.alive || v.bulwarkT > 0 || v.juggerT > 0 || v.holdT > 0) return;
+  if (!v.alive || v.bulwarkT > 0 || v.juggerT > 0 || v.holdT > 0 || v.def.immovable) return;
   v.act = Act.Knockdown; v.actT = 0; v.actDur = t; v.knockT = t; v.draw = 0; v.heavy = false;
   v.vx *= 0.2; v.vz *= 0.2;
   m.emit({ t: 'knockdown', k: v.id, by: by.id });
@@ -362,7 +364,7 @@ export function stepArrows(m: Match, dt: number) {
       const spd = Math.hypot(a.vx, a.vy, a.vz) || 1;
       const ndx = a.vx / spd, ndy = a.vy / spd, ndz = a.vz / spd;
       const sh = v.shield;
-      const shieldBlock = !!sh && sh.arrows && !a.bodkin && (isBlocking(v, px, pz) || (v.act !== Act.Release && Math.abs(angleDiff(v.yaw, yawTo(v.x, v.z, px, pz))) < (sh.id === 'pavise' ? 0.8 : 0.5) && hitZone !== 0 && m.rng.chance(sh.cover)));
+      const shieldBlock = !!sh && sh.arrows && !a.bodkin && (isBlocking(v, px, pz) || (v.act !== Act.Release && Math.abs(angleDiff(v.yaw, yawTo(v.x, v.z, px, pz))) < (sh.id === 'pavise' || sh.id === 'tower' ? 0.8 : 0.5) && hitZone !== 0 && m.rng.chance(sh.cover)));
       if (shieldBlock) {
         spend(v, 5);
         m.emit({ t: 'arrowHit', id: a.id, v: v.id, x: hx, y: hy, z: hz, nx: -ndx, ny: -ndy, nz: -ndz, stuck: true, shield: true });

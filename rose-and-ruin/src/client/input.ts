@@ -51,6 +51,8 @@ export class Input {
     window.addEventListener('keydown', (e) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
       if (this.enabled && (e.code === 'Tab' || e.code === 'Space' || e.code.startsWith('Arrow'))) e.preventDefault();
+      // Alt+number picks the later orders: keep the browser from taking it
+      if (e.altKey && e.code.startsWith('Digit')) e.preventDefault();
       if (!this.keys.has(e.code)) {
         this.pressedKeys.add(e.code);
         this.latch(this.codeToBtn(e.code));

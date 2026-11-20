@@ -206,6 +206,16 @@ const heater = (): PieceDef[] => {
     { key: 'heaterRim', geo: () => s.rim, mat: 'steelDark', mount: 'offhand' },
   ];
 };
+/** the colossus's tower shield: a pavise of oak and iron grown to the size of a door */
+const towerShield = (): PieceDef[] => {
+  const s = A.paviseShield();
+  const big = (g: THREE.BufferGeometry) => A.xf(g, 0, 0.06, 0, 0, 0, 0, 1.3, 1.45, 1.4);
+  return [
+    { key: 'towerFace', geo: () => big(s.face), mat: 'shieldFace', mount: 'offhand', team: true },
+    { key: 'towerBack', geo: () => big(s.back), mat: 'shieldBack', mount: 'offhand' },
+    { key: 'towerRim', geo: () => big(s.rim), mat: 'steelDark', mount: 'offhand' },
+  ];
+};
 const pavise = (): PieceDef[] => {
   const s = A.paviseShield();
   return [
@@ -525,5 +535,54 @@ export const KITS: Record<ClassId, PieceDef[]> = {
     ...fullLegs('steel', 0.04),
     ...W.mace,
     ...heater(),
+  ],
+  garter: [
+    ...base(),
+    mailNeck(),
+    { key: 'bascinetV', geo: () => A.bascinet().steel, mat: 'steelBright', mount: B.head, head: true },
+    { key: 'bascinetVDetail', geo: () => A.bascinetDetail(), mat: 'void', mount: B.head, head: true, detail: true },
+    { key: 'plume', geo: () => A.plume(), mat: 'plume', mount: B.head, head: true, team: true },
+    { key: 'cuirassB', geo: () => A.cuirass({ bulge: 1.12, ridge: 1.6 }), mat: 'steelBright', mount: B.chest },
+    { key: 'surcoatK', geo: () => cylUV(A.tabardTop(0.3), -0.3, 0.215), mat: 'tabard', mount: B.chest, team: true },
+    { key: 'fauld4', geo: () => A.fauld(4), mat: 'steelBright', mount: B.pelvis },
+    { key: 'garterBand', geo: () => A.legTube(-0.06, -0.12, 0.072, 0.07, 0.012), mat: 'cloth', mount: B.shinL, team: true },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    ...fullArms('steelBright', 1.2),
+    ...fullLegs('steelBright', 0.05),
+    ...W.sword,
+    ...heater(),
+  ],
+  warlord: [
+    ...base(),
+    mailNeck(),
+    { key: 'armet', geo: () => A.armet(), mat: 'steelBright', mount: B.head, head: true },
+    { key: 'armetSlit', geo: () => A.slit(0.09, -0.17, 0.15), mat: 'void', mount: B.head, head: true, detail: true },
+    { key: 'plume', geo: () => A.plume(), mat: 'plume', mount: B.head, head: true, team: true },
+    { key: 'cuirassC', geo: () => A.cuirass({ bulge: 1.14, ridge: 1.7 }), mat: 'steelBright', mount: B.chest },
+    { key: 'fauld4', geo: () => A.fauld(4), mat: 'steelBright', mount: B.pelvis },
+    { key: 'tasset', geo: () => A.tasset(), mat: 'steelBright', mount: B.thighL },
+    { key: 'tasset', geo: () => A.tasset(), mat: 'steelBright', mount: B.thighR },
+    { key: 'capeC', geo: () => A.cape(1.15), mat: 'cloth', mount: B.chest, team: true },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    ...fullArms('steelBright', 1.25),
+    ...fullLegs('steelBright', 0.06),
+    ...W.poleaxe,
+  ],
+  colossus: [
+    ...base(),
+    mailNeck(),
+    { key: 'greatHelm', geo: () => A.greatHelm(), mat: 'steelBright', mount: B.head, head: true },
+    { key: 'greatHelmTrim', geo: () => A.greatHelmTrim(), mat: 'brass', mount: B.head, head: true },
+    { key: 'greatHelmSlits', geo: () => A.greatHelmSlits(), mat: 'void', mount: B.head, head: true, detail: true },
+    { key: 'cuirassC', geo: () => A.cuirass({ bulge: 1.14, ridge: 1.7 }), mat: 'steelDark', mount: B.chest },
+    { key: 'surcoatK', geo: () => cylUV(A.tabardTop(0.3), -0.3, 0.215), mat: 'tabard', mount: B.chest, team: true },
+    { key: 'fauld4C', geo: () => A.fauld(4), mat: 'brass', mount: B.pelvis },
+    { key: 'tassetC', geo: () => A.tasset(), mat: 'brass', mount: B.thighL },
+    { key: 'tassetC', geo: () => A.tasset(), mat: 'brass', mount: B.thighR },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    ...fullArms('steelDark', 1.3),
+    ...fullLegs('steelDark', 0.07),
+    ...W.spear,
+    ...towerShield(),
   ],
 };
