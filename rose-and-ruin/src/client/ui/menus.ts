@@ -6,7 +6,7 @@ import type { MapDef } from '../../shared/world/mapgen';
 import { CLASSES, CLASS_IDS, type ClassId } from '../../shared/data/classes';
 import { DIFFICULTY_NAMES, TEAM_HOUSE, TEAM_MOTTO, type GameMode, type MatchSettings, type Team } from '../../shared/types';
 import { icon } from './icons';
-import { mapArt } from './mapArt';
+import { mapArt, mapPreview } from './mapArt';
 import { classDetailHtml, classList, classForKey, classLocked, esc, keyLabel, setRenown } from './classInfo';
 import { nextUnlock, renownLine } from '../progress';
 import { exportCode, importSave } from '../prefs';
@@ -138,7 +138,7 @@ export class Menus {
       sheet.innerHTML = `
         <div class="sheet-head"><h2 class="gold-text">${spectate ? 'Witness a Battle' : 'Muster for Battle'}</h2><button class="close-x" data-a="back" aria-label="Close">×</button></div>
         <div class="sheet-body">
-          <div class="maps">${(duel ? ARENA_MAPS : CASTLES).map((d) => `<button class="mapcard ${d.id === m.mapId ? 'sel' : ''}" data-map="${d.id}">${mapArt(d)}<div class="meta"><div class="nm">${esc(d.name)}</div><div class="loc">${esc(d.location)} · ${esc(d.year)}</div></div></button>`).join('')}</div>
+          <div class="maps">${(duel ? ARENA_MAPS : CASTLES).map((d) => `<button class="mapcard ${d.id === m.mapId ? 'sel' : ''}" data-map="${d.id}">${mapPreview(d)}<div class="meta"><div class="nm">${esc(d.name)}</div><div class="loc">${esc(d.location)} · ${esc(d.year)}</div></div></button>`).join('')}</div>
           <div class="map-blurb parchment"><b>${esc(def.name)}</b> — ${esc(def.blurb)}<br><i style="font-size:14px;color:var(--ink-soft)">${esc(def.history)}</i></div>
           <div class="opts">
             <div class="opt"><label>Manner of battle</label>${seg('mode', [['battle', 'Pitched'], ['conquest', 'Conquest'], ['laststand', 'Last Stand'], ['duel', 'Single Combat']], m.mode)}<div class="hint">${MODE_INFO[m.mode].text}</div></div>
@@ -582,7 +582,7 @@ export class Menus {
     const s = el('screen loading');
     s.style.zIndex = '45';
     const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
-    s.innerHTML = `${mapArt(def, 'loadart')}<div class="loadshade"></div>
+    s.innerHTML = `${mapPreview(def, 'loadart')}<div class="loadshade"></div>
       <div class="loadwrap"><div class="sub title-caps">${esc(subtitle)}</div><h1 class="gold-text">${esc(def.name)}</h1>
       <div class="when">${esc(def.location)} · ${esc(def.year)}</div><div class="rule"></div>
       <p class="hist">${esc(def.history)}</p>

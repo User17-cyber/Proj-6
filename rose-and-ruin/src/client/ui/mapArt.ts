@@ -52,6 +52,14 @@ const ARTS: Record<string, Art> = {
 };
 
 let artId = 0;
+/** The preview of a battleground, rendered from the game itself (inlined in the single-file build). */
+export function mapPreview(def: MapDef, cls = ''): string {
+  const path = `./assets/previews/${def.id}.jpg`;
+  const src = (window as unknown as { __ASSETS?: Record<string, string> }).__ASSETS?.[path] ?? path;
+  return `<img class="mapimg ${cls}" src="${src}" alt="" loading="lazy" decoding="async">`;
+}
+
+/** The drawn stand-in, kept for a map that has no preview yet. */
 export function mapArt(def: MapDef, cls = ''): string {
   const a = ARTS[def.id] ?? ARTS.bodiam;
   const [horizon, top] = def.card.sky;

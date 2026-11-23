@@ -19,6 +19,9 @@ html = html.replace(/<link rel="stylesheet"[^>]*href="\.\/(assets\/[^"]+\.css)"[
 const sky = path.join(dir, 'assets/sky');
 const assets = {};
 for (const f of fs.readdirSync(sky)) assets[`./assets/sky/${f}`] = dataUrl(path.join(sky, f));
+// battleground previews for the map cards and loading screens
+const prev = path.join(dir, 'assets/previews');
+if (fs.existsSync(prev)) for (const f of fs.readdirSync(prev)) assets[`./assets/previews/${f}`] = dataUrl(path.join(prev, f));
 const assetTag = `<script>window.__ASSETS=${JSON.stringify(assets)};</script>`;
 // the game itself
 html = html.replace(/<script type="module"[^>]*src="\.\/(assets\/[^"]+\.js)"[^>]*><\/script>/, (_, js) => {
