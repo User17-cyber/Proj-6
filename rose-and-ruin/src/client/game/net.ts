@@ -202,7 +202,7 @@ export class NetSession implements SessionView {
         for (const p of this.pending) {
           pk.input.mx = p.mx; pk.input.mz = p.mz; pk.input.yaw = p.yaw; pk.input.pitch = p.pitch; pk.input.buttons = p.buttons;
           movement(this.map.world, pk, DT, this.phase === 'live', p.buttons & ~p.prev);
-          if (this.settings.mode === 'duel') holdInRing(pk, this.map.duel.x, this.map.duel.z, this.map.world);
+          if (this.settings.mode === 'duel') holdInRing(pk, this.map.duel.x, this.map.duel.z, this.map.world, this.map.def.arena);
           pk.actT += DT;
         }
         if (wasAlive) {
@@ -271,7 +271,7 @@ export class NetSession implements SessionView {
       if (this.pending.length > 120) this.pending.shift();
       pk.input.mx = f.mx; pk.input.mz = f.mz; pk.input.yaw = f.yaw; pk.input.pitch = f.pitch; pk.input.buttons = buttons;
       movement(this.map.world, pk, DT, this.phase === 'live', buttons & ~this.prevBtn);
-      if (this.settings.mode === 'duel') holdInRing(pk, this.map.duel.x, this.map.duel.z, this.map.world);
+      if (this.settings.mode === 'duel') holdInRing(pk, this.map.duel.x, this.map.duel.z, this.map.world, this.map.def.arena);
       pk.actT += DT;
     }
     this.prevBtn = buttons;

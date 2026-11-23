@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket, type RawData } from 'ws';
 import { Match } from '../shared/sim/match';
-import { buildMap, MAPS } from '../shared/world/maps/index';
+import { buildMap, MAPS, ARENA_MAPS, CASTLES, mapForMode } from '../shared/world/maps/index';
 import { Btn, DEFAULT_SETTINGS, DT, type GameMode, type InputFrame, type MatchSettings, type Team } from '../shared/types';
 import { CLASS_IDS, type ClassId } from '../shared/data/classes';
 import {
@@ -223,8 +223,9 @@ class Room {
 
   /** The battle is over: the next castle in the rotation, same company. */
   private rotate() {
-    const i = MAPS.findIndex((d) => d.id === this.settings.mapId);
-    const next = MAPS[(i + 1) % MAPS.length].id;
+    const list = this.settings.mode === 'duel' ? ARENA_MAPS : CASTLES;
+    const i = list.findIndex((d) => d.id === this.settings.mapId);
+    const next = list[(i + 1) % list.length].id;
     this.newMatch({ ...this.settings, mapId: next, seed: (Math.random() * 1e9) | 0 });
     for (const c of this.clients) this.place(c);
   }
@@ -239,7 +240,7 @@ function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSettings 
   const d = DEFAULT_SETTINGS;
   const modes: GameMode[] = ['battle', 'conquest', 'laststand', 'duel'];
   const n = (v: unknown, lo: number, hi: number, def: number) => { const x = Number(v); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x))) : def; };
-  return {
+  const out: MatchSettings = {
     mapId: MAPS.some((m) => m.id === s?.mapId) ? s!.mapId! : d.mapId,
     mode: modes.includes(s?.mode as GameMode) ? (s!.mode as GameMode) : d.mode,
     teamSize: n(s?.teamSize, 5, 100, d.teamSize),
@@ -250,7 +251,10 @@ function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSettings 
     ticketScale: n(s?.ticketScale, 2, 10, d.ticketScale),
     rounds: n(s?.rounds, 1, 15, d.rounds ?? 5),
     duelFoe: CLASS_IDS.includes(s?.duelFoe as ClassId) ? s!.duelFoe : 'random',
-  };
+  }
+  out.mapId = mapForMode(out.mapId, out.mode);
+  return out;
+
 }
 
 const isClass = (c: unknown): c is ClassId => CLASS_IDS.includes(c as ClassId);

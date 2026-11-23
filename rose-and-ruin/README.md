@@ -171,9 +171,19 @@ Any order you have won can be chosen at the start and again every time you fall 
 - **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (eighteen at first, twenty-four with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight in a small arena raised on open ground outside the castle (a sand floor inside a stone wall, three tiers of stands, an arcade round the top), to practise guards, parries, feints and timing. The ring is 22 metres across, and nothing carries a fighter out of it: running, sidesteps, charges, shoves and knockbacks all stop at the wall, and the camera stays inside it too. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, there is a two-second breath, then the knight menu opens and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–4). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
+- **Single Combat**: you against one knight in an arena of your choosing (the castles are not offered for single combat, and the arenas only for it), to practise guards, parries, feints and timing. Nothing carries a fighter out of the arena: running, sidesteps, charges, shoves and knockbacks all stop at the wall, and the camera stays inside it too. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, there is a two-second breath, then the knight menu opens and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–4). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
+
+### The arenas
+
+Offered only for single combat, each a walled ring on open ground with a sand floor, stands and an arcade, ringed by the knights' pavilions:
+
+- **The Lists at Smithfield** (London, 1467): a long oval, 34 by 20 metres, where Lord Scales fought the Bastard of Burgundy.
+- **The Bear Pit at Southwark** (1471): a cramped round pit 17 metres across, with nowhere to go but forward.
+- **The Great Ring at Westminster** (1483): a great round arena 30 metres across, raised for the coronation tourney.
+- **The Octagon of the Pleasance** (Kenilworth, 1459): eight-sided, 22 metres across, with corners to pin a man in.
+- **The Square Yard of the Tower** (1471): a square walled yard 20 metres a side.
 
 ### The castles
 

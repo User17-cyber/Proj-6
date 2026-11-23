@@ -97,7 +97,7 @@ export class GameView {
     if (this.arena) { this.world.root.remove(this.arena.group); this.arena = null; }
     if (this.s.settings.mode !== 'duel') return;
     const d = this.world.map.duel;
-    this.arena = new Arena(this.world.baker, this.particles, d.x, d.z, this.ground2);
+    this.arena = new Arena(this.world.baker, this.particles, d.x, d.z, this.ground2, this.world.map.def.arena);
     this.world.root.add(this.arena.group);
   }
 

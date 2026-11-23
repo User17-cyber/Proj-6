@@ -15,8 +15,18 @@ import { dunstanburgh } from './dunstanburgh';
 import { pembroke } from './pembroke';
 import { caister } from './caister';
 import { pontefract } from './pontefract';
+import { ARENAS } from './arenas';
 
-export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan, alnwick, dunstanburgh, pembroke, caister, pontefract];
+export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan, alnwick, dunstanburgh, pembroke, caister, pontefract, ...ARENAS];
+/** the castles, for every manner of battle but single combat */
+export const CASTLES: MapDef[] = MAPS.filter((m) => !m.arena);
+/** the arenas, for single combat alone */
+export const ARENA_MAPS: MapDef[] = MAPS.filter((m) => !!m.arena);
+/** a map that suits the manner of battle (single combat needs an arena, the rest a castle) */
+export function mapForMode(mapId: string, mode: string): string {
+  const list = mode === 'duel' ? ARENA_MAPS : CASTLES;
+  return list.some((m) => m.id === mapId) ? mapId : list[0].id;
+}
 
 export function getMap(id: string): MapDef {
   return MAPS.find((m) => m.id === id) ?? MAPS[0];

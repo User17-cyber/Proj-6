@@ -445,7 +445,7 @@ export class Match {
     }
     this.separate();
     // single combat is fought inside the ring: nothing carries a fighter out of it
-    if (this.settings.mode === 'duel') for (const k of this.knights) if (k.alive) holdInRing(k, this.map.duel.x, this.map.duel.z, this.world);
+    if (this.settings.mode === 'duel') for (const k of this.knights) if (k.alive) holdInRing(k, this.map.duel.x, this.map.duel.z, this.world, this.map.def.arena);
     // at the marks, re-aim after any nudge from the crowd or the scenery
     if (this.settings.mode === 'duel' && (this.phase === 'warmup' || this.roundReadyT > 0)) {
       for (const k of this.knights) {

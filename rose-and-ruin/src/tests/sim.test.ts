@@ -1,8 +1,9 @@
 // Headless checks for the simulation: builds every map, runs bot battles and verifies
 // sanity (no NaNs, knights fight and die, matches end, nobody escapes the world).
-import { buildMap, MAPS } from '../shared/world/maps/index';
+import { buildMap, MAPS, CASTLES, ARENA_MAPS } from '../shared/world/maps/index';
+import { clampToArena, DEFAULT_ARENA } from '../shared/sim/arena';
 import { Match } from '../shared/sim/match';
-import { Act, ARENA_R, Btn, DEFAULT_SETTINGS, type GameMode } from '../shared/types';
+import { Act, Btn, DEFAULT_SETTINGS, type GameMode } from '../shared/types';
 import { WEAPONS } from '../shared/data/weapons';
 import { CLASS_IDS, SHIELDS } from '../shared/data/classes';
 import { wearShield } from '../shared/sim/combat';
@@ -95,9 +96,16 @@ function runBattle(mapId: string, mode: GameMode, teamSize: number, seconds: num
   return m;
 }
 
+/** How far a knight stands beyond the inside face of the arena wall (0 when inside). */
+function beyondWall(m: Match, k: { x: number; z: number }): number {
+  const p = { x: k.x, z: k.z };
+  clampToArena(p, m.map.duel.x, m.map.duel.z, m.map.def.arena ?? DEFAULT_ARENA, 0);
+  return Math.hypot(p.x - k.x, p.z - k.z);
+}
+
 checkPoses();
 const only = process.argv[2];
-for (const def of MAPS) {
+for (const def of CASTLES) {
   if (only && def.id !== only) continue;
   runBattle(def.id, 'battle', 24, 150, 1);
 }
@@ -293,7 +301,7 @@ if (!only) {
   console.log(`duel rounds: countdown held both still and facing; fought round two as ${me.cls}`);
 }
 // single combat: one knight a side on the duelling ground, first to three rounds
-for (const def of MAPS) {
+for (const def of ARENA_MAPS) {
   const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', teamSize: 24, rounds: 3, difficulty: 2, seed: 11 }, buildMap(def.id));
   if (m.knights.length !== 2) fail(`duel ${def.id}: ${m.knights.length} knights`);
   const [a, b] = m.knights;
@@ -304,20 +312,20 @@ for (const def of MAPS) {
   let far = 0;
   for (let i = 0; i < 60 * 600 && m.phase !== 'ended'; i++) {
     m.step();
-    for (const k of m.knights) if (k.alive) far = Math.max(far, Math.hypot(k.x - m.map.duel.x, k.z - m.map.duel.z));
+    for (const k of m.knights) if (k.alive) far = Math.max(far, beyondWall(m, k));
     for (const e of m.events) if (e.t === 'round') {
       rounds.push(`${e.score0}-${e.score1}`);
       for (const k of m.knights) if (!k.alive || k.hp !== k.def.hp) fail(`duel ${def.id}: round ${e.n} began with a fighter not whole`);
     }
     m.events.length = 0;
   }
-  if (far > ARENA_R) fail(`duel ${def.id}: a fighter left the ring (${far.toFixed(1)} m from its middle)`);
+  if (far > 0) fail(`duel ${def.id}: a fighter left the ring (${far.toFixed(2)} m beyond its wall)`);
   const t = m.teams;
   if (m.phase !== 'ended' || Math.max(t[0].tickets, t[1].tickets) !== 3) fail(`duel ${def.id}: did not finish (${m.phase}, ${t[0].tickets}-${t[1].tickets}, ${(m.time / 60).toFixed(0)} min)`);
   console.log(`duel ${def.id.padEnd(9)} ${a.cls} vs ${b.cls}: rounds ${rounds.join(' > ')} final ${t[0].tickets}-${t[1].tickets} in ${m.time.toFixed(0)}s, winner ${m.winner}`);
 }
 // single combat: a player who runs flat out for the edge (sprinting, sidestepping) stays in the ring
-for (const def of MAPS) {
+for (const def of ARENA_MAPS) {
   const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', rounds: 99, seed: 5 }, buildMap(def.id));
   const me = m.addPlayer('Runner', 0, 0, 'cutthroat');
   while (m.phase !== 'live' || m.roundReadyT > 0) m.step();
@@ -330,10 +338,10 @@ for (const def of MAPS) {
     void yaw;
     me.stamina = me.def.stamina; me.cds[1] = 0; me.hp = me.def.hp;
     m.step(); m.events.length = 0;
-    far = Math.max(far, Math.hypot(me.x - m.map.duel.x, me.z - m.map.duel.z));
+    far = Math.max(far, beyondWall(m, me));
   }
-  if (far > ARENA_R) fail(`duel ${def.id}: a fleeing fighter got ${far.toFixed(1)} m from the middle of the ring`);
+  if (far > 0) fail(`duel ${def.id}: a fleeing fighter got ${far.toFixed(2)} m beyond the wall`);
 }
-console.log(`single combat: nobody leaves the ${ARENA_R} m ring`);
+console.log(`single combat: nobody leaves the arena in any of ${ARENA_MAPS.length} arenas`);
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all simulation checks passed');

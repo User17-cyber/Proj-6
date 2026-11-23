@@ -1,7 +1,7 @@
 // Menus: the great hall (main menu over a live battle), battle setup, the armoury with a
 // live 3D knight, settings, the codex, the multiplayer muster and the loading screens.
 
-import { MAPS } from '../../shared/world/maps/index';
+import { ARENA_MAPS, CASTLES, MAPS, mapForMode } from '../../shared/world/maps/index';
 import type { MapDef } from '../../shared/world/mapgen';
 import { CLASSES, CLASS_IDS, type ClassId } from '../../shared/data/classes';
 import { DIFFICULTY_NAMES, TEAM_HOUSE, TEAM_MOTTO, type GameMode, type MatchSettings, type Team } from '../../shared/types';
@@ -129,6 +129,8 @@ export class Menus {
     const sheet = el('sheet panel');
     wrap.appendChild(sheet);
     const render = () => {
+      // single combat is fought in the arenas, every other manner of battle at the castles
+      m.mapId = mapForMode(m.mapId, m.mode);
       const def = MAPS.find((d) => d.id === m.mapId) ?? MAPS[0];
       const duel = m.mode === 'duel';
       const seg = (key: string, opts: [string | number, string][], cur: string | number) =>
@@ -136,7 +138,7 @@ export class Menus {
       sheet.innerHTML = `
         <div class="sheet-head"><h2 class="gold-text">${spectate ? 'Witness a Battle' : 'Muster for Battle'}</h2><button class="close-x" data-a="back" aria-label="Close">×</button></div>
         <div class="sheet-body">
-          <div class="maps">${MAPS.map((d) => `<button class="mapcard ${d.id === m.mapId ? 'sel' : ''}" data-map="${d.id}">${mapArt(d)}<div class="meta"><div class="nm">${esc(d.name)}</div><div class="loc">${esc(d.location)} · ${esc(d.year)}</div></div></button>`).join('')}</div>
+          <div class="maps">${(duel ? ARENA_MAPS : CASTLES).map((d) => `<button class="mapcard ${d.id === m.mapId ? 'sel' : ''}" data-map="${d.id}">${mapArt(d)}<div class="meta"><div class="nm">${esc(d.name)}</div><div class="loc">${esc(d.location)} · ${esc(d.year)}</div></div></button>`).join('')}</div>
           <div class="map-blurb parchment"><b>${esc(def.name)}</b> — ${esc(def.blurb)}<br><i style="font-size:14px;color:var(--ink-soft)">${esc(def.history)}</i></div>
           <div class="opts">
             <div class="opt"><label>Manner of battle</label>${seg('mode', [['battle', 'Pitched'], ['conquest', 'Conquest'], ['laststand', 'Last Stand'], ['duel', 'Single Combat']], m.mode)}<div class="hint">${MODE_INFO[m.mode].text}</div></div>
@@ -538,7 +540,7 @@ export class Menus {
     const m: MatchSettings = { ...this.prefs.match, teamSize: Math.min(this.prefs.match.teamSize, 32) };
     box.innerHTML = `<div class="parchment" style="padding:14px 18px">
       <div class="opts" style="margin-top:0">
-        <div class="opt"><label style="color:var(--ink-soft)">Castle</label><select class="textin" data-k="map" style="color:var(--parch)">${MAPS.map((d) => `<option value="${d.id}" ${d.id === m.mapId ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select></div>
+        <div class="opt"><label style="color:var(--ink-soft)">Castle</label><select class="textin" data-k="map" style="color:var(--parch)">${CASTLES.map((d) => `<option value="${d.id}" ${d.id === m.mapId ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select></div>
         <div class="opt"><label style="color:var(--ink-soft)">Manner of battle</label><select class="textin" data-k="mode" style="color:var(--parch)">${(Object.keys(MODE_INFO) as GameMode[]).map((g) => `<option value="${g}" ${g === m.mode ? 'selected' : ''}>${MODE_INFO[g].name}</option>`).join('')}</select></div>
         <div class="opt"><label style="color:var(--ink-soft)">Knights per house</label><select class="textin" data-k="size" style="color:var(--parch)">${[5, 10, 15, 20, 24, 32, 40, 48, 64, 80, 100].map((n) => `<option ${n === m.teamSize ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="opt"><label style="color:var(--ink-soft)">Bots' prowess</label><select class="textin" data-k="diff" style="color:var(--parch)">${DIFFICULTY_NAMES.map((n, i) => `<option value="${i}" ${i === m.difficulty ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
@@ -546,7 +548,7 @@ export class Menus {
       <div style="margin-top:12px;text-align:right"><button class="btn" data-a="docreate">Raise the Banner</button></div></div>`;
     box.querySelector('[data-a="docreate"]')!.addEventListener('click', () => {
       const v = (k: string) => (box.querySelector(`[data-k="${k}"]`) as HTMLSelectElement).value;
-      m.mapId = v('map'); m.mode = v('mode') as GameMode; m.teamSize = Number(v('size')); m.difficulty = Number(v('diff')) as MatchSettings['difficulty'];
+      m.mapId = v('map'); m.mode = v('mode') as GameMode; m.mapId = mapForMode(m.mapId, m.mode); m.teamSize = Number(v('size')); m.difficulty = Number(v('diff')) as MatchSettings['difficulty'];
       m.seed = (Math.random() * 1e9) | 0;
       this.host.mpCreate(m);
       box.innerHTML = '';

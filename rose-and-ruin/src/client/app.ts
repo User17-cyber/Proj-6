@@ -1,10 +1,11 @@
+import { DEFAULT_ARENA } from '../shared/sim/arena';
 // The application: boots the renderer, runs a live battle behind the menus, and moves
 // between the great hall, loading, battle (as a knight or a spectator) and multiplayer.
 
 import * as THREE from 'three';
 import { Renderer } from './render/renderer';
 import { buildWorldView, type WorldView } from './render/world';
-import { MAPS, buildMap, getMap } from '../shared/world/maps/index';
+import { MAPS, CASTLES, buildMap, getMap, mapForMode } from '../shared/world/maps/index';
 import type { BuiltMap } from '../shared/world/mapgen';
 import { LocalSession, type SessionView, type LiveInput } from './game/session';
 import { GameView } from './game/gameView';
@@ -19,7 +20,7 @@ import { CLASS_KEY_CODES, classForKey, classLocked, setRenown } from './ui/class
 import { UNLOCK_ORDER, CLASS_IDS } from '../shared/data/classes';
 import { lockedClasses, nextUnlock, FINISH_BOUNTY, VICTORY_BOUNTY } from './progress';
 import { loadPrefs, syncGore, savePrefs, type Prefs } from './prefs';
-import { Act, ARENA_R, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
+import { Act, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
 import { CLASSES, type ClassId } from '../shared/data/classes';
 import { knightName } from '../shared/data/names';
 import { Rng } from '../shared/rng';
@@ -144,7 +145,7 @@ export class App implements HudHost, MenuHost {
     try { await Promise.race([document.fonts?.ready, sleep(2500)]); } catch { /* fonts optional */ }
 
     const auto = this.params.get('auto');
-    const startMap = this.params.get('map') ?? MAPS[Math.floor(Math.random() * MAPS.length)].id;
+    const startMap = this.params.get('map') ?? CASTLES[Math.floor(Math.random() * CASTLES.length)].id;
     setBoot(0.05, 'Surveying the land');
     await nextFrame();
     await this.loadWorld(startMap, (p, l) => setBoot(0.08 + p * 0.82, l));
@@ -248,6 +249,7 @@ export class App implements HudHost, MenuHost {
 
   // ======================================================================= MenuHost
   async startBattle(m: MatchSettings, cls: ClassId, team: Team | -1) {
+    m = { ...m, mapId: mapForMode(m.mapId, m.mode) };
     this.lastMatch = { ...m };
     this.loadout = { cls, team };
     this.prefs.lastClass = cls;
@@ -256,6 +258,7 @@ export class App implements HudHost, MenuHost {
   }
 
   async startSpectate(m: MatchSettings) {
+    m = { ...m, mapId: mapForMode(m.mapId, m.mode) };
     this.lastMatch = { ...m };
     await this.enterLocal(m, null, 'The hosts take the field');
   }
@@ -899,7 +902,7 @@ export class App implements HudHost, MenuHost {
       const zoomT = ranged && (this.input.held() & Btn.Block) && this.input.locked ? 1 : 0;
       rig.zoom = lerp(rig.zoom, zoomT, 1 - Math.exp(-dt * 9));
       const head = this.firstPerson ? v.headOf(s.localId, _h) : null;
-      rig.bound = s.settings.mode === 'duel' ? { x: s.map.duel.x, z: s.map.duel.z, r: ARENA_R - 0.4 } : null;
+      rig.bound = s.settings.mode === 'duel' ? { x: s.map.duel.x, z: s.map.duel.z, shape: s.map.def.arena ?? DEFAULT_ARENA } : null;
       rig.updatePlayer(dt, me, this.input.yaw, this.input.pitch, head, me.sprinting && Math.hypot(me.vx, me.vz) > 4, fov);
     }
   }

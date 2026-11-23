@@ -1,3 +1,4 @@
+import type { ArenaShape } from '../sim/arena';
 // Map construction kit. A map definition sculpts the heightfield and places castle
 // structures, props and trees through a MapBuilder. The result (BuiltMap) holds the
 // physical world for the simulation plus render descriptions for the client.
@@ -72,6 +73,8 @@ export interface MapDef {
   atmosphere: Atmosphere;
   /** teams: which house holds which spawn ([0] = Lancaster spawn index) */
   build(b: MapBuilder): void;
+  /** a single-combat arena (offered only for single combat); its wall's shape */
+  arena?: ArenaShape;
   /** colours for the menu card illustration */
   card: { sky: [string, string]; ground: string; silhouette: string };
 }
