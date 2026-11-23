@@ -329,6 +329,9 @@ button { font: inherit; color: inherit; }
 .death h1 { margin: 0; text-align: center; font-family: var(--deco); font-size: clamp(30px, min(5vw, 8vh), 66px); line-height: 1.1; color: #d8402f; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9), 0 0 30px rgba(160, 20, 10, 0.5); }
 .death .by { text-align: center; font-size: clamp(15px, 2.4vh, 19px); font-style: italic; margin: 2px 0 clamp(8px, 2vh, 18px); }
 .death .classes { min-height: 0; }
+/* single combat: Leave the Battle sits off to the side, out of the way of the choice */
+.death.duel .respawn-btns { position: fixed; left: clamp(12px, 3vw, 40px); bottom: clamp(12px, 4vh, 40px); }
+.death.duel .respawn-btns .btn { font-size: 13px; padding: 8px 16px; }
 .death .class-list { overflow: auto; min-height: 0; }
 .death .classbtn { padding: clamp(4px, 1vh, 10px) 12px; }
 .death .classbtn svg { width: clamp(30px, 6vh, 48px); height: clamp(30px, 6vh, 48px); }

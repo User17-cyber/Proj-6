@@ -2,6 +2,7 @@
 // direction, kill feed, score & objectives, minimap, nameplates, scoreboard, and the
 // death, end-of-battle and pause screens.
 
+import { ROUND_BREATH, ROUND_PAUSE } from '../../shared/sim/match';
 import * as THREE from 'three';
 import type { SessionView, KnightState } from '../game/session';
 import type { HudSink } from '../game/gameView';
@@ -507,8 +508,9 @@ export class Hud implements HudSink {
     // death screen; in single combat the same knight menu opens after every round, won or lost
     const duel = s.settings.mode === 'duel';
     const foe = duel && me ? s.knights.find((k) => k.team !== me.team) : undefined;
-    const interlude = duel && s.phase === 'live' && !!me && !!foe && (!me.alive || !foe.alive);
-    if (me && (!me.alive || interlude) && s.phase !== 'ended' && !f.spectating) {
+    // a 2-second breath after the decisive blow before the knight menu comes up
+    const interlude = duel && s.phase === 'live' && !!me && !!foe && (!me.alive || !foe.alive) && s.timeLeft <= ROUND_PAUSE - ROUND_BREATH;
+    if (me && (duel ? interlude : !me.alive) && s.phase !== 'ended' && !f.spectating) {
       if (this.deadSince < 0) this.deadSince = this.time;
       const canRespawn = me.respawnT < 900 || duel;
       if ((duel || this.time - this.deadSince > 1.6) && canRespawn && this.death.classList.contains('hidden')) {
@@ -516,6 +518,7 @@ export class Hud implements HudSink {
         (this.death.querySelector('h1') as HTMLElement).textContent = duel ? (me.alive ? 'The Round Is Yours' : 'Thou Art Bested') : 'Thou Art Slain';
         (this.death.querySelector('.by') as HTMLElement).innerHTML = duel ? (!me.alive && this.deathKiller ? `Struck down ${this.deathKiller} · ` : '') + `Choose your knight for round ${round}` : this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
         this.respawnBtn.style.display = duel ? 'none' : '';
+        this.death.classList.toggle('duel', duel);
         this.renderSpawnPick(me.team);
         this.death.classList.remove('hidden');
         this.deathShownAt = this.time;

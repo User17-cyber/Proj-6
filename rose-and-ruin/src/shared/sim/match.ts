@@ -24,7 +24,9 @@ export type MatchPhase = 'warmup' | 'live' | 'ended';
 export const WARMUP_TIME = 6;
 export const END_TIME = 14;
 /** single combat: seconds between a round's deciding blow and the next round */
-export const ROUND_PAUSE = 6;
+/** after a round: a 2-second breath, then the 6-second choice of knight */
+export const ROUND_BREATH = 2;
+export const ROUND_PAUSE = 6 + ROUND_BREATH;
 /** single combat: the count of seconds, at the marks, before each round after the first */
 export const ROUND_COUNTDOWN = 3;
 

@@ -1,8 +1,8 @@
 import type { WeaponId } from './weapons';
 
 export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer' | 'garter' | 'warlord' | 'colossus' | 'cutthroat';
-/** at most 128: snapshots pack the class index into 7 bits */
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'yeoman', 'marshal', 'champion', 'bearer', 'sapper', 'kern', 'hammerer', 'garter', 'warlord', 'colossus', 'cutthroat'];
+/** at most 128: snapshots pack the class index into 7 bits. Listed from least to most renown. */
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'bearer', 'sapper', 'kern', 'hammerer', 'cutthroat', 'yeoman', 'marshal', 'garter', 'champion', 'warlord', 'colossus'];
 /** the orders won by renown, in the order they are unlocked */
 export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'garter', 'champion', 'warlord', 'colossus'];
 

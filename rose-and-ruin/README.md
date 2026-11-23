@@ -72,7 +72,7 @@ In bot-versus-bot tests with the same reflexes and accuracy, Legend tactics won 
 | Scoreboard | Tab |
 | Chat (multiplayer) | Enter |
 | Menu, pause and leave the battle (any time) | Esc or P |
-| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0, then Alt+1–4 |
+| Choose a knight (death screen, armoury, between duel rounds) | 1–9, 0, then Shift+1–9, 0, then Alt+1–4 (the orders are listed from least to most renown) |
 | Spectator: director / follow / free camera | 1 / 2 / 3 |
 | Spectator: previous / next knight | ← / → |
 | Spectator: slower / faster, pause | − / +, P |
@@ -171,7 +171,7 @@ Any order you have won can be chosen at the start and again every time you fall 
 - **Pitched Battle**: each house has a reserve of men. Every fallen knight spends one; a house loses when its reserves are spent and its last knight dies. You may fight as each order you have (eighteen at first, twenty-four with every renowned order won) once: when an order falls it is spent, and after all of them you watch the rest of the battle.
 - **Conquest**: hold the castle's banners. A house holding more banners bleeds the enemy's reserves.
 - **Last Stand**: one life each; the last house standing wins.
-- **Single Combat**: you against one knight in a small arena raised on open ground outside the castle (a sand floor inside a stone wall, three tiers of stands, an arcade round the top), to practise guards, parries, feints and timing. The ring is 22 metres across, and nothing carries a fighter out of it: running, sidesteps, charges, shoves and knockbacks all stop at the wall, and the camera stays inside it too. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, the knight menu opens at once and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–4). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
+- **Single Combat**: you against one knight in a small arena raised on open ground outside the castle (a sand floor inside a stone wall, three tiers of stands, an arcade round the top), to practise guards, parries, feints and timing. The ring is 22 metres across, and nothing carries a fighter out of it: running, sidesteps, charges, shoves and knockbacks all stop at the wall, and the camera stays inside it too. Choose how many rounds win the day (3, 5 or 10), the foe's order (or any order, changing every round) and his prowess. Both fighters come back whole after each round. When a round ends, won or lost, there is a two-second breath, then the knight menu opens and you have six seconds to choose your order for the next round, with the mouse or the number keys (1–0, then Shift+1–0 and Alt+1–4). Then both fighters stand at their marks, turned squarely toward each other, through a three-second countdown. Online, two players can duel each other.
 
 Health bars hang only over enemies; allies show just their names (spectators see everyone's).
 
