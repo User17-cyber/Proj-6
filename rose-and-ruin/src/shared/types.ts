@@ -62,6 +62,9 @@ export function emptyInput(): InputFrame {
 
 export type GameMode = 'battle' | 'conquest' | 'laststand' | 'duel';
 export type Difficulty = 0 | 1 | 2 | 3;
+/** radius of the single-combat ring (metres): fighters can never leave it */
+export const ARENA_R = 11;
+
 export const DIFFICULTY_NAMES = ['Recruit', 'Veteran', 'Champion', 'Legend'] as const;
 
 export interface MatchSettings {

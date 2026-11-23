@@ -19,7 +19,7 @@ import { CLASS_KEY_CODES, classForKey, classLocked, setRenown } from './ui/class
 import { UNLOCK_ORDER, CLASS_IDS } from '../shared/data/classes';
 import { lockedClasses, nextUnlock, FINISH_BOUNTY, VICTORY_BOUNTY } from './progress';
 import { loadPrefs, syncGore, savePrefs, type Prefs } from './prefs';
-import { Act, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
+import { Act, ARENA_R, Btn, DEFAULT_SETTINGS, type MatchSettings, type SimEvent, type Team } from '../shared/types';
 import { CLASSES, type ClassId } from '../shared/data/classes';
 import { knightName } from '../shared/data/names';
 import { Rng } from '../shared/rng';
@@ -899,6 +899,7 @@ export class App implements HudHost, MenuHost {
       const zoomT = ranged && (this.input.held() & Btn.Block) && this.input.locked ? 1 : 0;
       rig.zoom = lerp(rig.zoom, zoomT, 1 - Math.exp(-dt * 9));
       const head = this.firstPerson ? v.headOf(s.localId, _h) : null;
+      rig.bound = s.settings.mode === 'duel' ? { x: s.map.duel.x, z: s.map.duel.z, r: ARENA_R - 0.4 } : null;
       rig.updatePlayer(dt, me, this.input.yaw, this.input.pitch, head, me.sprinting && Math.hypot(me.vx, me.vz) > 4, fov);
     }
   }

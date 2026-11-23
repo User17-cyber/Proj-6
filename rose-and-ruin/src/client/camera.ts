@@ -32,7 +32,15 @@ export class CameraRig {
 
   addShake(amount: number) { this.shake = Math.min(1.2, this.shake + amount); }
 
+  /** a ring the camera may not leave (single combat): centre and radius */
+  bound: { x: number; z: number; r: number } | null = null;
+
   private collide(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3 {
+    if (this.bound) {
+      // keep to the inside of the arena wall
+      const b = this.bound, dx = to.x - b.x, dz = to.z - b.z, d = Math.hypot(dx, dz);
+      if (d > b.r) { to.x = b.x + (dx / d) * b.r; to.z = b.z + (dz / d) * b.r; }
+    }
     if (!this.world) return to;
     const t = this.world.raycast(from.x, from.y, from.z, to.x, to.y, to.z);
     if (t >= 0) {

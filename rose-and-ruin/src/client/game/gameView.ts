@@ -13,6 +13,7 @@ import { Particles } from '../fx/particles';
 import { Decals } from '../fx/decals';
 import { Arrows, type BodyArrow } from '../fx/arrows';
 import { Hazards } from '../fx/hazards';
+import { Arena } from '../fx/arena';
 import type { AudioEngine } from '../audio/audio';
 import type { SimEvent } from '../../shared/types';
 import { Act } from '../../shared/types';
@@ -50,6 +51,8 @@ export class GameView {
   readonly decals: Decals;
   readonly arrows: Arrows;
   readonly hazards: Hazards;
+  /** the single-combat ring, when the session is a duel */
+  private arena: Arena | null = null;
   private views: KView[] = [];
   private corpses: Corpse[] = [];
   private time = 0;
@@ -86,6 +89,16 @@ export class GameView {
     this.hazards = new Hazards(this.particles, this.ground2);
     world.root.add(this.hazards.group);
     this.particles.ambient = Math.min(1, 0.35 + world.sky.envIntensity * 0.5);
+    this.setupArena();
+  }
+
+  /** Single combat is fought in a ring: raise it for a duel, take it down otherwise. */
+  private setupArena() {
+    if (this.arena) { this.world.root.remove(this.arena.group); this.arena = null; }
+    if (this.s.settings.mode !== 'duel') return;
+    const d = this.world.map.duel;
+    this.arena = new Arena(this.world.baker, this.particles, d.x, d.z, this.ground2);
+    this.world.root.add(this.arena.group);
   }
 
   /** Start presenting a new session on the same world (keeps GPU buffers). */
@@ -97,6 +110,7 @@ export class GameView {
     this.kr.clearStatic();
     this.arrows.clear();
     this.hazards.clear();
+    this.setupArena();
     this.decals.clear();
     this.particles.clear();
     this.combatNear = 0;
@@ -621,6 +635,7 @@ export class GameView {
       if (d2 < 90 * 90) this.particles.fire(f.x, f.y - 0.15, f.z, f.intensity > 12 ? 1.6 : 1, dt);
     }
     this.hazards.update(dt, this.time);
+    this.arena?.update(dt, this.time);
     this.particles.update(dt, cam, this.ground2);
     this.decals.update(dt);
   }

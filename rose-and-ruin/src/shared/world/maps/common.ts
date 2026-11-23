@@ -1,4 +1,5 @@
 import type { MapBuilder, Shape } from '../mapgen';
+import { ARENA_R } from '../../types';
 
 /** A cluster of timber-framed cottages around a point, plus a stone church. */
 export function village(b: MapBuilder, cx: number, cz: number, count: number, radius: number, church = true) {
@@ -135,18 +136,23 @@ export function ground(b: MapBuilder, kind: GroundKind, x: number, z: number, r 
   } else {
     // a trampled meadow where the lines meet: stakes, mantlets and the wreck of a cart
     // (the first meadow of each castle is also its ground for single combat)
+    const arena = !b.duelSpot;
     b.duelSpot ??= { x, z };
     b.flatten({ kind: 'circle', x, z, r }, y, 14, 0.65);
+    // the single-combat arena stands here: its floor is levelled and everything kept outside its wall
+    if (arena) b.flatten({ kind: 'circle', x, z, r: ARENA_R + 7 }, y, 6, 1);
+    const keep = arena ? ARENA_R + 6 : 0;
     b.paint({ kind: 'circle', x, z, r: r * 0.7 }, 0, 0.4, r * 0.4, 1);
     for (let i = 0; i < 4; i++) {
-      const a = rng.range(0, Math.PI * 2), d = rng.range(0.55, 0.9) * r;
+      const a = rng.range(0, Math.PI * 2), d = Math.max(keep + 1, rng.range(0.55, 0.9) * r);
       b.prop(rng.pick(['stakes', 'mantlet', 'stakes'] as const), x + Math.cos(a) * d, z + Math.sin(a) * d, a + Math.PI / 2, 1);
     }
     // the wreck and the banner stand off to the side, leaving the middle open (it is the duelling ground)
-    const ca = rng.range(0, Math.PI * 2), cd = rng.range(7, 10), ba = ca + rng.range(1.5, 4.5), bd = rng.range(5, 7);
+    const ca = rng.range(0, Math.PI * 2), cd = keep + rng.range(7, 10), ba = ca + rng.range(1.5, 4.5), bd = keep + rng.range(5, 7);
     b.prop('cart', x + Math.cos(ca) * cd, z + Math.sin(ca) * cd, rng.range(0, 6), 1);
     b.prop('banner', x + Math.cos(ba) * bd, z + Math.sin(ba) * bd, 0, 1.2);
-    b.scatterProps({ kind: 'circle', x, z, r }, 'rock', 6, [0.5, 1.1]);
+    if (arena) for (let i = 0; i < 6; i++) { const a = rng.range(0, Math.PI * 2), d = rng.range(keep + 1, Math.max(keep + 2, r)); b.prop('rock', x + Math.cos(a) * d, z + Math.sin(a) * d, rng.range(0, 6), rng.range(0.5, 1.1)); }
+    else b.scatterProps({ kind: 'circle', x, z, r }, 'rock', 6, [0.5, 1.1]);
     b.avoid({ kind: 'circle', x, z, r: r + 4 });
   }
   b.front([x, z]);

@@ -1,7 +1,8 @@
 // The authoritative battle simulation. Runs at a fixed 60 Hz on the server (multiplayer)
 // or in the browser (single player and bots-only). Presentation consumes `events`.
 
-import { Act, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone } from '../types';
+import { holdInRing } from './arena';
+import { Act, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone  } from '../types';
 import { Knight, KNIGHT_RADIUS } from './knight';
 import { knockdown , stepHazards, type Hazard } from './combat';
 import { CLASSES, CLASS_IDS, SHIELDS, type ClassId } from '../data/classes';
@@ -441,6 +442,8 @@ export class Match {
       updateKnight(this, k, DT);
     }
     this.separate();
+    // single combat is fought inside the ring: nothing carries a fighter out of it
+    if (this.settings.mode === 'duel') for (const k of this.knights) if (k.alive) holdInRing(k, this.map.duel.x, this.map.duel.z, this.world);
     // at the marks, re-aim after any nudge from the crowd or the scenery
     if (this.settings.mode === 'duel' && (this.phase === 'warmup' || this.roundReadyT > 0)) {
       for (const k of this.knights) {

@@ -7,6 +7,7 @@ import { buildMap } from '../../shared/world/maps/index';
 import type { BuiltMap } from '../../shared/world/mapgen';
 import { Knight } from '../../shared/sim/knight';
 import { movement } from '../../shared/sim/actions';
+import { holdInRing } from '../../shared/sim/arena';
 import { CLASS_IDS, CLASSES, type ClassId } from '../../shared/data/classes';
 import { Act, DT, type InputFrame, type MatchSettings, type SimEvent, type Team } from '../../shared/types';
 import { wrapAngle } from '../../shared/math';
@@ -201,6 +202,7 @@ export class NetSession implements SessionView {
         for (const p of this.pending) {
           pk.input.mx = p.mx; pk.input.mz = p.mz; pk.input.yaw = p.yaw; pk.input.pitch = p.pitch; pk.input.buttons = p.buttons;
           movement(this.map.world, pk, DT, this.phase === 'live', p.buttons & ~p.prev);
+          if (this.settings.mode === 'duel') holdInRing(pk, this.map.duel.x, this.map.duel.z, this.map.world);
           pk.actT += DT;
         }
         if (wasAlive) {
@@ -269,6 +271,7 @@ export class NetSession implements SessionView {
       if (this.pending.length > 120) this.pending.shift();
       pk.input.mx = f.mx; pk.input.mz = f.mz; pk.input.yaw = f.yaw; pk.input.pitch = f.pitch; pk.input.buttons = buttons;
       movement(this.map.world, pk, DT, this.phase === 'live', buttons & ~this.prevBtn);
+      if (this.settings.mode === 'duel') holdInRing(pk, this.map.duel.x, this.map.duel.z, this.map.world);
       pk.actT += DT;
     }
     this.prevBtn = buttons;

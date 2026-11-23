@@ -2,7 +2,7 @@
 // sanity (no NaNs, knights fight and die, matches end, nobody escapes the world).
 import { buildMap, MAPS } from '../shared/world/maps/index';
 import { Match } from '../shared/sim/match';
-import { Act, Btn, DEFAULT_SETTINGS, type GameMode } from '../shared/types';
+import { Act, ARENA_R, Btn, DEFAULT_SETTINGS, type GameMode } from '../shared/types';
 import { WEAPONS } from '../shared/data/weapons';
 import { CLASS_IDS, SHIELDS } from '../shared/data/classes';
 import { wearShield } from '../shared/sim/combat';
@@ -301,17 +301,39 @@ for (const def of MAPS) {
   if (gap < 8 || gap > 16) fail(`duel ${def.id}: fighters start ${gap.toFixed(1)} m apart`);
   if (!m.nav.isWalkable(m.map.duel.x, m.map.duel.z)) fail(`duel ${def.id}: duelling ground not walkable`);
   const rounds: string[] = [];
+  let far = 0;
   for (let i = 0; i < 60 * 600 && m.phase !== 'ended'; i++) {
     m.step();
+    for (const k of m.knights) if (k.alive) far = Math.max(far, Math.hypot(k.x - m.map.duel.x, k.z - m.map.duel.z));
     for (const e of m.events) if (e.t === 'round') {
       rounds.push(`${e.score0}-${e.score1}`);
       for (const k of m.knights) if (!k.alive || k.hp !== k.def.hp) fail(`duel ${def.id}: round ${e.n} began with a fighter not whole`);
     }
     m.events.length = 0;
   }
+  if (far > ARENA_R) fail(`duel ${def.id}: a fighter left the ring (${far.toFixed(1)} m from its middle)`);
   const t = m.teams;
   if (m.phase !== 'ended' || Math.max(t[0].tickets, t[1].tickets) !== 3) fail(`duel ${def.id}: did not finish (${m.phase}, ${t[0].tickets}-${t[1].tickets}, ${(m.time / 60).toFixed(0)} min)`);
   console.log(`duel ${def.id.padEnd(9)} ${a.cls} vs ${b.cls}: rounds ${rounds.join(' > ')} final ${t[0].tickets}-${t[1].tickets} in ${m.time.toFixed(0)}s, winner ${m.winner}`);
 }
+// single combat: a player who runs flat out for the edge (sprinting, sidestepping) stays in the ring
+for (const def of MAPS) {
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: def.id, mode: 'duel', rounds: 99, seed: 5 }, buildMap(def.id));
+  const me = m.addPlayer('Runner', 0, 0, 'cutthroat');
+  while (m.phase !== 'live' || m.roundReadyT > 0) m.step();
+  const foe = m.knights.find((k) => k !== me)!;
+  m.brains.delete(foe.id);
+  let far = 0;
+  for (let i = 0; i < 60 * 12; i++) {
+    const yaw = me.yaw + (i % 240 < 120 ? 0 : 2.4);
+    me.input = { ...me.input, yaw: i % 240 === 0 ? me.yaw + Math.PI : me.input.yaw, mz: 1, mx: i % 90 < 45 ? 0.4 : -0.4, buttons: Btn.Sprint | (i % 70 === 0 ? Btn.Ability2 : 0) };
+    void yaw;
+    me.stamina = me.def.stamina; me.cds[1] = 0; me.hp = me.def.hp;
+    m.step(); m.events.length = 0;
+    far = Math.max(far, Math.hypot(me.x - m.map.duel.x, me.z - m.map.duel.z));
+  }
+  if (far > ARENA_R) fail(`duel ${def.id}: a fleeing fighter got ${far.toFixed(1)} m from the middle of the ring`);
+}
+console.log(`single combat: nobody leaves the ${ARENA_R} m ring`);
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all simulation checks passed');
