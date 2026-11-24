@@ -605,7 +605,7 @@ export class App implements HudHost, MenuHost {
     if (tab !== this.boardHeld) { this.boardHeld = tab; this.hud.showBoard(tab); }
     // death screen choices
     // single combat: at the marks the camera and aim are turned squarely on the foe
-    if (s.settings.mode === 'duel' && me && me.alive && (s.phase === 'warmup' || (s.timeLeft > 0 && s.knights.every((k) => k.alive)))) { I.yaw = me.yaw; I.pitch = 0; }
+    // single combat: you are turned to face your foe as each round begins (the spawn event sets the view); after that you may look about freely
     // the knight menu (death screen, or single combat between rounds): number keys pick an order
     // (1-0, then Shift+1-6), Space or Enter rejoins
     const shift = I.keys.has('AltLeft') || I.keys.has('AltRight') ? 2 : I.keys.has('ShiftLeft') || I.keys.has('ShiftRight') ? 1 : 0;

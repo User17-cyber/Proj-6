@@ -288,13 +288,13 @@ if (!only) {
   if (Math.abs(Math.atan2(Math.sin(me.yaw - face), Math.cos(me.yaw - face))) > 0.02) fail(`player not facing the foe at the marks (off by ${(me.yaw - face).toFixed(2)} rad)`);
   const x0 = me.x, z0 = me.z;
   while (m.roundReadyT > 0) {
-    // the player tries to turn away and charge in early: he is held, facing his foe
+    // the player looks about and tries to charge in early: he may turn, but is held on his mark
     me.input = { ...me.input, mz: 1, buttons: Btn.Attack, yaw: face + 1.5 };
     m.step(); m.events.length = 0;
     if (me.act === Act.Windup || Math.hypot(me.x - x0, me.z - z0) > 0.3) still = false;
   }
   if (!still) fail('a fighter moved or struck during the countdown');
-  if (Math.abs(Math.atan2(Math.sin(me.yaw - face), Math.cos(me.yaw - face))) > 0.05) fail('the player was turned away from his foe when the round began');
+  if (Math.abs(Math.atan2(Math.sin(me.yaw - face - 1.5), Math.cos(me.yaw - face - 1.5))) > 0.05) fail('the player could not look about during the countdown');
   let moved = false;
   for (let i = 0; i < 60; i++) { me.input = { ...me.input, mz: 1, buttons: 0 }; m.step(); m.events.length = 0; if (Math.hypot(me.x - x0, me.z - z0) > 0.5) moved = true; }
   if (!moved) fail('fighters still held after the countdown');

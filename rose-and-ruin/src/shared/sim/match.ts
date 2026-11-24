@@ -2,7 +2,7 @@
 // or in the browser (single player and bots-only). Presentation consumes `events`.
 
 import { holdInRing } from './arena';
-import { Act, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone  } from '../types';
+import { Act, Btn, DT, type MatchSettings, type SimEvent, type Team, type InputFrame, type HitZone  } from '../types';
 import { Knight, KNIGHT_RADIUS } from './knight';
 import { knockdown , stepHazards, type Hazard } from './combat';
 import { CLASSES, CLASS_IDS, SHIELDS, type ClassId } from '../data/classes';
@@ -25,6 +25,7 @@ export const WARMUP_TIME = 6;
 export const END_TIME = 14;
 /** single combat: seconds between a round's deciding blow and the next round */
 /** after a round: a 2-second breath, then the 6-second choice of knight */
+const ATTACK_BTNS = Btn.Attack | Btn.Thrust | Btn.Kick | Btn.Block | Btn.Ability1 | Btn.Ability2;
 export const ROUND_BREATH = 2;
 export const ROUND_PAUSE = 6 + ROUND_BREATH;
 /** single combat: the count of seconds, at the marks, before each round after the first */
@@ -423,10 +424,15 @@ export class Match {
     if (this.settings.mode === 'duel' && (this.phase === 'warmup' || (this.roundReadyT > 0 && this.phase === 'live'))) {
       if (this.phase === 'live') this.roundReadyT = Math.max(0, this.roundReadyT - DT);
       for (const k of this.knights) {
-        const o = this.knights.find((x) => x !== k && x.alive && x.active);
-        const yaw = o ? Math.atan2(-(o.x - k.x), -(o.z - k.z)) : k.yaw;
-        k.yaw = yaw;
-        k.input = { ...k.input, yaw, pitch: 0, mx: 0, mz: 0, buttons: this.phase === 'warmup' ? k.input.buttons : 0 };
+        // feet stay on the marks and no blow is struck; a player may look about as he likes
+        // (he was set facing his foe when the round began), a bot keeps its eyes on its man
+        if (k.bot) {
+          const o = this.knights.find((x) => x !== k && x.alive && x.active);
+          const yaw = o ? Math.atan2(-(o.x - k.x), -(o.z - k.z)) : k.yaw;
+          k.yaw = yaw;
+          k.input = { ...k.input, yaw, pitch: 0 };
+        }
+        k.input = { ...k.input, mx: 0, mz: 0, buttons: this.phase === 'warmup' ? k.input.buttons & ~ATTACK_BTNS : 0 };
         if (this.phase === 'live') k.prevButtons = 0;
       }
       if (this.phase === 'live' && this.roundReadyT <= 0) this.emit({ t: 'horn', team: -1, kind: 0 });
@@ -449,6 +455,7 @@ export class Match {
     // at the marks, re-aim after any nudge from the crowd or the scenery
     if (this.settings.mode === 'duel' && (this.phase === 'warmup' || this.roundReadyT > 0)) {
       for (const k of this.knights) {
+        if (!k.bot) continue;
         const o = this.knights.find((x) => x !== k && x.alive && x.active);
         if (o) { k.yaw = Math.atan2(-(o.x - k.x), -(o.z - k.z)); k.input = { ...k.input, yaw: k.yaw }; }
       }
