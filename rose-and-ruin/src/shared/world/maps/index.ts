@@ -16,8 +16,13 @@ import { pembroke } from './pembroke';
 import { caister } from './caister';
 import { pontefract } from './pontefract';
 import { ARENAS } from './arenas';
+import { hohenzollern } from './hohenzollern';
+import { carregcennen } from './carregcennen';
+import { hedingham } from './hedingham';
+import { tattershall } from './tattershall';
+import { skipton } from './skipton';
 
-export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan, alnwick, dunstanburgh, pembroke, caister, pontefract, ...ARENAS];
+export const MAPS: MapDef[] = [bodiam, harlech, bamburgh, tower, warwick, conwy, kenilworth, ludlow, middleham, raglan, alnwick, dunstanburgh, pembroke, caister, pontefract, hohenzollern, carregcennen, hedingham, tattershall, skipton, ...ARENAS];
 /** the castles, for every manner of battle but single combat */
 export const CASTLES: MapDef[] = MAPS.filter((m) => !m.arena);
 /** the arenas, for single combat alone */

@@ -14,6 +14,7 @@ import { Decals } from '../fx/decals';
 import { Arrows, type BodyArrow } from '../fx/arrows';
 import { Hazards } from '../fx/hazards';
 import { Arena } from '../fx/arena';
+import { Rain } from '../fx/rain';
 import type { AudioEngine } from '../audio/audio';
 import type { SimEvent } from '../../shared/types';
 import { Act } from '../../shared/types';
@@ -53,6 +54,8 @@ export class GameView {
   readonly hazards: Hazards;
   /** the single-combat ring, when the session is a duel */
   private arena: Arena | null = null;
+  /** falling rain, on a battleground with rainy weather */
+  private rain: Rain | null = null;
   private views: KView[] = [];
   private corpses: Corpse[] = [];
   private time = 0;
@@ -90,6 +93,8 @@ export class GameView {
     world.root.add(this.hazards.group);
     this.particles.ambient = Math.min(1, 0.35 + world.sky.envIntensity * 0.5);
     this.setupArena();
+    const wet = world.map.def.atmosphere.rain ?? 0;
+    if (wet > 0) { this.rain = new Rain(wet, r.settings.quality, world.map.def.atmosphere.wind); world.root.add(this.rain.mesh); }
   }
 
   /** Single combat is fought in a ring: raise it for a duel, take it down otherwise. */
@@ -636,6 +641,7 @@ export class GameView {
     }
     this.hazards.update(dt, this.time);
     this.arena?.update(dt, this.time);
+    this.rain?.update(dt, cam.position, this.ground2);
     this.particles.update(dt, cam, this.ground2);
     this.decals.update(dt);
   }

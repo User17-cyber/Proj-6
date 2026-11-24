@@ -60,6 +60,8 @@ export interface Atmosphere {
   wind: number;
   grassTint: [number, number, number];
   ambientSound: 'meadow' | 'coast' | 'wind' | 'city';
+  /** rain, 0 (none) to 1 (a downpour) */
+  rain?: number;
   dust: number;
 }
 

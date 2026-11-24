@@ -1,6 +1,6 @@
 # Rose & Ruin
 
-A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 100 knights each at fifteen real British castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
+A large-scale medieval knight battle game for the browser, set during the Wars of the Roses (1455–1487). House Lancaster and House York field 5 to 100 knights each at twenty castles. You fight as one of them, watch the battle unfold with bots only, or join other players online.
 
 ## Run it
 
@@ -184,6 +184,11 @@ Offered only for single combat, each a walled ring on open ground with a sand fl
 - **The Great Ring at Westminster** (1483): a great round arena 30 metres across, raised for the coronation tourney.
 - **The Octagon of the Pleasance** (Kenilworth, 1459): eight-sided, 22 metres across, with corners to pin a man in.
 - **The Square Yard of the Tower** (1471): a square walled yard 20 metres a side.
+- **The Hexagon of the Golden Tree** (Bruges, 1468): a broad six-sided ring 27 metres across, from Charles the Bold's wedding tourney.
+- **The Wedge at Calais** (1460): a small three-cornered yard whose corners close on a retreating man.
+- **The Narrow Lists at Eltham** (1480): a lane of a ring 40 metres long and only 13 across.
+- **The Five-Sided Yard at Norwich** (1469): a pentagon 24 metres across.
+- **The Colossal Ring of Coventry** (1459): the greatest arena of all, 42 metres across.
 
 ### The castles
 
@@ -205,6 +210,11 @@ Each castle sits in a wide stretch of country (roughly 400 by 400 metres) with o
 - **Pembroke Castle**, Pembrokeshire, 1461: Jasper Tudor's fortress on a ridge between two rivers, its great round keep in the inner ward, the gatehouse facing the town.
 - **Caister Castle**, Norfolk, 1469: the Pastons' moated brick castle under Norfolk's siege, with a slender great tower, a bridged moat and a moated base court.
 - **Pontefract Castle**, Yorkshire, 1483: the key to the north, an oval curtain of seven towers on its rock, and a round keep of clustered drum towers on the old motte.
+- **Burg Hohenzollern**, Swabia, 1461: a Gothic fortress of tremendous size on the summit of the Zollerberg, eighty metres above the valleys, in driving rain and low cloud. Climb the mountain to the lower gate, then break the Eagle Gate of the inner fortress and take the great keep. The home hills of the German mercenaries who fought at Stoke.
+- **Carreg Cennen Castle**, Carmarthenshire, 1462: a crag-top fortress above a sheer cliff, reached by a walled ramp and barbican from the north.
+- **Hedingham Castle**, Essex, 1471: the de Vere earls' great Norman keep on its mound, an inner bailey, and an outer bailey across a dry ditch.
+- **Tattershall Castle**, Lincolnshire, 1469: Lord Cromwell's soaring brick tower within a wet inner moat and a dry outer one.
+- **Skipton Castle**, Yorkshire, 1461: the Cliffords' ring of six drum towers on a cliff over the beck, with a four-towered gatehouse facing the town.
 
 ## How it works
 
