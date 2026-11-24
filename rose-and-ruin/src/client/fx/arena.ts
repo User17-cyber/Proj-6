@@ -2,7 +2,7 @@
 // outward, an arcade of piers round the top, the houses' banners and four braziers.
 
 import * as THREE from 'three';
-import { DEFAULT_ARENA, type ArenaShape } from '../../shared/sim/arena';
+import { clampToArena, DEFAULT_ARENA, type ArenaShape } from '../../shared/sim/arena';
 import { TEAM_COLORS } from '../render/heraldry';
 import { pbr } from '../render/materials';
 import type { TextureBaker } from '../render/textures';
@@ -65,7 +65,6 @@ export class Arena {
     // the ground under the ring: the wall stands on the lowest of it, the stands rise from the highest
     let lo = Infinity, hi = -Infinity;
     for (const o of [0, 3, 6]) for (const [x, z] of outline(sh, o)) { const h = ground(cx + x, cz + z); lo = Math.min(lo, h); hi = Math.max(hi, h); }
-    const big = sh.kind === 'ellipse' ? Math.max(sh.rx, sh.rz) : sh.r / Math.cos(Math.PI / sh.sides);
     const top = hi + 2.4;
     const stone = pbr(baker.get('ashlar'), { color: 0xd9cbb2, repeat: [1, 1] });
     const timber = pbr(baker.get('planks'), { color: 0xb99a74, repeat: [1, 1], side: THREE.DoubleSide });
@@ -74,10 +73,27 @@ export class Arena {
     g.position.set(cx, 0, cz);
 
     // the sand floor, laid over the ground
-    const floor = new THREE.CircleGeometry(big + 0.6, 64, 0, Math.PI * 2);
-    floor.rotateX(-Math.PI / 2);
-    const fp = floor.getAttribute('position') as THREE.BufferAttribute;
-    for (let i = 0; i < fp.count; i++) fp.setY(i, ground(cx + fp.getX(i), cz + fp.getZ(i)) + 0.035);
+    // the sand: a fine grid over the arena, kept to the squares inside the wall's outline so it
+    // follows the ground everywhere and never shows outside the wall
+    const ext = outline(sh, 0.6).reduce((m, [x, z]) => Math.max(m, Math.abs(x), Math.abs(z)), 0);
+    const N = 56, step = (ext * 2) / N;
+    const fpos: number[] = [], fidx: number[] = [];
+    for (let iz = 0; iz <= N; iz++) for (let ix = 0; ix <= N; ix++) {
+      const x = -ext + ix * step, z = -ext + iz * step;
+      fpos.push(x, ground(cx + x, cz + z) + 0.035, z);
+    }
+    const inside = (x: number, z: number) => { const p = { x, z }; return !clampToArena(p, 0, 0, sh, -0.6); };
+    for (let iz = 0; iz < N; iz++) for (let ix = 0; ix < N; ix++) {
+      const x = -ext + (ix + 0.5) * step, z = -ext + (iz + 0.5) * step;
+      if (!inside(x, z)) continue;
+      const a = iz * (N + 1) + ix, b = a + 1, c = a + N + 1, d = c + 1;
+      fidx.push(a, c, b, b, c, d);
+    }
+    const floor = new THREE.BufferGeometry();
+    floor.setAttribute('position', new THREE.Float32BufferAttribute(fpos, 3));
+    const fuv: number[] = []; for (let k = 0; k < fpos.length; k += 3) fuv.push(fpos[k] / 8, fpos[k + 2] / 8);
+    floor.setAttribute('uv', new THREE.Float32BufferAttribute(fuv, 2));
+    floor.setIndex(fidx);
     floor.computeVertexNormals();
     const floorM = new THREE.Mesh(floor, sand);
     floorM.receiveShadow = true;
