@@ -182,6 +182,8 @@ export interface ClassDef {
   hyperArmor: boolean;
   /** never knocked off his feet, whatever strikes him */
   immovable?: boolean;
+  /** multiplies every stamina cost (blows, guards, abilities, sprinting); 1 when absent */
+  staminaDrain?: number;
   /** how fast this order swings: 1 is the norm, higher is quicker (windup, release and recovery are divided by it) */
   attackSpeed: number;
   /** UI ratings 1..5 */
@@ -416,10 +418,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   },
   colossus: {
     id: 'colossus', name: 'Colossus', title: 'Great Spear & Tower Shield',
-    description: 'A giant of a man in a giant\'s harness, behind a shield like a castle door. Nothing knocks him down. Bulwark of the Realm shelters everyone near him; Shield Slam batters a whole rank back. He is slow, and nothing else about him is.',
-    hp: 330, stamina: 200, speed: 3.3, sprint: 4.3, mass: 2.4, size: { height: 1.38, girth: 1.42 },
+    description: 'A giant of a man in a giant\'s harness, behind a shield like a castle door. Nothing knocks him down. Bulwark of the Realm shelters everyone near him; Shield Slam batters a whole rank back. He is slow and tires quickly; nothing else about him is weak.',
+    hp: 330, stamina: 200, speed: 2.8, sprint: 3.5, mass: 2.4, size: { height: 1.38, girth: 1.42 },
     armor: [0.62, 0.3, 0.62], weapon: 'greatspear', shield: 'tower', ranged: false,
-    abilities: ['realm', 'shieldslam'], hyperArmor: true, immovable: true, attackSpeed: 1.15,
+    abilities: ['realm', 'shieldslam'], hyperArmor: true, immovable: true, staminaDrain: 1.8, attackSpeed: 1.15,
     ratings: { attack: 5, defence: 5, speed: 1, reach: 5, difficulty: 5 },
     armourDesc: 'A great helm, a giant\'s full harness, and a tower shield of oak and iron',
     botWeight: 3, unlock: 12000,

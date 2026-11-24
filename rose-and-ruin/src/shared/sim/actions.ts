@@ -14,7 +14,7 @@ import { looseArrow, resolveKick } from './combat';
 export const KICK_TIME = 0.62, KICK_HIT = 0.22;
 
 export function spend(k: Knight, amount: number) {
-  k.stamina = Math.max(0, k.stamina - amount);
+  k.stamina = Math.max(0, k.stamina - amount * (k.def.staminaDrain ?? 1));
   k.staminaDelay = 0.9;
 }
 
@@ -74,7 +74,7 @@ function timers(m: Match, k: Knight, dt: number) {
   }
   if (k.staminaDelay > 0) k.staminaDelay -= dt;
   else if (!k.sprinting) k.stamina = Math.min(k.def.stamina, k.stamina + (k.act === Act.Block ? 10 : 21) * (k.bannerT > 0 ? 1.4 : 1) * dt);
-  if (k.sprinting) { k.stamina = Math.max(0, k.stamina - 9 * dt); k.staminaDelay = 0.5; }
+  if (k.sprinting) { k.stamina = Math.max(0, k.stamina - 9 * (k.def.staminaDrain ?? 1) * dt); k.staminaDelay = 0.5; }
 }
 
 function startAttack(m: Match, k: Knight, slot: number, chained: boolean) {
