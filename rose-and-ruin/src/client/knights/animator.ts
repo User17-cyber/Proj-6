@@ -21,6 +21,8 @@ export interface AnimSource {
   shieldBroken?: boolean;
   /** lasting effects of the renowned orders' abilities (see buffBits), when known */
   buffs?: number;
+  /** wind left, when known: a winded man breathes hard */
+  stamina?: number; maxStamina?: number;
 }
 
 export type GroundFn = (x: number, z: number, y: number) => number;
@@ -73,6 +75,12 @@ export class KnightAnimator {
   private headPitchS = 0;
   private lastYaw = 0;
   private turnRate = 0;
+  // secondary motion: how the body answers speeding up, slowing, turning and landing
+  private lastSpeed = 0;
+  private accelS = 0;
+  private landT = 0;
+  private wasAir = 0;
+  private seed = Math.random() * 100;
 
   /** Called by the effects layer when the knight is hit (world-space direction of the blow). */
   flinch(dx: number, dz: number, amount: number) {
@@ -108,6 +116,19 @@ export class KnightAnimator {
     this.phase += (2 * Math.PI * speedEff / stride) * dt;
     const gait = smoothstep(0.05, 0.9, speedEff);
     const run = smoothstep(2.5, 5.5, this.speed);
+    // acceleration along the way he is going (smoothed): positive speeding up, negative pulling up
+    this.accelS = lerp(this.accelS, clamp((this.speed - this.lastSpeed) / Math.max(dt, 1e-3), -12, 12), 1 - Math.exp(-dt * 6));
+    this.lastSpeed = this.speed;
+    // the share of his motion that is backwards relative to where he faces
+    const backing = sp > 0.4 ? clamp(-(k.vx * -Math.sin(k.yaw) + k.vz * -Math.cos(k.yaw)) / sp, 0, 1) : 0;
+    // landing from a drop: the knees give a little
+    if (k.onGround && this.wasAir > 0.25) this.landT = Math.min(0.3, this.wasAir * 0.4);
+    this.wasAir = k.onGround ? 0 : this.wasAir + dt;
+    this.landT = Math.max(0, this.landT - dt);
+    // standing still: breathing (harder when winded) and a slow shift of weight from foot to foot
+    const winded = k.stamina !== undefined && k.maxStamina ? 1 - clamp(k.stamina / k.maxStamina, 0, 1) : 0;
+    const breathRate = 1.4 + winded * 2.2;
+    const breath = Math.sin(time * breathRate + this.seed) * (0.006 + winded * 0.012);
 
     const yawVis = k.yaw + (ability === 'whirlwind' ? this.whirlSpin(abU) : 0);
     const fwd = _fwd.set(-Math.sin(yawVis), 0, -Math.cos(yawVis));
@@ -210,6 +231,7 @@ export class KnightAnimator {
     if (ability === 'cleave') crouch = 0.12 * hump;
     if (ability === 'shieldslam') crouch = 0.08 * hump;
     if (k.stunT > 0) crouch = 0.08 + Math.sin(time * 5) * 0.02;
+    crouch += this.landT * 0.35 + Math.max(0, -breath) * 0.4 * (1 - gait);
     let pelvisY = k.y + BODY.hipY + bob - crouch - this.airT * 0.05;
     // keep both legs within reach on slopes
     const legLen = BODY.thigh + BODY.shin - 0.015;
@@ -230,6 +252,10 @@ export class KnightAnimator {
     const p = this.weaponPose(k, weapon, rest, ability, abU, time);
     const sprint = smoothstep(5.2, 6.8, this.speed);
     let twist = p.twist, lean = p.lean + this.strikeS * 0.11 + run * 0.14 + sprint * 0.12 + gait * 0.04 + (Math.min(1, stanceSum) - 0.5) * 0.04 * run;
+    // lean into a start, rock back when pulling up; sit back when stepping backwards
+    lean += clamp(this.accelS * 0.022, -0.14, 0.12) - backing * 0.12 * gait;
+    // a winded man stoops a little over his breath
+    lean += winded * 0.06 * (1 - gait) + breath * 0.6;
     if (ability === 'charge') lean += 0.28;
     if (ability === 'dash') lean += 0.15;
     if (ability === 'shield_bash') lean += 0.3 * Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI);
@@ -251,6 +277,10 @@ export class KnightAnimator {
     twist -= hipTwist * (0.7 + run * 0.4);
     // flinch / stagger / stun
     let sideLean = -weightSide * 0.035 * gait;
+    // lean into a turn, the more so the faster he goes
+    sideLean += clamp(this.turnRate * this.speed * 0.025, -0.16, 0.16);
+    // the idle weight shift from foot to foot
+    sideLean += Math.sin(time * 0.45 + this.seed) * 0.022 * (1 - gait);
     if (this.flinchT > 0) {
       this.flinchT -= dt;
       const f = Math.sin((1 - this.flinchT / 0.32) * Math.PI) * this.flinchAmp;

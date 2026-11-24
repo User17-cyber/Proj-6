@@ -300,6 +300,8 @@ export class NetSession implements SessionView {
       const base = k1.alive ? k1 : k0;
       s.cls = CLASS_IDS[base.cls] ?? s.cls; s.team = base.team as Team;
       s.maxHp = CLASSES[s.cls].hp; s.maxStamina = CLASSES[s.cls].stamina;
+      // other knights' wind is not sent: draw them fresh rather than winded (yours is set below)
+      if (s.id !== this.localId) s.stamina = s.maxStamina;
       if (!aliveNow) { s.act = Act.Dead; continue; }
       // dead entries carry no state: only blend between two living samples
       const both = k0.alive && k1.alive;
