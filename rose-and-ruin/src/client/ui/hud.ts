@@ -338,7 +338,7 @@ export class Hud implements HudSink {
     this.death.innerHTML = `<div class="wrap">
       <h1>Thou Art Slain</h1><div class="by"></div>
       <div class="classes"><div class="class-list"></div><div class="class-detail parchment"></div></div>
-      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>/<kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>0</kbd> · rejoin with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
+      <div class="spawn-pick"></div><div class="respawn"><div class="respawn-btns"><button class="btn" data-a="rejoin">Rejoin the Fight</button><button class="btn iron" data-a="leave">Leave the Battle</button></div><div class="timer"></div><div class="spentnote hint"></div><div class="keys">Choose with <kbd>1</kbd>–<kbd>0</kbd>, <kbd>Shift</kbd>/<kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>0</kbd> · <span class="sk">rejoin</span> with <kbd>Space</kbd> · menu with <kbd>Esc</kbd></div></div></div>`;
     const list = this.death.querySelector('.class-list') as HTMLElement;
     this.deathDetail = this.death.querySelector('.class-detail') as HTMLElement;
     this.setDeathSel = classList(list, this.deathCls, (c) => { if (this.spent.has(c) || classLocked(c)) return; this.setLoadout(c); this.host.selectClass(c); });
@@ -517,7 +517,10 @@ export class Hud implements HudSink {
         const round = s.teams[0].tickets + s.teams[1].tickets + 2;
         (this.death.querySelector('h1') as HTMLElement).textContent = duel ? (me.alive ? 'The Round Is Yours' : 'Thou Art Bested') : 'Thou Art Slain';
         (this.death.querySelector('.by') as HTMLElement).innerHTML = duel ? (!me.alive && this.deathKiller ? `Struck down ${this.deathKiller} · ` : '') + `Choose your knight for round ${round}` : this.deathKiller ? `Struck down ${this.deathKiller}` : 'You have fallen';
-        this.respawnBtn.style.display = duel ? 'none' : '';
+        // against a bot the player may call the next round himself; online the interval runs its course
+        this.respawnBtn.style.display = duel && s.online ? 'none' : '';
+        this.respawnBtn.textContent = duel ? 'Begin the Next Round' : 'Rejoin the Fight';
+        const sk = this.death.querySelector('.sk'); if (sk) sk.textContent = duel ? (s.online ? 'wait' : 'begin') : 'rejoin';
         this.death.classList.toggle('duel', duel);
         this.renderSpawnPick(me.team);
         this.death.classList.remove('hidden');
@@ -525,7 +528,7 @@ export class Hud implements HudSink {
       }
       if (!this.death.classList.contains('hidden')) {
         const t = Math.max(0, duel ? s.timeLeft : me.respawnT);
-        this.respawnBtn.disabled = t > 0;
+        this.respawnBtn.disabled = duel ? s.online : t > 0;
         this.respawnTimer.textContent = duel ? (t > 0 ? `The next round begins in ${Math.ceil(t)}` : 'To your marks') : t > 0 ? `Reinforcements muster in ${Math.ceil(t)}` : 'The line awaits you';
       }
     } else {

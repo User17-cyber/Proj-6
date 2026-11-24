@@ -562,6 +562,13 @@ export class Match {
     }
   }
 
+  /** Single combat against a bot: the player calls the next round now, cutting the interval short. */
+  beginNextRound(): boolean {
+    if (this.settings.mode !== 'duel' || this.phase !== 'live' || this.roundT <= 0) return false;
+    this.roundT = DT / 2;
+    return true;
+  }
+
   private updateDuel() {
     if (this.round === 0) {
       this.round = 1;

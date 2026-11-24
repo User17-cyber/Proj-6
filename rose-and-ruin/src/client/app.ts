@@ -444,6 +444,12 @@ export class App implements HudHost, MenuHost {
 
   // ======================================================================= HudHost
   respawn(cls: ClassId) {
+    // single combat against a bot: the knight is already chosen; begin the next round now
+    if (this.session instanceof LocalSession && this.session.settings.mode === 'duel') {
+      this.pickRoundClass(cls);
+      if (this.session.match.beginNextRound()) { this.input.enabled = true; this.input.requestLock(); }
+      return;
+    }
     if (this.usedCls.has(cls) || classLocked(cls)) return;
     this.loadout.cls = cls;
     this.prefs.lastClass = cls;
