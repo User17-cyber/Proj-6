@@ -2,6 +2,7 @@
 // sounds, and the feed of hit/kill information for the HUD.
 
 import * as THREE from 'three';
+import { buildFieldEdge } from '../fx/fieldEdge';
 import type { SessionView, KnightState } from './session';
 import type { WorldView } from '../render/world';
 import type { Renderer } from '../render/renderer';
@@ -93,6 +94,7 @@ export class GameView {
     world.root.add(this.hazards.group);
     this.particles.ambient = Math.min(1, 0.35 + world.sky.envIntensity * 0.5);
     this.setupArena();
+    if (!world.map.def.arena) world.root.add(buildFieldEdge(W));
     const wet = world.map.def.atmosphere.rain ?? 0;
     if (wet > 0) { this.rain = new Rain(wet, r.settings.quality, world.map.def.atmosphere.wind); world.root.add(this.rain.mesh); }
   }

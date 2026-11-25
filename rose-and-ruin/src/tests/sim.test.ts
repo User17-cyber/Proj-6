@@ -268,7 +268,7 @@ if (!only) {
 }
 // single combat rounds: a countdown at the marks, and the player may change order between rounds
 {
-  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'bodiam', mode: 'duel', rounds: 5, seed: 51 }, buildMap('bodiam'));
+  const m = new Match({ ...DEFAULT_SETTINGS, mapId: 'smithfield', mode: 'duel', rounds: 5, seed: 51 }, buildMap('smithfield'));
   const me = m.addPlayer('Tester', 1, 0, 'manatarms');
   while (m.phase !== 'live') m.step();
   const foe = m.knights.find((k) => k !== me)!;

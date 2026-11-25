@@ -112,7 +112,7 @@ export class MapBuilder {
   readonly lights: LightDef[] = [];
   readonly spawns: [SpawnZone[], SpawnZone[]] = [[], []];
   readonly objectives: ObjectiveDef[] = [];
-  readonly rally: [number, number][] = [];
+  rally: [number, number][] = [];
   readonly cameras: BuiltMap['camera'] = [];
   seaLevel: number | null = null;
   duelSpot: { x: number; z: number } | null = null;
@@ -555,8 +555,89 @@ export class MapBuilder {
   front(...pts: [number, number][]) { this.rally.push(...pts); }
   cinematic(x: number, y: number, z: number, tx: number, ty: number, tz: number) { this.cameras.push({ x, y, z, tx, ty, tz }); }
 
+  /**
+   * Draw the field in close round the castle so the hosts meet sooner: the bounds shrink to the
+   * castle's works and objectives plus a margin, camps left outside are brought in along the road to
+   * the fighting, outlying grounds beyond the new edge drop out of play, and each house gains a
+   * forward muster within a short march of the objectives.
+   */
+  private tighten() {
+    const pts: [number, number][] = this.objectives.map((o) => [o.x, o.z]);
+    for (const st of this.structures) {
+      if (st.type === 'wall') { pts.push([st.ax, st.az], [st.bx, st.bz]); }
+      else if (st.type === 'tower' || st.type === 'gatehouse' || st.type === 'keep') pts.push([st.x, st.z]);
+    }
+    if (!pts.length) return;
+    const ob = this.world.bounds;
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const [x, z] of pts) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); }
+    const box = {
+      minX: Math.max(ob.minX, minX - FIELD_MARGIN), maxX: Math.min(ob.maxX, maxX + FIELD_MARGIN),
+      minZ: Math.max(ob.minZ, minZ - FIELD_MARGIN), maxZ: Math.min(ob.maxZ, maxZ + FIELD_MARGIN),
+    };
+    const W = this.world;
+    const inside = (x: number, z: number, pad: number) => x > box.minX + pad && x < box.maxX - pad && z > box.minZ + pad && z < box.maxZ - pad;
+    // somewhere a host can stand: open, dry, level enough ground with room about it
+    const standable = (x: number, z: number, w: number, d: number) => {
+      for (const [ox, oz] of [[0, 0], [w / 2, d / 2], [-w / 2, d / 2], [w / 2, -d / 2], [-w / 2, -d / 2]]) {
+        const px = x + ox, pz = z + oz, g = W.groundAt(px, pz, 999);
+        if (!inside(px, pz, 2) || !W.walkable(px, pz, g) || !W.dry(px, pz, g, -0.2) || W.pointBlocked(px, g + 1, pz, 1.2)) return false;
+      }
+      return Math.abs(W.groundAt(x + w / 2, z, 999) - W.groundAt(x - w / 2, z, 999)) < w * 0.5;
+    };
+    const nearestObj = (x: number, z: number, team: number) => {
+      let best = this.objectives[0], bd = Infinity;
+      for (const o of this.objectives) { if (o.owner === team) continue; const d = Math.hypot(o.x - x, o.z - z); if (d < bd) { bd = d; best = o; } }
+      return best;
+    };
+    /** Walk from (x, z) toward (tx, tz) and stop at the first good ground inside the field. */
+    const bringIn = (x: number, z: number, tx: number, tz: number, w: number, d: number, keep: number): [number, number] | null => {
+      const len = Math.hypot(tx - x, tz - z);
+      for (let s = 0; s <= len - keep; s += 2) {
+        const px = x + ((tx - x) / len) * s, pz = z + ((tz - z) / len) * s;
+        if (inside(px, pz, Math.max(w, d) / 2 + 4) && standable(px, pz, w, d)) return [px, pz];
+      }
+      return null;
+    };
+    for (const team of [0, 1] as const) {
+      const zones = this.spawns[team];
+      for (let i = zones.length - 1; i >= 0; i--) {
+        const zn = zones[i];
+        if (inside(zn.x, zn.z, Math.max(zn.w, zn.d) / 2 + 2)) continue;
+        if (zn.minor) { zones.splice(i, 1); continue; }
+        // a main camp outside the field is brought in along its road to the fighting
+        const o = this.objectives.length ? nearestObj(zn.x, zn.z, team) : null;
+        const tx = o ? o.x : (box.minX + box.maxX) / 2, tz = o ? o.z : (box.minZ + box.maxZ) / 2;
+        const p = bringIn(zn.x, zn.z, tx, tz, zn.w, zn.d, 22) ?? bringIn(zn.x, zn.z, tx, tz, 8, 6, 14);
+        if (p) { zn.x = p[0]; zn.z = p[1]; zn.yaw = Math.atan2(-(tx - p[0]), -(tz - p[1])); if (!standable(p[0], p[1], zn.w, zn.d)) { zn.w = 8; zn.d = 6; } }
+        else zones.splice(i, 1);
+      }
+      // a forward muster for each house, a short march from the fighting
+      const main = zones.find((z) => !z.minor) ?? zones[0];
+      if (main && this.objectives.length) {
+        const o = nearestObj(main.x, main.z, team);
+        const base = Math.atan2(main.x - o.x, main.z - o.z);
+        place: for (const off of [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.4, -1.4, 1.9, -1.9]) {
+          for (const dist of [30, 36, 26, 42, 22, 48, 55]) {
+            const px = o.x + Math.sin(base + off) * dist, pz = o.z + Math.cos(base + off) * dist;
+            if (zones.some((z) => Math.hypot(px - z.x, pz - z.z) < 16)) continue;
+            if (this.spawns[1 - team].some((z) => Math.hypot(px - z.x, pz - z.z) < 45)) continue;
+            if (standable(px, pz, 10, 6)) { zones.push({ x: px, z: pz, yaw: Math.atan2(-(o.x - px), -(o.z - pz)), w: 10, d: 6, name: 'The forward muster', minor: true }); break place; }
+          }
+        }
+      }
+    }
+    // every house needs somewhere to stand
+    for (const team of [0, 1] as const) if (!this.spawns[team].length) return this.restoreBounds(ob);
+    this.rally = this.rally.filter(([x, z]) => inside(x, z, 6));
+    if (!this.rally.length) this.rally.push(...this.objectives.map((o) => [o.x, o.z] as [number, number]));
+    W.bounds = box;
+  }
+  private restoreBounds(b: StaticWorld['bounds']) { this.world.bounds = b; }
+
   build(def: MapDef): BuiltMap {
     this.world.finalize();
+    if (!def.arena) this.tighten();
     return {
       def,
       world: this.world,
@@ -574,6 +655,11 @@ export class MapBuilder {
     };
   }
 }
+
+/** How far the fighting may range beyond the castle and its objectives (metres). */
+const FIELD_MARGIN = 48;
+
+export interface Tightened { box: { minX: number; maxX: number; minZ: number; maxZ: number } }
 
 function segDist(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
   const dx = bx - ax, dz = bz - az;
