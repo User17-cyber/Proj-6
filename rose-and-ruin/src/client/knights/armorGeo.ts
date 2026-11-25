@@ -629,6 +629,18 @@ export function greatsword(): WeaponGeo {
     grip: xf(new THREE.CylinderGeometry(0.017, 0.019, 0.34, 10), 0, -0.04, 0),
   };
 }
+/** A giant's broadsword: a broad, long blade, a wide cross and a grip long enough for two great hands. */
+export function giantSword(): WeaponGeo {
+  return {
+    steel: merge([
+      bladeGeo(1.96, 0.118, 0.05, 0.024, 0.009, 0.2),
+      xf(new THREE.BoxGeometry(0.03, 0.03, 0.56), 0, 0.17, 0),
+      xf(new THREE.BoxGeometry(0.02, 0.11, 0.08), 0, 0.23, 0),
+      xf(new THREE.SphereGeometry(0.05, 12, 8), 0, -0.33, 0, 0, 0, 0, 1, 1.3, 1),
+    ]),
+    grip: xf(new THREE.CylinderGeometry(0.022, 0.025, 0.46, 10), 0, -0.07, 0),
+  };
+}
 export function falchion(): WeaponGeo {
   return {
     steel: merge([

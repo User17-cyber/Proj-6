@@ -17,6 +17,8 @@ const STONE: Record<StoneStyle, { gen: string; tint: [number, number, number]; r
   banded: { gen: 'ashlar', tint: [0.56, 0.52, 0.48], rows: 6 },
   white: { gen: 'ashlar', tint: [0.7, 0.67, 0.6], rows: 7 },
   red: { gen: 'ashlar', tint: [0.6, 0.45, 0.38], rows: 6 },
+  // pale, freshly dressed limestone, almost white in the sun
+  limestone: { gen: 'ashlar', tint: [0.86, 0.84, 0.79], rows: 8 },
 };
 
 /** World-space weathering for masonry: damp bases, rain streaks, moss on ledges, stains. */
@@ -64,7 +66,7 @@ export function structureMaterials(baker: TextureBaker, quality: number): Struct
         const set = st.gen === 'rubble'
           ? baker.get('rubble', { uTint: new THREE.Color(...st.tint) }, style, sz)
           : baker.get('ashlar', { uTint: new THREE.Color(...st.tint), uRows: st.rows }, style, sz);
-        return pbr(set, { vertexColors: true, color: kind === 'trim' ? 0xc8c2b8 : 0xffffff, normalScale: 1.2, patches: [weatherPatch(style === 'white' ? 0.6 : 1)], keys: ['weather' + style] });
+        return pbr(set, { vertexColors: true, color: kind === 'trim' ? 0xc8c2b8 : 0xffffff, normalScale: 1.2, patches: [weatherPatch(style === 'white' ? 0.6 : style === 'limestone' ? 0.35 : 1)], keys: ['weather' + style] });
       }
       case 'rubbleWall': return pbr(baker.get('rubble', undefined, 'grey', sz), { vertexColors: true, patches: [weatherPatch(1)], keys: ['weatherR'] });
       case 'slate': return pbr(baker.get('slate', undefined, '', sz), { vertexColors: true, envMapIntensity: 0.9 });
@@ -76,6 +78,7 @@ export function structureMaterials(baker: TextureBaker, quality: number): Struct
       case 'daub': return pbr(baker.get('daub', undefined, '', sz * 0.5), { vertexColors: true });
       case 'iron': return prepare(new THREE.MeshStandardMaterial({ color: 0x2a2a2c, metalness: 0.85, roughness: 0.55, vertexColors: true }));
       case 'void': return prepare(new THREE.MeshStandardMaterial({ color: 0x050403, roughness: 1, metalness: 0, envMapIntensity: 0.05 }));
+      case 'brass': return prepare(new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 1, roughness: 0.35, vertexColors: true }));
       case 'glass': return prepare(new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.25, metalness: 0.2 }));
       default: return prepare(new THREE.MeshStandardMaterial({ color: 0xff00ff }));
     }
@@ -195,7 +198,7 @@ function wall(b: Builder, s: Extract<StructureDef, { type: 'wall' }>, rng: Rng) 
   if (s.brokenB) broken(1);
 }
 
-function roundTower(b: Builder, K: string, T: string, x: number, z: number, r: number, base: number, top: number, segs: number, flat: boolean, rng: Rng, roof: 'cone' | 'flat' | 'none', turret?: boolean, rot = 0) {
+function roundTower(b: Builder, K: string, T: string, x: number, z: number, r: number, base: number, top: number, segs: number, flat: boolean, rng: Rng, roof: 'cone' | 'flat' | 'none', turret?: boolean, rot = 0, spire = 1) {
   const h = top - base;
   b.cylinder(K, x, base, z, r * 1.1, r, h, segs, UV, 0, flat, rot);
   b.cylinder(T, x, base, z, r * 1.16, r * 1.12, 3.6, segs, UV, 0, flat, rot);
@@ -225,7 +228,9 @@ function roundTower(b: Builder, K: string, T: string, x: number, z: number, r: n
     }
   }
   if (roof === 'cone') {
-    b.cone('slate', x, top + 0.9, z, r + 0.75, r * 1.5 + 1.5, segs, 3);
+    b.cone('slate', x, top + 0.9, z, r + 0.75, (r * 1.5 + 1.5) * spire, segs, 3);
+    // a tall spire carries a gilt finial
+    if (spire > 1.3) b.cylinder('brass', x, top + 0.9 + (r * 1.5 + 1.5) * spire - 0.2, z, 0.06, 0.04, 1.6, 6, 1, 0b10);
   } else if (roof === 'flat') {
     b.cylinder('lead', x, top - 0.05, z, r - 0.1, r - 0.1, 0.1, segs, 4, 0b10);
   }
@@ -268,12 +273,12 @@ function tower(b: Builder, s: Extract<StructureDef, { type: 'tower' }>, rng: Rng
     }
     if (s.roof === 'cone') {
       // pyramidal spire (church towers)
-      b.cone('slate', s.x, s.top + 1.0, s.z, Math.max(hx, hz) * 1.2, Math.max(hx, hz) * 3.2, 4, 3);
+      b.cone('slate', s.x, s.top + 1.0, s.z, Math.max(hx, hz) * 1.2, Math.max(hx, hz) * 3.2 * (s.spire ?? 1), 4, 3);
     }
     return;
   }
   const segs = s.shape === 'poly' ? s.sides : s.r > 4 ? 30 : 22;
-  roundTower(b, K, T, s.x, s.z, s.r, s.base, s.top, segs, s.shape === 'poly', rng, s.roof, s.turret, s.rot + (s.shape === 'poly' ? Math.PI / segs : 0));
+  roundTower(b, K, T, s.x, s.z, s.r, s.base, s.top, segs, s.shape === 'poly', rng, s.roof, s.turret, s.rot + (s.shape === 'poly' ? Math.PI / segs : 0), s.spire ?? 1);
 }
 
 function arch(b: Builder, key: string, f: Frame, zFace: number, w: number, spring: number, depth: number) {
@@ -465,6 +470,7 @@ function building(b: Builder, s: Extract<StructureDef, { type: 'building' }>, rn
     }
     return;
   }
+  if (s.style === 'palace') return palace(b, s, fr, span, length, gy, eave);
   const rise = s.roof === 'lead' ? span * 0.18 : s.roof === 'thatch' ? span * 0.72 : span * 0.55;
   const roofKey = s.roof === 'none' ? '' : s.roof;
   if (s.style === 'stone') {
@@ -611,6 +617,78 @@ function palisade(b: Builder, s: Extract<StructureDef, { type: 'palisade' }>, rn
       const h = s.h * rng.range(0.9, 1.1);
       b.beam('timber', x, g - 0.5, z, x + rng.range(-0.05, 0.05), g + h, z + rng.range(-0.05, 0.05), 0.3, 0.3, 1, false);
       b.cone('timber', x, g + h, z, 0.16, 0.45, 6, 1);
+    }
+  }
+}
+
+/**
+ * A palace in the romantic manner: a tall block of pale ashlar under a very steep slate roof,
+ * storey on storey of paired round-headed windows between string courses, an arcade of tall
+ * lights under the eaves, gable ends with a pinnacle at the peak, and slender corner turrets
+ * with needle spires.
+ */
+function palace(b: Builder, s: Extract<StructureDef, { type: 'building' }>, fr: Frame, span: number, length: number, gy: number, eave: number) {
+  const K = 'stone:limestone', T = 'trim:limestone';
+  const rise = span * 1.1;
+  const flH = (eave - gy) / s.floors;
+  // plinth, body and the cornice
+  b.box(K, fr, 0, (s.base + gy + 1.2) / 2, 0, span + 0.5, gy + 1.2 - s.base, length + 0.5, UV);
+  b.box(K, fr, 0, (s.base + eave) / 2, 0, span, eave - s.base, length, UV);
+  b.box(T, fr, 0, eave - 0.2, 0, span + 0.5, 0.4, length + 0.5, UV);
+  for (const lz of [length / 2, -length / 2]) b.gableEnd(K, new Frame(fr.ox, 0, fr.oz, fr.rot), span, lz, eave, rise, UV);
+  // windows, storey by storey: pairs of round-headed lights on every face
+  const pairs = (len: number) => Math.max(1, Math.floor(len / 3.4));
+  for (let fl = 0; fl < s.floors; fl++) {
+    const y0 = gy + fl * flH;
+    // a string course at each floor
+    if (fl > 0) b.box(T, fr, 0, y0, 0, span + 0.18, 0.22, length + 0.18, 2);
+    const top = fl === s.floors - 1;
+    const wh = top ? flH * 0.62 : flH * 0.5, wy = y0 + flH * (top ? 0.5 : 0.48);
+    const nL = pairs(length), nS = pairs(span);
+    for (let i = 0; i < nL; i++) {
+      const z = -length / 2 + ((i + 0.5) / nL) * length;
+      for (const side of [-1, 1]) {
+        for (const o of top ? [-0.6, 0, 0.6] : [-0.42, 0.42]) b.box('void', fr, side * (span / 2 + 0.02), wy, z + o, 0.04, wh, top ? 0.42 : 0.6, 1, side > 0 ? 0b000001 : 0b000010);
+        b.box(T, fr, side * (span / 2 + 0.06), wy + wh / 2 + 0.18, z, 0.14, 0.3, top ? 2.2 : 1.9, 2);
+        b.box(T, fr, side * (span / 2 + 0.07), wy - wh / 2 - 0.1, z, 0.16, 0.16, top ? 2.2 : 1.9, 2);
+      }
+    }
+    for (let i = 0; i < nS; i++) {
+      const x = -span / 2 + ((i + 0.5) / nS) * span;
+      for (const side of [-1, 1]) {
+        for (const o of [-0.42, 0.42]) b.box('void', fr, x + o, wy, side * (length / 2 + 0.02), 0.6, wh, 0.04, 1, side > 0 ? 0b010000 : 0b100000);
+        b.box(T, fr, x, wy + wh / 2 + 0.18, side * (length / 2 + 0.06), 1.9, 0.3, 0.14, 2);
+      }
+    }
+  }
+  // windows in the gables too
+  for (const side of [-1, 1]) for (let k = 0; k < 2; k++) {
+    const y = eave + rise * (0.22 + k * 0.32), w = span * (0.5 - k * 0.2);
+    const n = k === 0 ? 3 : 1;
+    for (let i = 0; i < n; i++) b.box('void', fr, n === 1 ? 0 : (i - 1) * w * 0.4, y, side * (length / 2 + 0.02), 0.55, 1.5, 0.04, 1, side > 0 ? 0b010000 : 0b100000);
+  }
+  // the roof, steep and dark
+  b.gable('slate', new Frame(fr.ox, 0, fr.oz, fr.rot), span, length, eave, rise, 0.45, 0.22, 3);
+  // a pinnacle on each gable peak, and slender turrets with needle spires at the corners
+  for (const side of [-1, 1]) {
+    const px = fr.px(0, side * (length / 2 + 0.1)), pz = fr.pz(0, side * (length / 2 + 0.1));
+    b.cylinder(T, px, eave + rise - 0.6, pz, 0.35, 0.3, 1.6, 8, 1, 0b10);
+    b.cone('slate', px, eave + rise + 1.0, pz, 0.45, 3.2, 8, 2);
+    for (const sx of [-1, 1]) {
+      const tx = fr.px(sx * (span / 2 + 0.4), side * (length / 2 + 0.4)), tz = fr.pz(sx * (span / 2 + 0.4), side * (length / 2 + 0.4));
+      const ty0 = eave - flH * 2.2;
+      // corbelled out from the corner, rising past the eaves
+      b.cone(K, tx, ty0 - 1.6, tz, 0.15, -1.6 + 0.01, 10, 1);
+      b.cylinder(K, tx, ty0 - 1.6, tz, 0.4, 1.25, 1.6, 12, UV, 0);
+      b.cylinder(K, tx, ty0, tz, 1.25, 1.25, flH * 2.2 + 2.6, 12, UV, 0);
+      for (let j = 0; j < 3; j++) {
+        const a = Math.atan2(sx, side) + (j - 1) * 0.9;
+        const f2 = new Frame(tx + Math.sin(a) * 1.26, 0, tz + Math.cos(a) * 1.26, a + Math.PI / 2);
+        b.box('void', f2, 0, eave + 0.4, 0, 0.04, 1.6, 0.4, 1, 0b000001);
+      }
+      b.cylinder(T, tx, eave + 2.6, tz, 1.4, 1.4, 0.3, 12, 1, 0b10);
+      b.cone('slate', tx, eave + 2.9, tz, 1.5, 7.5, 12, 3);
+      b.cylinder('brass', tx, eave + 10.2, tz, 0.05, 0.03, 1.2, 6, 1, 0b10);
     }
   }
 }

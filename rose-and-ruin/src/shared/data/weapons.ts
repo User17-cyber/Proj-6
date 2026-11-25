@@ -16,7 +16,7 @@ export const DMG_CUT = 0, DMG_BLUNT = 1, DMG_PIERCE = 2;
 export const DMG_NAMES = ['cut', 'blunt', 'pierce'] as const;
 
 type BaseWeaponId = 'arming_sword' | 'greatsword' | 'halberd' | 'poleaxe' | 'longbow' | 'falchion' | 'spear' | 'mace';
-export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth' | 'standard' | 'maul' | 'javelin' | 'beccorbin' | 'lordaxe' | 'greatspear' | 'rondel';
+export type WeaponId = BaseWeaponId | 'bill' | 'bastard' | 'greataxe' | 'longsword' | 'waraxe' | 'pike' | 'sparth' | 'standard' | 'maul' | 'javelin' | 'beccorbin' | 'lordaxe' | 'greatspear' | 'rondel' | 'giantsword';
 
 export interface AttackDef {
   name: string;
@@ -376,6 +376,12 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     id: 'greatspear', name: 'Great Spear', visual: 'spear', time: 0.95, dmg: 1.5,
     blurb: 'A spear of ash as thick as a man\'s wrist, swung one-handed from behind the tower shield.',
     hitEnd: 2.5,
+  }),
+  // the goliath's broadsword: a giant's blade, ruinous and very slow
+  giantsword: derive(BASE.greatsword, {
+    id: 'giantsword', name: 'Giant\'s Broadsword', visual: 'greatsword', time: 1.9, dmg: 1.6,
+    blurb: 'A broadsword nearly the length of a man, too heavy for any but a giant. Each stroke is slow to come and ends whatever it meets.',
+    hitStart: 0.22, hitEnd: 2.15, blockArc: 130, blockStamina: 0.8, parryWindow: 0.14,
   }),
   // the rondel dagger: a long stiff spike of a blade, made to find the gaps, quicker than anything
   rondel: derive(BASE.arming_sword, {

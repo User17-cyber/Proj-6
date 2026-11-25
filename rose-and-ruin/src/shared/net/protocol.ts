@@ -11,7 +11,7 @@ import type { Match } from '../sim/match';
 import type { Knight } from '../sim/knight';
 import { wrapAngle } from '../math';
 
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 6;
 export const SNAP_EVERY = 3; // ticks between snapshots (60 / 3 = 20 Hz)
 export const MSG_SNAPSHOT = 1;
 export const MSG_INPUT = 2;

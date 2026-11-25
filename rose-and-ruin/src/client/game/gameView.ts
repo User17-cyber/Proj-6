@@ -59,6 +59,12 @@ export class GameView {
   private rain: Rain | null = null;
   private views: KView[] = [];
   private corpses: Corpse[] = [];
+  /** per-frame crowd bookkeeping, by knight id */
+  private order: number[] = [];
+  private kDist = new Float32Array(512);
+  private kSeen = new Uint8Array(512);
+  private kLod = new Uint8Array(512);
+  private kShadow = new Uint8Array(512);
   private time = 0;
   private frame = 0;
   /** Ultimate graphics: knights at full detail and casting shadows much further out */
@@ -563,6 +569,42 @@ export class GameView {
     this.arrows.begin(dt);
     let near = 0;
     const camPos = cam.position;
+    const U = this.ultimate;
+    // What the camera can see this frame, and a budget for the crowd: only the nearest few
+    // knights in view get full or middling detail and only the nearest few cast shadows, however
+    // large the hosts. Knights out of view are drawn into the shadows alone (if near) and
+    // animate at a fraction of the rate.
+    _pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+    _fr.setFromProjectionMatrix(_pm);
+    const order = this.order; order.length = 0;
+    if (this.kDist.length <= K.length) { const n = K.length * 2; this.kDist = new Float32Array(n); this.kSeen = new Uint8Array(n); this.kLod = new Uint8Array(n); this.kShadow = new Uint8Array(n); }
+    let alive = 0;
+    for (const k of K) {
+      if (!k.alive) continue;
+      alive++;
+      const d = Math.hypot(k.x - camPos.x, k.z - camPos.z);
+      const h = CLASSES[k.cls].size.height;
+      this.kDist[k.id] = d;
+      _sph.center.set(k.x, k.y + 1.0 * h, k.z); _sph.radius = 2.8 * h;
+      this.kSeen[k.id] = _fr.intersectsSphere(_sph) ? 1 : 0;
+      order.push(k.id);
+    }
+    const dist = this.kDist;
+    order.sort((a, b) => dist[a] - dist[b]);
+    const crowd = alive > 70;
+    const cap0 = U ? 24 : crowd ? 8 : 12, cap1 = U ? 90 : crowd ? 30 : 48, capS = U ? 80 : crowd ? 28 : 44;
+    const d0 = U ? 30 : 12, d1 = U ? 90 : 40, dS = U ? 140 : 70;
+    let n0 = 0, n1 = 0, nS = 0;
+    for (const id of order) {
+      const d = dist[id], seen = this.kSeen[id] === 1;
+      let lod = 2;
+      if (seen && d < d0 && n0 < cap0) { lod = 0; n0++; } else if (seen && d < d1 && n1 < cap1) { lod = 1; n1++; }
+      this.kLod[id] = lod;
+      let sh = 0;
+      if (d < dS && nS < capS) { sh = 1; nS++; }
+      this.kShadow[id] = sh;
+    }
+    const farA = crowd ? 50 : 80, farB = crowd ? 100 : 160;
     for (const k of K) {
       const v = this.view(k.id);
       if (!k.alive) {
@@ -572,18 +614,18 @@ export class GameView {
         continue;
       }
       v.wasAlive = true;
-      const d = Math.hypot(k.x - camPos.x, k.z - camPos.z);
-      // far knights animate at a lower rate
-      const skip = d > 160 ? 3 : d > 80 ? 2 : 1;
+      const d = dist[k.id], seen = this.kSeen[k.id] === 1 || k.id === localId;
+      // far knights, and those out of view, animate at a lower rate
+      let skip = d > farB ? 3 : d > farA ? 2 : 1;
+      if (!seen && d > 10) skip = 4;
       if (skip === 1 || (this.frame + k.id) % skip === 0 || !v.anim.hasFirstFrame) v.anim.update(k as unknown as Parameters<KnightAnimator['update']>[0], dt * skip, this.ground, this.time);
-      // Ultimate keeps every knight at full detail far further out
-      const U = this.ultimate;
-      const lod = d < (U ? 30 : 12) ? 0 : d < (U ? 90 : 40) ? 1 : 2;
-      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId ? 2 : false, k.id * 7 + k.team, d < (U ? 140 : 70));
-      for (const a of v.arrows) this.arrows.body(v.anim.bones[a.bone], a);
+      const lod = k.id === localId ? (d < d0 ? 0 : this.kLod[k.id]) : this.kLod[k.id];
+      const shadow = this.kShadow[k.id] === 1 || k.id === localId;
+      this.kr.draw(k.cls, k.team, this.drawable(k, v.anim), this.showBlood ? v.blood : 0, v.mud, lod, this.firstPerson && k.id === localId ? 2 : false, k.id * 7 + k.team, shadow, seen);
+      if (seen) for (const a of v.arrows) this.arrows.body(v.anim.bones[a.bone], a);
       if (d < 12 && (k.act === Act.Release || k.act === Act.Block)) near++;
       // a comrade's blessing hangs about him in the air: motes circling up around his body
-      if (k.aura > 0 && d < 70 && !(this.firstPerson && k.id === localId && Math.random() < 0.6)) {
+      if (seen && k.aura > 0 && d < 70 && !(this.firstPerson && k.id === localId && Math.random() < 0.6)) {
         const col = AURA_COL[k.aura - 1];
         const size = CLASSES[k.cls].size, rate = d < 25 ? 22 : 10;
         let n = rate * dt + Math.random();
@@ -605,6 +647,7 @@ export class GameView {
       }
     }
     this.combatNear = this.combatNear * 0.97 + near * 0.03;
+    const corpseVis = U ? 400 : crowd ? 140 : 220;
     for (let i = this.corpses.length - 1; i >= 0; i--) {
       const c = this.corpses[i];
       c.age += dt;
@@ -622,14 +665,20 @@ export class GameView {
         const gy = this.ground2(j.x, j.z);
         this.decals.add(j.x, gy, j.z, this.world.map.world.terrain.normal(j.x, j.z, _n), 1.6 + Math.random() * 1.1, true);
       }
-      const d = Math.hypot(c.rag.joints.chest.x - camPos.x, c.rag.joints.chest.z - camPos.z);
+      const ch = c.rag.joints.chest;
+      const d = Math.hypot(ch.x - camPos.x, ch.z - camPos.z);
+      // the oldest of a great many fallen are left undrawn unless close by
+      if (i < this.corpses.length - corpseVis && d > 20 && c.stat >= 0) continue;
+      _sph.center.set(ch.x, ch.y, ch.z); _sph.radius = 2.2;
+      const seen = _fr.intersectsSphere(_sph);
       const lod = d < (this.ultimate ? 22 : 10) ? 0 : d < (this.ultimate ? 70 : 30) ? 1 : 2;
       const pose = { bones: c.rag.bones, weapon: c.rag.hasWeapon ? c.rag.weapon : null, offhand: c.rag.offhand, daggerOut: false, bowBend: 0, nock: _p, arrowNocked: false, aimYaw: 0, aimPitch: 0 };
       // once a body has settled it is posed into the static pool and costs almost nothing
       if (c.stat < 0 && c.rag.frozen) c.stat = this.kr.addStatic(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, c.id * 7 + c.team, c.decap);
-      const shadow = d < (this.ultimate ? 90 : 45);
-      if (c.stat >= 0) this.kr.drawStatic(c.stat, lod, shadow);
-      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, c.decap, c.id * 7 + c.team, shadow);
+      const shadow = d < (this.ultimate ? 90 : crowd ? 25 : 45);
+      if (c.stat >= 0) this.kr.drawStatic(c.stat, lod, shadow, seen);
+      else this.kr.draw(c.cls, c.team, pose, this.showBlood ? c.blood : 0, c.mud, lod, c.decap, c.id * 7 + c.team, shadow, seen);
+      if (!seen) continue;
       for (const a of c.arrows) this.arrows.body(c.rag.bones[a.bone], a);
     }
     this.stepHeads(dt, cam);
@@ -656,5 +705,6 @@ export class GameView {
 /** aura motes: strength (gold), shelter (silver-blue), swiftness (pale green) */
 const AURA_COL: [number, number, number, number][] = [[2.6, 1.9, 0.55, 0.75], [1.3, 1.75, 2.7, 0.7], [1.5, 2.6, 1.3, 0.65]];
 const _n = { x: 0, y: 1, z: 0 };
+const _pm = new THREE.Matrix4(), _fr = new THREE.Frustum(), _sph = new THREE.Sphere();
 const _one = new THREE.Vector3(1, 1, 1), _hm = new THREE.Matrix4(), _hq = new THREE.Quaternion(), _hv = new THREE.Vector3();
 const _p = new THREE.Vector3(), _q = new THREE.Vector3(), _d = new THREE.Vector3(), _tmp = new THREE.Vector3();

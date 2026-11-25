@@ -59,6 +59,7 @@ export const ICONS: Record<string, string> = {
   warlord: poleaxe('rotate(28 32 32)') + `<path ${D} d="M6 6 l4 8 l4 -6 l4 6 l4 -8 v10 h-16 z"/>`,
   colossus: spear('rotate(28 32 32) translate(10 -2)') + `<path ${O} d="M6 8 H34 V50 C34 56 26 60 20 62 C14 60 6 56 6 50 Z"/>`,
   marshal: longSword('rotate(38 32 32)'),
+  goliath: `<g transform="rotate(38 32 32)"><path d="M32 1 L39 9 V44 H25 V9 Z"/><path d="M16 44 H48 V49 H16 Z"/><rect x="29" y="49" width="6" height="10" rx="1"/><circle cx="32" cy="61" r="3"/></g>`,
   champion: greatAxeIcon('rotate(28 32 32)') + `<path ${D} d="M8 54 l4 -8 l4 6 l4 -9 l4 9 l4 -6 l4 8 z"/>`,
   errant: falchion('rotate(34 32 32) translate(5 -3)') + `<g ${O}><circle cx="20" cy="44" r="13"/></g><circle ${D} cx="20" cy="44" r="4.6"/><circle fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1.6" cx="20" cy="44" r="10"/>`,
 

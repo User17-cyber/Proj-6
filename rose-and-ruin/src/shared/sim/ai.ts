@@ -300,13 +300,19 @@ export function updateBot(m: Match, k: Knight, b: BotBrain) {
   inp.buttons = buttons;
 }
 
+const _cand: { e: Knight; d: number; score: number }[] = [];
 function pickTarget(m: Match, k: Knight, b: BotBrain) {
   // a band marching to a distant fighting ground keeps its order and only turns on foes that
   // come close (or the one it is already fighting), so the battle spreads over the field
   const cur = b.target;
   const marching = b.goalDist > 35 && m.phaseT < 1e9;
   const range = k.def.ranged ? (marching ? 36 : 80) : (marching ? (cur >= 0 ? 22 : 13) : 42);
-  let best = -1, bestScore = Infinity;
+  // First a cheap score for every foe in range; the costly checks (crowding, lines of sight,
+  // comrades in danger) are only run on those that could still beat the best found, nearest
+  // first. The checks can lower a score by at most BONUS, so the choice is the same as
+  // scoring them all in full.
+  const T = b.skill.tactics;
+  const cand = _cand; cand.length = 0;
   m.hash.query(k.x, k.z, range, (e) => {
     if (!e.alive || e.team === k.team) return;
     const d = Math.hypot(e.x - k.x, e.z - k.z);
@@ -317,23 +323,32 @@ function pickTarget(m: Match, k: Knight, b: BotBrain) {
     score -= (1 - e.hp / e.def.hp) * 4;
     // run down archers loosing nearby
     if (e.def.ranged && !k.def.ranged && d < 26 && (e.act === Act.Draw || e.act === Act.Loose)) score -= 7;
-    // crowding: how many allies already fight this foe
-    let crowd = 0;
-    m.hash.query(e.x, e.z, 2.6, (o) => { if (o.alive && o.team === k.team && o !== k) crowd++; });
-    score += Math.max(0, crowd - 1) * 5;
     if (e.id === cur) score -= 5;
-    const T = b.skill.tactics;
     if (T >= 1) {
       // finish the wounded and the reeling
       score -= (1 - e.hp / e.def.hp) * 4;
       if (d < 7 && (e.stunT > 0 || e.knockT > 0 || e.act === Act.Stagger)) score -= 4;
     }
-    if (T >= 2 && !k.def.ranged && d < 10 && engagedElsewhere(m, k, e)) score -= 4; // his back is to me
     if (T >= 2 && k.def.ranged) {
       if (e.def.ranged) score -= 6; // silence their bows first
       if (e.shield && Math.abs(angleDiff(e.yaw, yawTo(e.x, e.z, k.x, k.z))) < 1.1) score += 6; // a raised shield takes the arrow
-      if (m.settings.friendlyFire && crowd > 0) score += 15;
     }
+    cand.push({ e, d, score });
+  });
+  cand.sort((a, b2) => a.score - b2.score || a.e.id - b2.e.id);
+  const BONUS = 14;
+  let best = -1, bestScore = Infinity;
+  const kComp = m.nav.component(k.x, k.z);
+  for (const c of cand) {
+    if (c.score - BONUS >= bestScore) break;
+    const e = c.e, d = c.d;
+    let score = c.score;
+    // crowding: how many allies already fight this foe
+    let crowd = 0;
+    m.hash.query(e.x, e.z, 2.6, (o) => { if (o.alive && o.team === k.team && o !== k) crowd++; });
+    score += Math.max(0, crowd - 1) * 5;
+    if (T >= 2 && !k.def.ranged && d < 10 && engagedElsewhere(m, k, e)) score -= 4; // his back is to me
+    if (T >= 2 && k.def.ranged && m.settings.friendlyFire && crowd > 0) score += 15;
     if (T >= 3) {
       // the host shares its targets: join one or two comrades, never a mob
       const f = focusOn(m, e.id) - (e.id === cur ? 1 : 0);
@@ -345,11 +360,14 @@ function pickTarget(m: Match, k: Knight, b: BotBrain) {
         if (ward) score -= 6;
       }
     }
+    if (score >= bestScore) continue;
+    if (m.nav.component(e.x, e.z) !== kComp && !k.def.ranged) score += 80;
+    if (score >= bestScore) continue;
     if (d > 12 && !m.nav.los(k.x, k.z, e.x, e.z)) score += 14;
+    if (score >= bestScore) continue;
     if (k.def.ranged && !m.world.los(k.x, k.y + 1.5, k.z, e.x, e.y + 1.3, e.z)) score += 60;
-    if (m.nav.component(e.x, e.z) !== m.nav.component(k.x, k.z) && !k.def.ranged) score += 80;
     if (score < bestScore) { bestScore = score; best = e.id; }
-  });
+  }
   b.target = best;
 }
 

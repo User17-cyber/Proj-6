@@ -16,14 +16,14 @@ export type Shape =
   | { kind: 'poly'; pts: [number, number][] }
   | { kind: 'line'; pts: [number, number][]; w: number };
 
-export type StoneStyle = 'ashlar' | 'rubble' | 'banded' | 'white' | 'red';
+export type StoneStyle = 'ashlar' | 'rubble' | 'banded' | 'white' | 'red' | 'limestone';
 
 export type StructureDef =
   | { type: 'wall'; ax: number; az: number; bx: number; bz: number; thick: number; top: number; base: number; crenel: boolean; style: StoneStyle; brokenA?: boolean; brokenB?: boolean; slits: boolean }
-  | { type: 'tower'; x: number; z: number; r: number; top: number; base: number; shape: 'round' | 'square' | 'poly'; sides: number; rot: number; roof: 'cone' | 'flat' | 'none'; style: StoneStyle; turret?: boolean; hx?: number; hz?: number }
+  | { type: 'tower'; x: number; z: number; r: number; top: number; base: number; shape: 'round' | 'square' | 'poly'; sides: number; rot: number; roof: 'cone' | 'flat' | 'none'; style: StoneStyle; turret?: boolean; hx?: number; hz?: number; spire?: number }
   | { type: 'gatehouse'; x: number; z: number; rot: number; w: number; d: number; top: number; base: number; passW: number; passH: number; towers: 'round' | 'square' | 'none'; towerR: number; towerOff: number; style: StoneStyle; floor: number }
   | { type: 'keep'; x: number; z: number; rot: number; w: number; d: number; top: number; base: number; turrets: 'square' | 'round' | 'mixed' | 'none'; style: StoneStyle }
-  | { type: 'building'; x: number; z: number; rot: number; w: number; d: number; wallH: number; base: number; roof: 'thatch' | 'slate' | 'tile' | 'lead' | 'none'; style: 'stone' | 'timber' | 'ruin'; floors: number }
+  | { type: 'building'; x: number; z: number; rot: number; w: number; d: number; wallH: number; base: number; roof: 'thatch' | 'slate' | 'tile' | 'lead' | 'none'; style: 'stone' | 'timber' | 'ruin' | 'palace'; floors: number }
   | { type: 'bridge'; ax: number; az: number; bx: number; bz: number; w: number; y: number; rails: boolean; style: 'wood' | 'stone' }
   | { type: 'ramp'; ax: number; az: number; bx: number; bz: number; w: number; y0: number; y1: number; style: 'stone' | 'wood' | 'earth' }
   | { type: 'palisade'; pts: [number, number][]; h: number }
@@ -62,6 +62,10 @@ export interface Atmosphere {
   ambientSound: 'meadow' | 'coast' | 'wind' | 'city';
   /** rain, 0 (none) to 1 (a downpour) */
   rain?: number;
+  /** snow-capped mountains on the horizon: their height in metres */
+  alps?: number;
+  /** a sea of cloud filling the valleys below: the height of its top */
+  cloudSea?: number;
   dust: number;
 }
 
@@ -316,12 +320,12 @@ export class MapBuilder {
     }
     if (o.towers !== false) for (const p of pts) this.tower(p[0], p[1], { r: o.towerR ?? 5, top: towerTop, shape: o.shape ?? 'round', style: o.style, roof: o.roof });
   }
-  tower(x: number, z: number, o: { r?: number; top: number; shape?: 'round' | 'square' | 'poly'; sides?: number; rot?: number; roof?: 'cone' | 'flat' | 'none'; style?: StoneStyle; turret?: boolean; hx?: number; hz?: number }) {
+  tower(x: number, z: number, o: { r?: number; top: number; shape?: 'round' | 'square' | 'poly'; sides?: number; rot?: number; roof?: 'cone' | 'flat' | 'none'; style?: StoneStyle; turret?: boolean; hx?: number; hz?: number; spire?: number }) {
     const r = o.r ?? 5;
     const shape = o.shape ?? 'round';
     const base = Math.min(this.h(x, z), this.h(x + r, z), this.h(x - r, z), this.h(x, z + r), this.h(x, z - r)) - 2.5;
     const rot = o.rot ?? 0;
-    this.structures.push({ type: 'tower', x, z, r, top: o.top, base, shape, sides: o.sides ?? (shape === 'poly' ? 8 : 4), rot, roof: o.roof ?? 'flat', style: o.style ?? 'ashlar', turret: o.turret, hx: o.hx, hz: o.hz });
+    this.structures.push({ type: 'tower', x, z, r, top: o.top, base, shape, sides: o.sides ?? (shape === 'poly' ? 8 : 4), rot, roof: o.roof ?? 'flat', style: o.style ?? 'ashlar', turret: o.turret, hx: o.hx, hz: o.hz, spire: o.spire });
     if (shape === 'square') this.world.colliders.push(makeBox(x, z, o.hx ?? r, o.hz ?? r, rot, base, o.top + 1.5));
     else this.world.colliders.push(makeCyl(x, z, r, base, o.top + 1.5));
     this.avoid({ kind: 'circle', x, z, r: r + 2 });
@@ -368,7 +372,7 @@ export class MapBuilder {
     this.world.colliders.push(makeBox(x, z, w / 2 + 0.6, d / 2 + 0.6, rot, base, top + 4));
     this.avoid({ kind: 'rect', x, z, hx: w / 2 + 4, hz: d / 2 + 4, rot });
   }
-  building(x: number, z: number, rot: number, w: number, d: number, o: { wallH?: number; roof?: 'thatch' | 'slate' | 'tile' | 'lead' | 'none'; style?: 'stone' | 'timber' | 'ruin'; floors?: number; flatten?: boolean } = {}) {
+  building(x: number, z: number, rot: number, w: number, d: number, o: { wallH?: number; roof?: 'thatch' | 'slate' | 'tile' | 'lead' | 'none'; style?: 'stone' | 'timber' | 'ruin' | 'palace'; floors?: number; flatten?: boolean } = {}) {
     const floors = o.floors ?? 1;
     const wallH = o.wallH ?? (floors === 1 ? 3.6 : 3.2 * floors);
     const ground = this.h(x, z);
@@ -376,7 +380,7 @@ export class MapBuilder {
     const base = Math.min(this.h(x - w / 2, z), this.h(x + w / 2, z), this.h(x, z - d / 2), this.h(x, z + d / 2)) - 1.2;
     const style = o.style ?? 'timber';
     this.structures.push({ type: 'building', x, z, rot, w, d, wallH, base, roof: o.roof ?? (style === 'timber' ? 'thatch' : 'slate'), style, floors });
-    const roofH = style === 'ruin' ? 0 : Math.min(w, d) * 0.6;
+    const roofH = style === 'ruin' ? 0 : Math.min(w, d) * (style === 'palace' ? 1.1 : 0.6);
     this.world.colliders.push(makeBox(x, z, w / 2, d / 2, rot, base, ground + wallH + roofH, style === 'timber' ? MAT_WOOD : MAT_STONE));
     this.avoid({ kind: 'rect', x, z, hx: w / 2 + 2.5, hz: d / 2 + 2.5, rot });
   }

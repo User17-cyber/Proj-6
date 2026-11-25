@@ -1,10 +1,10 @@
 import type { WeaponId } from './weapons';
 
-export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer' | 'garter' | 'warlord' | 'colossus' | 'cutthroat';
+export type ClassId = 'manatarms' | 'vanguard' | 'halberdier' | 'banneret' | 'longbowman' | 'errant' | 'pavisier' | 'bachelor' | 'master' | 'brigand' | 'chaplain' | 'pikeman' | 'gallowglass' | 'yeoman' | 'marshal' | 'champion' | 'bearer' | 'sapper' | 'kern' | 'hammerer' | 'garter' | 'warlord' | 'colossus' | 'cutthroat' | 'goliath';
 /** at most 128: snapshots pack the class index into 7 bits. Listed from least to most renown. */
-export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'bearer', 'sapper', 'kern', 'hammerer', 'cutthroat', 'yeoman', 'marshal', 'garter', 'champion', 'warlord', 'colossus'];
+export const CLASS_IDS: readonly ClassId[] = ['manatarms', 'vanguard', 'halberdier', 'banneret', 'longbowman', 'errant', 'pavisier', 'bachelor', 'master', 'brigand', 'chaplain', 'pikeman', 'gallowglass', 'bearer', 'sapper', 'kern', 'hammerer', 'cutthroat', 'yeoman', 'marshal', 'garter', 'goliath', 'champion', 'warlord', 'colossus'];
 /** the orders won by renown, in the order they are unlocked */
-export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'garter', 'champion', 'warlord', 'colossus'];
+export const UNLOCK_ORDER: readonly ClassId[] = ['yeoman', 'marshal', 'garter', 'goliath', 'champion', 'warlord', 'colossus'];
 
 export type ShieldId = 'heater' | 'buckler' | 'pavise' | 'tower';
 
@@ -425,6 +425,16 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     ratings: { attack: 5, defence: 5, speed: 1, reach: 5, difficulty: 5 },
     armourDesc: 'A great helm, a giant\'s full harness, and a tower shield of oak and iron',
     botWeight: 3, unlock: 12000,
+  },
+  goliath: {
+    id: 'goliath', name: 'Goliath', title: 'Giant\'s Broadsword',
+    description: 'A lesser giant, a head shorter than the Colossus and nothing like so hard to fell, who carries a broadsword fit for a giant. Every blow is slow to come and ruinous when it lands; Earthshaker throws the ranks off their feet and Whirlwind turns the great blade in a full circle.',
+    hp: 175, stamina: 200, speed: 3.1, sprint: 3.9, mass: 2.0, size: { height: 1.28, girth: 1.3 },
+    armor: [0.38, 0.16, 0.38], weapon: 'giantsword', shield: null, ranged: false,
+    abilities: ['earthshaker', 'whirlwind'], hyperArmor: false, staminaDrain: 1.8, attackSpeed: 0.85,
+    ratings: { attack: 5, defence: 3, speed: 1, reach: 4, difficulty: 4 },
+    armourDesc: 'A great bascinet, a giant\'s harness of blackened plate and mail',
+    botWeight: 3, unlock: 7000,
   },
   cutthroat: {
     id: 'cutthroat', name: 'Cutthroat', title: 'Long Rondel Dagger',

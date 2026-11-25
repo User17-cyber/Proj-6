@@ -92,6 +92,7 @@ const BODY_SURF: Record<ClassId, [string, string, string, string, string]> = {
   garter: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
   warlord: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
   colossus: ['doublet', 'doublet', 'hose', 'skin', 'skin'],
+  goliath: ['mail', 'mail', 'hose', 'skin', 'skin'],
   cutthroat: ['doublet', 'skin', 'hose', 'skin', 'skin'],
 };
 
@@ -579,10 +580,10 @@ export class KnightRenderer {
     this.staticTex.needsUpdate = true;
     return i;
   }
-  drawStatic(i: number, lod: number, shadow: boolean) {
+  drawStatic(i: number, lod: number, shadow: boolean, seen = true) {
     const st = this.statics[i];
-    if (!st) return;
-    this.enqueue(st.cls, st.team, this.capacity + i, st.blood, st.mud, lod, st.headless, st.seed, shadow);
+    if (!st || (!seen && !shadow)) return;
+    this.enqueue(st.cls, st.team, this.capacity + i, st.blood, st.mud, lod, st.headless, st.seed, shadow, seen);
   }
   clearStatic() { this.statics.length = 0; }
 
@@ -597,15 +598,16 @@ export class KnightRenderer {
    * reflection set. `seed` picks his face, skin and hair.
    */
   /** hideHead: true hides the head (first-person helm), 2 hides all but forearms, hands and held arms */
-  draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean | 2 | 3, seed = 0, shadow = true) {
-    if (this.rows >= this.capacity) return;
+  /** `seen`: false for a knight outside the camera's view, who is drawn only into the shadows */
+  draw(cls: ClassId, team: number, d: KnightDrawable, blood: number, mud: number, lod: number, hideHead: boolean | 2 | 3, seed = 0, shadow = true, seen = true) {
+    if (this.rows >= this.capacity || (!seen && !shadow)) return;
     const row = this.rows++;
     writePose(this.boneData, row * SLOTS * 12, d);
-    this.enqueue(cls, team, row, blood, mud, lod, hideHead, seed, shadow);
-    if (cls === 'longbowman') this.bowString(d);
+    this.enqueue(cls, team, row, blood, mud, lod, hideHead, seed, shadow, seen);
+    if (seen && cls === 'longbowman') this.bowString(d);
   }
 
-  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean | 2 | 3, seed: number, shadow: boolean) {
+  private enqueue(cls: ClassId, team: number, row: number, blood: number, mud: number, lod: number, hideHead: boolean | 2 | 3, seed: number, shadow: boolean, seen = true) {
     const h = hash(seed);
     const beard = (h & 255) / 255, skin = ((h >>> 8) & 255) / 255, hair = ((h >>> 16) & 255) / 255;
     const bks = this.buckets.get(cls)!;
@@ -614,7 +616,7 @@ export class KnightRenderer {
       b.i0.setXYZW(k, row, team, hideHead === 3 ? 3 : hideHead === 2 ? 2 : hideHead ? 1 : 0, beard < 0.25 ? 0 : beard);
       b.i1.setXYZW(k, blood, mud, skin, hair);
     };
-    put(bks[Math.max(0, Math.min(2, lod))]);
+    if (seen) put(bks[Math.max(0, Math.min(2, lod))]);
     if (shadow) put(bks[3]);
   }
 

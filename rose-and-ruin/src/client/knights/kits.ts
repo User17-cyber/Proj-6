@@ -112,6 +112,10 @@ const W: Record<string, PieceDef[]> = {
     { key: 'gsSteel', geo: () => A.greatsword().steel!, mat: 'steelBright', mount: 'weapon' },
     { key: 'gsGrip', geo: () => A.greatsword().grip!, mat: 'grip', mount: 'weapon' },
   ],
+  giantsword: [
+    { key: 'gianSteel', geo: () => A.giantSword().steel!, mat: 'steelBright', mount: 'weapon' },
+    { key: 'gianGrip', geo: () => A.giantSword().grip!, mat: 'grip', mount: 'weapon' },
+  ],
   halberd: [
     { key: 'halSteel', geo: () => A.halberd().steel!, mat: 'steel', mount: 'weapon' },
     { key: 'halWood', geo: () => A.halberd().wood!, mat: 'wood', mount: 'weapon' },
@@ -589,6 +593,21 @@ export const KITS: Record<ClassId, PieceDef[]> = {
     ...fullLegs('steelDark', 0.07),
     ...W.spear,
     ...towerShield(),
+  ],
+  goliath: [
+    ...base(),
+    mailNeck(),
+    { key: 'bascinetG', geo: () => A.bascinet().steel, mat: 'steelDark', mount: B.head, head: true },
+    { key: 'bascinetGDetail', geo: () => A.bascinetDetail(), mat: 'void', mount: B.head, head: true, detail: true },
+    { key: 'aventailG', geo: () => A.aventail(0.16), mat: 'mail', mount: B.head, head: true },
+    { key: 'cuirassG', geo: () => A.cuirass({ bulge: 1.12, ridge: 1.4 }), mat: 'steelDark', mount: B.chest },
+    { key: 'surcoatG', geo: () => cylUV(A.tabardTop(0.3), -0.3, 0.215), mat: 'tabard', mount: B.chest, team: true },
+    { key: 'surcoatGSkirt', geo: () => cylUV(A.skirtPanels(0.5, 1.25, 1.05), -0.5, 0.08), mat: 'tabard', mount: B.pelvis, team: true },
+    { key: 'mailSkirt', geo: () => A.skirtRound(0.3), mat: 'mail', mount: B.pelvis },
+    { key: 'belt', geo: () => A.belt(), mat: 'leather', mount: B.pelvis, detail: true },
+    ...fullArms('steelDark', 1.2),
+    ...fullLegs('steelDark', 0.06),
+    ...W.giantsword,
   ],
   cutthroat: [
     ...base(),

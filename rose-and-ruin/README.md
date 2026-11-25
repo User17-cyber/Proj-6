@@ -126,20 +126,23 @@ Keys can be rebound in Settings, where you can also hide the crosshair (hit mark
 
 The last ten are free from the start. Their abilities are things a fifteenth-century fighter could really do, drawn from the fight-books (the murder stroke, disarms, wrestling throws, the misericorde) and from the field (pike drill, the gallowglass's long axe, the chaplain's care for the wounded). In bot duels they win about 53–61% of rounds against the other base orders. Of the newest four, the Sapper and the Hammerer win 56–57% of bot duels. The Standard-Bearer (47%) and the Kern (43%) are made for the wider battle, where the planted standard, the call to arms and the javelins count for most.
 
-**Renowned orders.** Six more orders are won with renown, one after another:
+**Renowned orders.** Seven more orders are won with renown, one after another:
 
 | Class | Arms | Abilities | Renown |
 | --- | --- | --- | --- |
 | Yeoman of the Guard | English bill | Bill Hook (drag a foe in and stun him), Hold the Line (30% less damage for the line) | 1,500 |
 | Knight Marshal | Hand-and-a-half sword | Half-Sword (thrusts pierce plate, harder and faster), War Cry (foes reel, allies hasten) | 4,000 |
 | Knight of the Garter | Arming sword and heater shield | Counterstroke (for 4 seconds the next blow turned on your shield stuns its striker), For Saint George! (you and comrades within 12 metres strike 15% harder for 8 seconds) | 6,000 |
+| Goliath | Giant's broadsword | Earthshaker (the ground is struck and the ranks about him thrown off their feet), Whirlwind (the great blade turned in a full circle) | 7,000 |
 | Champion | Great axe and gilded plate | Executioner (a blow that leaves a foe below a third slays him), Juggernaut (unstoppable, bowls men over) | 8,000 |
 | Warlord | War poleaxe | Lord's Command (you and comrades within 15 metres recover 25 vigour, move faster and strike harder for 6 seconds), Cleave (a sweeping blow that harms and staggers every foe within 3 metres before you) | 10,000 |
 | Colossus | Great spear and tower shield | Bulwark of the Realm (you and comrades within 7 metres take 30% less harm for 6 seconds), Shield Slam (every foe within 3.5 metres before you is battered back and stunned) | 12,000 |
 
-In bot duels at equal skill against the base orders (which win about 60% at best), the Yeoman wins about 68%, the Marshal 78%, the Knight of the Garter 74%, the Champion 77%, the Warlord 77% and the Colossus 73%.
+In bot duels at equal skill against the base orders (which win about 60% at best), the Yeoman wins about 68%, the Marshal 78%, the Knight of the Garter 74%, the Goliath 65%, the Champion 77%, the Warlord 77% and the Colossus 73%.
 
-The **Colossus** is the last and greatest of them. He stands nearly a third taller than other men and is broad to match. Every rating is at its highest except footspeed, which is the lowest in the game, and he tires quickly: every blow, guard, ability and sprint costs him 1.8 times the stamina. He carries a tower shield like a castle door (950 durability) and cannot be knocked off his feet by any blow, throw or charge. A good archer in open ground is still the bane of the slow.
+The **Colossus** is the last and greatest of them. He stands nearly a third taller than other men and is broad to match. Every rating is at its highest except footspeed, which is the lowest in the game, and he tires quickly: every blow, guard, ability and sprint costs him 1.8 times the stamina. He carries a tower shield like a castle door (950 durability) and cannot be knocked off his feet by any blow, throw or charge. A good archer in open ground is still the bane of the slow. He walks like the giant he is: long, slow strides, rolling over each planted foot.
+
+The **Goliath** is a lesser giant, a head shorter than the Colossus and far easier to fell: no tower shield, lighter armour, no immunity to being knocked down, and his slow blows can be interrupted. He carries a broadsword fit for a giant: each stroke is very slow to come and deals tremendous harm (a full overhead cut does about 140 before armour), with a little less reach than the Colossus's spear. He is a touch quicker on his feet than the Colossus and tires just as fast.
 
 **Renown** is earned in battle: every point of your score (slaying, a share in a kill (an assist, worth 50 and announced as it happens), aiding comrades with your abilities, taking banners), plus 150 for seeing a battle through and 500 more for winning it. Renown is banked as you earn it, so if you leave a battle early (or close the page) you keep everything you won in it; only the bounty for seeing it through is forfeit. It is kept in your browser, for that copy of the game: a new download, another folder or browser, or the online page each start afresh. To carry it across, use Settings › Your progress: save it to a file (a `.rrsave` file, which no other program will try to open; older `.json` saves still load) or copy the save code, and load that into the other copy. Loading never lowers your renown; it brings your orders, keys and settings with it. The armoury shows how far you are from the next order, and a herald announces each one you win, which you may take to the field at once.
 

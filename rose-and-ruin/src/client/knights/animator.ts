@@ -102,7 +102,14 @@ export class KnightAnimator {
     this.cueT = Math.max(0, this.cueT - dt);
 
     // ---------------- locomotion parameters
-    const sp = Math.hypot(k.vx, k.vz);
+    // The gait is worked out for a man of ordinary size and the figure scaled up afterwards, so
+    // a giant's speed is taken in his own leg lengths: he takes longer, slower strides rather than
+    // a common man's steps stretched out. `heft` is how much of a giant he is: the biggest walk
+    // heavily, rolling over each planted foot, sinking at every footfall and stooping a little
+    // under the weight of their harness.
+    const S = def.size.height;
+    const heft = clamp((S - 1.1) / 0.28, 0, 1);
+    const sp = Math.hypot(k.vx, k.vz) / S;
     this.speed = lerp(this.speed, sp, 1 - Math.exp(-dt * 10));
     if (sp > 0.25) {
       _a.set(k.vx, 0, k.vz).normalize();
@@ -112,7 +119,7 @@ export class KnightAnimator {
     this.lastYaw = k.yaw;
     this.turnRate = lerp(this.turnRate, yawDelta / Math.max(dt, 1e-3), 1 - Math.exp(-dt * 8));
     const speedEff = Math.max(this.speed, Math.min(Math.abs(this.turnRate) * 0.25, 1.2) * (k.act === Act.Idle || k.act === Act.Block ? 1 : 0.4));
-    const stride = 1.1 + this.speed * 0.36;
+    const stride = (1.1 + this.speed * 0.36) * (1 + 0.14 * heft);
     this.phase += (2 * Math.PI * speedEff / stride) * dt;
     const gait = smoothstep(0.05, 0.9, speedEff);
     const run = smoothstep(2.5, 5.5, this.speed);
@@ -120,7 +127,7 @@ export class KnightAnimator {
     this.accelS = lerp(this.accelS, clamp((this.speed - this.lastSpeed) / Math.max(dt, 1e-3), -12, 12), 1 - Math.exp(-dt * 6));
     this.lastSpeed = this.speed;
     // the share of his motion that is backwards relative to where he faces
-    const backing = sp > 0.4 ? clamp(-(k.vx * -Math.sin(k.yaw) + k.vz * -Math.cos(k.yaw)) / sp, 0, 1) : 0;
+    const backing = sp > 0.4 ? clamp(-(k.vx * -Math.sin(k.yaw) + k.vz * -Math.cos(k.yaw)) / (sp * S), 0, 1) : 0;
     // landing from a drop: the knees give a little
     if (k.onGround && this.wasAir > 0.25) this.landT = Math.min(0.3, this.wasAir * 0.4);
     this.wasAir = k.onGround ? 0 : this.wasAir + dt;
@@ -128,7 +135,7 @@ export class KnightAnimator {
     // standing still: breathing (harder when winded) and a slow shift of weight from foot to foot
     const winded = k.stamina !== undefined && k.maxStamina ? 1 - clamp(k.stamina / k.maxStamina, 0, 1) : 0;
     const breathRate = 1.4 + winded * 2.2;
-    const breath = Math.sin(time * breathRate + this.seed) * (0.006 + winded * 0.012);
+    const breath = Math.sin(time * breathRate * (1 - 0.25 * heft) + this.seed) * (0.006 + winded * 0.012) * (1 + heft * 0.8);
 
     const yawVis = k.yaw + (ability === 'whirlwind' ? this.whirlSpin(abU) : 0);
     const fwd = _fwd.set(-Math.sin(yawVis), 0, -Math.cos(yawVis));
@@ -141,13 +148,13 @@ export class KnightAnimator {
     // ---------------- feet
     // each foot is planted for part of the cycle (stance) and swings through the rest; the
     // planted share falls from 60% walking to about a third sprinting, leaving a flight phase
-    const duty = lerp(0.6, 0.28, run);
+    const duty = lerp(0.6, 0.28, run) + 0.06 * heft;
     const stepLen = duty * stride * gait;
-    const lift = (0.09 + run * 0.08) * gait;
-    const footW = 0.11 - run * 0.045;
+    const lift = (0.09 + run * 0.08) * gait * (1 - 0.2 * heft);
+    const footW = 0.11 - run * 0.045 + 0.035 * heft;
     // runners land nearly under the hip and push off well behind it
     const contactBack = -0.2 * run * stepLen;
-    let stanceSum = 0, weightSide = 0;
+    let stanceSum = 0, weightSide = 0, impact = 0;
     const stanceSplit = (k.act === Act.Block || weapon.twoHanded || shieldK) ? 0.13 : 0.06;
     const idleFeet = 1 - gait;
     const legs: [THREE.Vector3, THREE.Vector3, THREE.Vector3, number][] = [[J.ankleL, J.toeL, J.hipL, -1], [J.ankleR, J.toeR, J.hipR, 1]];
@@ -161,6 +168,8 @@ export class KnightAnimator {
         l = 0; swing = -1;
         const c = Math.sin((t / duty) * Math.PI);
         stanceSum += c; weightSide += side * c;
+        // the jolt as the heel comes down and the knee takes the weight
+        impact += Math.sin(Math.PI * Math.min(1, t / (duty * 0.3)));
       } else {
         sU = (t - duty) / (1 - duty);
         // the heel kicks up behind first, then the knee drives the foot forward
@@ -200,7 +209,7 @@ export class KnightAnimator {
 
     // ---------------- pelvis and torso
     // the body sinks onto each planted leg and rises between them (most at a run)
-    const bob = ((0.5 - Math.min(1, stanceSum)) * (0.008 + run * 0.016)) * gait;
+    const bob = ((0.5 - Math.min(1, stanceSum)) * (0.008 + run * 0.016 + heft * 0.016)) * gait;
     let crouch = 0;
     if (k.act === Act.Block) crouch = 0.04;
     // a blow is thrown with the whole body: gather on the windup, step and drop into the
@@ -231,7 +240,7 @@ export class KnightAnimator {
     if (ability === 'cleave') crouch = 0.12 * hump;
     if (ability === 'shieldslam') crouch = 0.08 * hump;
     if (k.stunT > 0) crouch = 0.08 + Math.sin(time * 5) * 0.02;
-    crouch += this.landT * 0.35 + Math.max(0, -breath) * 0.4 * (1 - gait);
+    crouch += this.landT * 0.35 + Math.max(0, -breath) * 0.4 * (1 - gait) + heft * 0.03 * impact * gait;
     let pelvisY = k.y + BODY.hipY + bob - crouch - this.airT * 0.05;
     // keep both legs within reach on slopes
     const legLen = BODY.thigh + BODY.shin - 0.015;
@@ -246,7 +255,7 @@ export class KnightAnimator {
     this.pelvisYS = lerp(this.pelvisYS, pelvisY, 1 - Math.exp(-dt * 22));
     pelvisY = Math.min(this.pelvisYS, pelvisY + 0.03);
     // weight shifts over the planted foot
-    J.pelvis.set(k.x, pelvisY, k.z).addScaledVector(fwd, 0.02 + run * 0.08 + this.strikeS * 0.09).addScaledVector(right, weightSide * 0.025 * gait * (1 - run * 0.5));
+    J.pelvis.set(k.x, pelvisY, k.z).addScaledVector(fwd, 0.02 + run * 0.08 + this.strikeS * 0.09).addScaledVector(right, weightSide * (0.025 + 0.045 * heft) * gait * (1 - run * 0.5));
     // the weapon pose decides how the torso twists and leans
     const rest = this.restKey(k, weapon, gait);
     const p = this.weaponPose(k, weapon, rest, ability, abU, time);
@@ -256,6 +265,8 @@ export class KnightAnimator {
     lean += clamp(this.accelS * 0.022, -0.14, 0.12) - backing * 0.12 * gait;
     // a winded man stoops a little over his breath
     lean += winded * 0.06 * (1 - gait) + breath * 0.6;
+    // a giant stoops a little under his harness as he walks, and more with each heavy footfall
+    lean += heft * (0.05 * gait + 0.03 * impact * gait);
     if (ability === 'charge') lean += 0.28;
     if (ability === 'dash') lean += 0.15;
     if (ability === 'shield_bash') lean += 0.3 * Math.sin(clamp(abU / 0.6, 0, 1) * Math.PI);
@@ -273,10 +284,10 @@ export class KnightAnimator {
     if (ability === 'firepot') twist += abU < 0.42 ? 0.7 * smoothstep(0, 0.42, abU) : 0.7 - 1.2 * smoothstep(0.42, 0.62, abU);
     if (ability === 'cleave') twist += abU < 0.4 ? 0.9 * smoothstep(0, 0.4, abU) : 0.9 - 1.9 * smoothstep(0.4, 0.62, abU) * (1 - smoothstep(0.8, 1, abU) * 0.5);
     if (ability === 'throw') twist += 1.1 * Math.sin(clamp((abU - 0.25) / 0.6, 0, 1) * Math.PI);
-    const hipTwist = Math.sin(this.phase) * (0.12 + run * 0.06) * gait;
+    const hipTwist = Math.sin(this.phase) * (0.12 + run * 0.06 + heft * 0.05) * gait;
     twist -= hipTwist * (0.7 + run * 0.4);
     // flinch / stagger / stun
-    let sideLean = -weightSide * 0.035 * gait;
+    let sideLean = -weightSide * (0.035 + 0.075 * heft) * gait;
     // lean into a turn, the more so the faster he goes
     sideLean += clamp(this.turnRate * this.speed * 0.025, -0.16, 0.16);
     // the idle weight shift from foot to foot

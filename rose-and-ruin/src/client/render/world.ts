@@ -6,6 +6,7 @@ import type { BuiltMap } from '../../shared/world/mapgen';
 import type { Renderer } from './renderer';
 import { TextureBaker } from './textures';
 import { buildSky, type SkyResult } from './sky';
+import { buildAlps, buildCloudSea } from './alps';
 import { buildTerrain, type TerrainView } from './terrain';
 import { buildStructures, structureMaterials } from './structures';
 import { buildProps, flagUniforms, type PropsView } from './props';
@@ -76,6 +77,10 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
     root.add(pl);
     pool.push(pl);
   }
+  // mountains on the horizon and a sea of cloud below the summit
+  if (atm.alps) root.add(buildAlps(atm.alps, map.def.id.length * 7919, new THREE.Color(...atm.fogColor)));
+  const clouds = atm.cloudSea !== undefined ? buildCloudSea(atm.cloudSea, map.def.id.length * 31) : null;
+  if (clouds) root.add(clouds.group);
   r.scene.add(root);
   endWorld();
   await step(1, 'Ready');
@@ -89,6 +94,7 @@ export async function buildWorldView(r: Renderer, map: BuiltMap, onProgress?: (p
       const cam = r.camera;
       terrain.update(cam);
       veg.update(cam, G.uTime.value);
+      clouds?.update(dt);
       for (const u of flagUniforms) u.value = G.uTime.value;
       sky.dome.position.copy(cam.position);
       fireTimer -= dt;
