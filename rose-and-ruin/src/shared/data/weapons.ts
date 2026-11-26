@@ -320,7 +320,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   }),
   // a great axe: the poleaxe's moves with a broad bearded blade that cleaves
   greataxe: derive(BASE.poleaxe, {
-    id: 'greataxe', name: 'Great Axe', visual: 'greataxe', time: 1.0, dmg: 1.18, dtype: 0,
+    id: 'greataxe', name: 'Great Axe', visual: 'greataxe', time: 0.96, dmg: 1.3, dtype: 0,
     blurb: 'A broad bearded axe on a long haft, gilded for a champion. Each blow can end a man.',
     hitStart: 1.0, hitEnd: 1.52,
   }),
@@ -379,7 +379,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   }),
   // the goliath's broadsword: a giant's blade, ruinous and very slow
   giantsword: derive(BASE.greatsword, {
-    id: 'giantsword', name: 'Giant\'s Broadsword', visual: 'greatsword', time: 1.9, dmg: 0.97,
+    id: 'giantsword', name: 'Giant\'s Broadsword', visual: 'greatsword', time: 1.65, dmg: 0.97,
     blurb: 'A broadsword nearly the length of a man, too heavy for any but a giant. Each stroke is slow to come and ends whatever it meets.',
     hitStart: 0.22, hitEnd: 2.15, blockArc: 130, blockStamina: 0.8, parryWindow: 0.14,
   }),

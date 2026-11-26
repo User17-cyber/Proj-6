@@ -138,7 +138,7 @@ The last ten are free from the start. Their abilities are things a fifteenth-cen
 | Warlord | War poleaxe | Lord's Command (you and comrades within 15 metres recover 25 vigour, move faster and strike harder for 6 seconds), Cleave (a sweeping blow that harms and staggers every foe within 3 metres before you) | 10,000 |
 | Colossus | Great spear and tower shield | Bulwark of the Realm (you and comrades within 7 metres take 30% less harm for 6 seconds), Shield Slam (every foe within 3.5 metres before you is battered back and stunned) | 12,000 |
 
-In bot duels at equal skill against the base orders (which win about 60% at best), the Yeoman wins about 68%, the Marshal 78%, the Knight of the Garter 74%, the Goliath 38%, the Champion 77%, the Warlord 77% and the Colossus 73%.
+In bot duels at equal skill against the base orders (which win about 60% at best), the Yeoman wins about 68%, the Marshal 78%, the Knight of the Garter 74%, the Goliath 51%, the Champion 78%, the Warlord 77% and the Colossus 73%.
 
 The **Colossus** is the last and greatest of them. He stands nearly a third taller than other men and is broad to match. Every rating is at its highest except footspeed, which is the lowest in the game, and he tires quickly: every blow, guard, ability and sprint costs him 1.8 times the stamina. He carries a tower shield like a castle door (950 durability) and cannot be knocked off his feet by any blow, throw or charge. A good archer in open ground is still the bane of the slow. He walks like the giant he is: long, slow strides, rolling over each planted foot.
 

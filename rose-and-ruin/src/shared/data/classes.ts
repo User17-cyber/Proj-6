@@ -389,9 +389,9 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   champion: {
     id: 'champion', name: 'Champion', title: 'Great Axe & Gilded Plate',
     description: 'The king\'s own champion in gilded plate. The great axe ends men in one or two blows; Executioner finishes any foe left reeling, and Juggernaut carries him through the press like a ram.',
-    hp: 170, stamina: 115, speed: 4.65, sprint: 6.9, mass: 1.5, size: { height: 1.1, girth: 1.14 },
-    armor: [0.5, 0.22, 0.62], weapon: 'greataxe', shield: null, ranged: false,
-    abilities: ['execute', 'juggernaut'], hyperArmor: true, attackSpeed: 0.95,
+    hp: 205, stamina: 130, speed: 4.75, sprint: 7.0, mass: 1.6, size: { height: 1.1, girth: 1.14 },
+    armor: [0.55, 0.26, 0.64], weapon: 'greataxe', shield: null, ranged: false,
+    abilities: ['execute', 'juggernaut'], hyperArmor: true, attackSpeed: 1.1,
     ratings: { attack: 5, defence: 5, speed: 2, reach: 4, difficulty: 3 },
     armourDesc: 'Crested great bascinet and gilded full harness',
     botWeight: 5, unlock: 8000,
@@ -429,7 +429,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   goliath: {
     id: 'goliath', name: 'Goliath', title: 'Giant\'s Broadsword',
     description: 'A lesser giant, a head shorter than the Colossus and nothing like so hard to fell, who carries a broadsword fit for a giant. Every blow is slow to come and ruinous when it lands; Earthshaker throws the ranks off their feet and Whirlwind turns the great blade in a full circle.',
-    hp: 175, stamina: 200, speed: 3.1, sprint: 3.9, mass: 2.0, size: { height: 1.28, girth: 1.3 },
+    hp: 200, stamina: 200, speed: 3.1, sprint: 3.9, mass: 2.0, size: { height: 1.28, girth: 1.3 },
     armor: [0.38, 0.16, 0.38], weapon: 'giantsword', shield: null, ranged: false,
     abilities: ['earthshaker', 'whirlwind'], hyperArmor: false, staminaDrain: 1.8, attackSpeed: 0.85,
     ratings: { attack: 5, defence: 3, speed: 1, reach: 4, difficulty: 4 },
