@@ -379,7 +379,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   }),
   // the goliath's broadsword: a giant's blade, ruinous and very slow
   giantsword: derive(BASE.greatsword, {
-    id: 'giantsword', name: 'Giant\'s Broadsword', visual: 'greatsword', time: 1.9, dmg: 1.6,
+    id: 'giantsword', name: 'Giant\'s Broadsword', visual: 'greatsword', time: 1.9, dmg: 0.97,
     blurb: 'A broadsword nearly the length of a man, too heavy for any but a giant. Each stroke is slow to come and ends whatever it meets.',
     hitStart: 0.22, hitEnd: 2.15, blockArc: 130, blockStamina: 0.8, parryWindow: 0.14,
   }),
